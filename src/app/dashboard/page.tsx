@@ -1,9 +1,10 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/utils/supabaseClient";
 import { User } from "@supabase/supabase-js";
 import Link from "next/link";
+import { QRCodeCanvas } from "qrcode.react";
 
 export default function Dashboard() {
   const [user, setUser] = useState<User | null>(null);
@@ -277,6 +278,10 @@ function OrganizerDashboard({ user, router }: { user: User; router: any }) {
 function AttendeeDashboard({ user }: { user: User }) {
   const [tickets, setTickets] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [qrModalOpen, setQrModalOpen] = useState(false);
+  const [selectedTicket, setSelectedTicket] = useState<any | null>(null);
+  const qrRef = useRef<HTMLDivElement>(null);
+  const router = useRouter();
 
   useEffect(() => {
     fetchUserTickets();
@@ -337,6 +342,22 @@ function AttendeeDashboard({ user }: { user: User }) {
   const formatPrice = (price: number) => {
     if (price === 0) return 'Free';
     return `R${price.toFixed(2)}`;
+  };
+
+  const handleViewQR = (ticket: any) => {
+    setSelectedTicket(ticket);
+    setQrModalOpen(true);
+  };
+
+  const handleDownloadQR = () => {
+    if (!qrRef.current) return;
+    const canvas = qrRef.current.querySelector('canvas');
+    if (!canvas) return;
+    const url = canvas.toDataURL("image/png");
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `ticket-qr-${selectedTicket.id}.png`;
+    link.click();
   };
 
   return (
@@ -449,11 +470,11 @@ function AttendeeDashboard({ user }: { user: User }) {
                         {ticket.events ? formatPrice(ticket.events.price) : 'N/A'}
                       </span>
                       <div className="flex gap-2">
-                        <button className="bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700">
+                        <button
+                          className="bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700"
+                          onClick={() => handleViewQR(ticket)}
+                        >
                           View QR
-                        </button>
-                        <button className="bg-gray-600 text-white px-3 py-1 rounded text-sm hover:bg-gray-700">
-                          Download
                         </button>
                       </div>
                     </div>
@@ -463,6 +484,41 @@ function AttendeeDashboard({ user }: { user: User }) {
             </div>
           )}
         </div>
+
+        {/* QR Code Modal */}
+        {qrModalOpen && selectedTicket && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+            <div className="bg-white rounded-lg shadow-lg p-8 max-w-sm w-full relative">
+              <button
+                className="absolute top-2 right-2 text-gray-400 hover:text-gray-600"
+                onClick={() => setQrModalOpen(false)}
+              >
+                <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+              <h3 className="text-xl font-bold mb-4 text-center">Your Ticket QR Code</h3>
+              <div ref={qrRef} className="flex justify-center mb-4">
+                <QRCodeCanvas
+                  value={selectedTicket.qr_code_data || selectedTicket.id}
+                  size={220}
+                  bgColor="#fff"
+                  fgColor="#1e40af"
+                  level="H"
+                  includeMargin={true}
+                />
+              </div>
+              <div className="flex justify-center">
+                <button
+                  className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+                  onClick={handleDownloadQR}
+                >
+                  Download QR
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </main>
     </div>
   );

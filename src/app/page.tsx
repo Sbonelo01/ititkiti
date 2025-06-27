@@ -43,7 +43,6 @@ export default function Home() {
       const { data, error } = await supabase
         .from('events')
         .select('*')
-        .gt('total_tickets', 0) // Only events with tickets
         .order('date', { ascending: true });
 
       console.log('Query result:', { data, error }); // Debug log
@@ -80,6 +79,8 @@ export default function Home() {
   const latestEvents = events.slice(0, 5); // Get the 5 latest events
   const otherEvents = filteredEvents.filter(event => !latestEvents.find(latest => latest.id === event.id));
 
+  const allEvents = filteredEvents;
+
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString('en-US', {
@@ -110,36 +111,6 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white shadow">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-6">
-            <div className="flex items-center">
-              <div className="h-10 w-10 bg-blue-600 rounded-lg flex items-center justify-center mr-3">
-                <svg className="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z" />
-                </svg>
-              </div>
-              <h1 className="text-3xl font-bold text-gray-900">Tikiti</h1>
-            </div>
-            <div className="flex items-center space-x-4">
-              <Link
-                href="/events"
-                className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium"
-              >
-                All Events
-              </Link>
-              <Link
-                href="/login"
-                className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition-colors"
-              >
-                Sign In
-              </Link>
-            </div>
-          </div>
-        </div>
-      </header>
-
       {/* Hero Section with Latest Events Carousel */}
       {latestEvents.length > 0 && (
         <section className="bg-gradient-to-r from-blue-600 to-indigo-700 py-16">
@@ -260,13 +231,13 @@ export default function Home() {
           </div>
         </div>
 
-        {otherEvents.length === 0 ? (
+        {allEvents.length === 0 ? (
           <div className="text-center py-12">
             <p className="text-gray-500 text-lg">No events found matching your criteria.</p>
           </div>
         ) : (
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {otherEvents.map((event) => (
+            {allEvents.map((event) => (
               <div key={event.id} className="bg-white rounded-lg shadow overflow-hidden hover:shadow-lg transition-shadow">
                 <div className="p-6">
                   <h3 className="text-xl font-semibold text-gray-900 mb-2">{event.title}</h3>

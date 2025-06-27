@@ -90,12 +90,31 @@ export default function EventDetail() {
     setPurchaseError(null);
 
     try {
-      console.log('Purchasing tickets:', {
-        eventId,
-        userId: user.id,
-        quantity: ticketQuantity,
-        totalPrice: event!.price * ticketQuantity
-      });
+      // Call the RPC function directly to decrement tickets atomically
+      const { data: rpcResult, error: rpcError } = await supabase
+        .rpc('decrement_tickets', { event_id_param: eventId, quantity_param: ticketQuantity });
+
+      if (rpcError || !rpcResult) {
+        setPurchaseError('Not enough tickets available. Please try a lower quantity.');
+        setPurchasing(false);
+        return;
+      }
+
+      // Fetch the latest event data directly
+      const { data: latestEvent, error: latestEventError } = await supabase
+        .from('events')
+        .select('*')
+        .eq('id', eventId)
+        .single();
+
+      if (latestEventError || !latestEvent) {
+        setPurchaseError('Error loading event data after purchase.');
+        setPurchasing(false);
+        return;
+      }
+
+      // Update the event state
+      setEvent(latestEvent);
 
       // Create tickets in the database matching the actual schema
       const tickets = [];
@@ -104,52 +123,33 @@ export default function EventDetail() {
           event_id: eventId,
           attendee_name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'Attendee',
           email: user.email,
-          qr_code_data: `TICKET-${eventId}-${user.id}-${Date.now()}-${i}`, // Generate unique QR code data
+          qr_code_data: `TICKET-${eventId}-${user.id}-${Date.now()}-${i}`,
           used: false,
-          payment_status: 'paid', // Assuming payment is successful for now
+          payment_status: 'paid',
           created_at: new Date().toISOString()
         });
       }
 
-      console.log('Attempting to insert tickets:', tickets); // Debug log
-
       const { data: ticketData, error: ticketError } = await supabase
         .from('tickets')
         .insert(tickets)
-        .select(); // Add select to see what was inserted
-
-      console.log('Ticket insertion result:', { ticketData, ticketError }); // Debug log
+        .select();
 
       if (ticketError) {
-        console.error('Error creating tickets:', ticketError);
-        console.error('Error details:', {
-          message: ticketError.message,
-          details: ticketError.details,
-          hint: ticketError.hint,
-          code: ticketError.code
-        });
-        throw new Error(`Failed to create tickets: ${ticketError.message}`);
+        setPurchaseError('Failed to create tickets. Please try again.');
+        setPurchasing(false);
+        return;
       }
 
-      // Update event ticket count (reduce available tickets)
-      const { error: eventError } = await supabase
-        .from('events')
-        .update({ total_tickets: event!.total_tickets - ticketQuantity })
-        .eq('id', eventId);
+      // Reload event data to reflect new ticket count
+      await loadEventData();
 
-      if (eventError) {
-        console.error('Error updating event:', eventError);
-        // Note: We don't throw here as tickets were already created
-      }
-
-      console.log('Tickets purchased successfully!', ticketData);
       setPurchaseSuccess(true);
       setTimeout(() => {
         router.push('/dashboard');
       }, 3000);
 
     } catch (error) {
-      console.error('Purchase error:', error);
       setPurchaseError(error instanceof Error ? error.message : 'Failed to purchase tickets. Please try again.');
     } finally {
       setPurchasing(false);
@@ -233,7 +233,7 @@ export default function EventDetail() {
             </div>
             {!user && (
               <Link
-                href="/"
+                href="/login"
                 className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
               >
                 Sign In to Purchase
@@ -341,7 +341,7 @@ export default function EventDetail() {
                   <div className="text-center">
                     <p className="text-gray-600 mb-4">Sign in to purchase tickets for this event.</p>
                     <Link
-                      href="/"
+                      href="/login"
                       className="w-full bg-blue-600 text-white py-3 rounded-md hover:bg-blue-700 font-medium inline-block"
                     >
                       Sign In
