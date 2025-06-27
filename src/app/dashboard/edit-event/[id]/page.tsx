@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { supabase } from "@/utils/supabaseClient";
 import { User } from "@supabase/supabase-js";
@@ -35,33 +35,7 @@ export default function EditEvent() {
     total_tickets: 0,
   });
 
-  useEffect(() => {
-    const checkAuthAndLoadEvent = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (!session) {
-        router.push('/login');
-        return;
-      }
-
-      // Check if user is an organizer
-      const userRole = session.user.user_metadata?.role;
-      if (userRole !== 'organizer') {
-        router.push('/dashboard');
-        return;
-      }
-
-      setUser(session.user);
-      
-      // Load event data after user is set
-      await loadEventData(session.user.id);
-      setLoading(false);
-    };
-
-    checkAuthAndLoadEvent();
-  }, [router, eventId]);
-
-  const loadEventData = async (userId: string) => {
+  const loadEventData = useCallback(async (userId: string) => {
     try {
       console.log('Loading event data for event ID:', eventId, 'and user ID:', userId); // Debug log
       
@@ -109,7 +83,33 @@ export default function EditEvent() {
       console.error('Error:', error);
       setEventNotFound(true);
     }
-  };
+  }, [eventId]);
+
+  useEffect(() => {
+    const checkAuthAndLoadEvent = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        router.push('/login');
+        return;
+      }
+
+      // Check if user is an organizer
+      const userRole = session.user.user_metadata?.role;
+      if (userRole !== 'organizer') {
+        router.push('/dashboard');
+        return;
+      }
+
+      setUser(session.user);
+      
+      // Load event data after user is set
+      await loadEventData(session.user.id);
+      setLoading(false);
+    };
+
+    checkAuthAndLoadEvent();
+  }, [router, eventId, loadEventData]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -178,9 +178,9 @@ export default function EditEvent() {
         router.push('/dashboard');
       }, 2000);
 
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error updating event:', err); // Debug log
-      setError(err.message || 'Failed to update event');
+      setError(err instanceof Error ? err.message : 'Failed to update event');
     } finally {
       setSubmitting(false);
     }
@@ -202,7 +202,7 @@ export default function EditEvent() {
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
           <h2 className="text-2xl font-bold text-gray-900 mb-2">Event Not Found</h2>
-          <p className="text-gray-600 mb-4">The event you're looking for doesn't exist or you don't have permission to edit it.</p>
+          <p className="text-gray-600 mb-4">The event you&apos;re looking for doesn&apos;t exist or you don&apos;t have permission to edit it.</p>
           <button
             onClick={() => router.push('/dashboard')}
             className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"

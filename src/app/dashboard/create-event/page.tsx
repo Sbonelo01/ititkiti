@@ -111,9 +111,9 @@ export default function CreateEvent() {
         router.push('/dashboard');
       }, 2000);
 
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error creating event:', err); // Debug log
-      setError(err.message || 'Failed to create event');
+      setError(err instanceof Error ? err.message : 'Failed to create event');
     } finally {
       setSubmitting(false);
     }

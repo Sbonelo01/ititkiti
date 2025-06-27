@@ -77,7 +77,6 @@ export default function Home() {
   });
 
   const latestEvents = events.slice(0, 5); // Get the 5 latest events
-  const otherEvents = filteredEvents.filter(event => !latestEvents.find(latest => latest.id === event.id));
 
   const allEvents = filteredEvents;
 
@@ -135,7 +134,7 @@ export default function Home() {
                   className="flex transition-transform duration-500 ease-in-out"
                   style={{ transform: `translateX(-${currentCarouselIndex * 100}%)` }}
                 >
-                  {latestEvents.map((event, index) => (
+                  {latestEvents.map((event) => (
                     <div key={event.id} className="w-full flex-shrink-0">
                       <div className="bg-white rounded-lg shadow-xl p-8 mx-4">
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">

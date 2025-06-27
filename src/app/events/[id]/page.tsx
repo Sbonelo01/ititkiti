@@ -1,8 +1,9 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { supabase } from "@/utils/supabaseClient";
 import Link from "next/link";
+import { User } from "@supabase/supabase-js";
 
 interface Event {
   id: string;
@@ -19,7 +20,7 @@ export default function EventDetail() {
   const [event, setEvent] = useState<Event | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<User | null>(null);
   const [ticketQuantity, setTicketQuantity] = useState(1);
   const [purchasing, setPurchasing] = useState(false);
   const [purchaseError, setPurchaseError] = useState<string | null>(null);
@@ -28,28 +29,7 @@ export default function EventDetail() {
   const params = useParams();
   const eventId = params.id as string;
 
-  useEffect(() => {
-    const loadEventAndCheckAuth = async () => {
-      try {
-        // Load event data
-        await loadEventData();
-        
-        // Check if user is authenticated
-        const { data: { session } } = await supabase.auth.getSession();
-        setUser(session?.user || null);
-        
-        setLoading(false);
-      } catch (error) {
-        console.error('Error:', error);
-        setError('Failed to load event');
-        setLoading(false);
-      }
-    };
-
-    loadEventAndCheckAuth();
-  }, [eventId]);
-
-  const loadEventData = async () => {
+  const loadEventData = useCallback(async () => {
     try {
       console.log('Loading event details for ID:', eventId); // Debug log
       
@@ -72,7 +52,28 @@ export default function EventDetail() {
       console.error('Error:', error);
       setError('Failed to load event');
     }
-  };
+  }, [eventId]);
+
+  useEffect(() => {
+    const loadEventAndCheckAuth = async () => {
+      try {
+        // Load event data
+        await loadEventData();
+        
+        // Check if user is authenticated
+        const { data: { session } } = await supabase.auth.getSession();
+        setUser(session?.user as User | null);
+        
+        setLoading(false);
+      } catch (error) {
+        console.error('Error:', error);
+        setError('Failed to load event');
+        setLoading(false);
+      }
+    };
+
+    loadEventAndCheckAuth();
+  }, [eventId, loadEventData]);
 
   const handlePurchase = async () => {
     if (!user) {
@@ -130,7 +131,7 @@ export default function EventDetail() {
         });
       }
 
-      const { data: ticketData, error: ticketError } = await supabase
+      const { error: ticketError } = await supabase
         .from('tickets')
         .insert(tickets)
         .select();
@@ -191,7 +192,7 @@ export default function EventDetail() {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <h2 className="text-2xl font-bold text-gray-900 mb-2">Event Not Found</h2>
-          <p className="text-gray-600 mb-4">{error || 'The event you\'re looking for doesn\'t exist.'}</p>
+          <p className="text-gray-600 mb-4">{error || 'The event you&apos;re looking for doesn&apos;t exist.'}</p>
           <Link
             href="/events"
             className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"

@@ -1,10 +1,34 @@
 "use client";
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/utils/supabaseClient";
 import { User } from "@supabase/supabase-js";
 import Link from "next/link";
 import { QRCodeCanvas } from "qrcode.react";
+import { AppRouterInstance } from "next/dist/shared/lib/app-router-context.shared-runtime";
+
+interface DashboardEvent {
+  id: string;
+  title: string;
+  description: string;
+  date: string;
+  location: string;
+  price: number;
+  total_tickets: number;
+  organizer_id: string;
+}
+
+interface DashboardTicket {
+  id: string;
+  event_id: string;
+  attendee_name: string;
+  email: string;
+  qr_code_data: string;
+  used: boolean;
+  payment_status: string;
+  created_at: string;
+  events?: DashboardEvent;
+}
 
 export default function Dashboard() {
   const [user, setUser] = useState<User | null>(null);
@@ -68,16 +92,12 @@ export default function Dashboard() {
   }
 }
 
-function OrganizerDashboard({ user, router }: { user: User; router: any }) {
-  const [events, setEvents] = useState<any[]>([]);
+function OrganizerDashboard({ user, router }: { user: User; router: AppRouterInstance }) {
+  const [events, setEvents] = useState<DashboardEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [deletingEventId, setDeletingEventId] = useState<string | null>(null);
 
-  useEffect(() => {
-    fetchOrganizerEvents();
-  }, []);
-
-  const fetchOrganizerEvents = async () => {
+  const fetchOrganizerEvents = useCallback(async () => {
     try {
       console.log('Fetching organizer events for user:', user.id); // Debug log
       
@@ -100,7 +120,11 @@ function OrganizerDashboard({ user, router }: { user: User; router: any }) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user]);
+
+  useEffect(() => {
+    fetchOrganizerEvents();
+  }, [fetchOrganizerEvents]);
 
   const handleDeleteEvent = async (eventId: string) => {
     if (!confirm('Are you sure you want to delete this event? This action cannot be undone.')) {
@@ -200,7 +224,7 @@ function OrganizerDashboard({ user, router }: { user: User; router: any }) {
             </div>
           ) : events.length === 0 ? (
             <div className="text-center py-12">
-              <p className="text-gray-500 mb-4">You haven't created any events yet.</p>
+              <p className="text-gray-500 mb-4">You haven&apos;t created any events yet.</p>
               <Link
                 href="/dashboard/create-event"
                 className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700"
@@ -276,18 +300,14 @@ function OrganizerDashboard({ user, router }: { user: User; router: any }) {
 }
 
 function AttendeeDashboard({ user }: { user: User }) {
-  const [tickets, setTickets] = useState<any[]>([]);
+  const [tickets, setTickets] = useState<DashboardTicket[]>([]);
   const [loading, setLoading] = useState(true);
   const [qrModalOpen, setQrModalOpen] = useState(false);
-  const [selectedTicket, setSelectedTicket] = useState<any | null>(null);
+  const [selectedTicket, setSelectedTicket] = useState<DashboardTicket | null>(null);
   const qrRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
 
-  useEffect(() => {
-    fetchUserTickets();
-  }, []);
-
-  const fetchUserTickets = async () => {
+  const fetchUserTickets = useCallback(async () => {
     try {
       console.log('Fetching tickets for user:', user.id); // Debug log
       
@@ -320,7 +340,11 @@ function AttendeeDashboard({ user }: { user: User }) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user]);
+
+  useEffect(() => {
+    fetchUserTickets();
+  }, [fetchUserTickets]);
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
@@ -344,12 +368,13 @@ function AttendeeDashboard({ user }: { user: User }) {
     return `R${price.toFixed(2)}`;
   };
 
-  const handleViewQR = (ticket: any) => {
+  const handleViewQR = (ticket: DashboardTicket) => {
     setSelectedTicket(ticket);
     setQrModalOpen(true);
   };
 
   const handleDownloadQR = () => {
+    if (!selectedTicket) return;
     if (!qrRef.current) return;
     const canvas = qrRef.current.querySelector('canvas');
     if (!canvas) return;
@@ -400,7 +425,7 @@ function AttendeeDashboard({ user }: { user: User }) {
             </div>
           ) : tickets.length === 0 ? (
             <div className="text-center py-12">
-              <p className="text-gray-500 mb-4">You haven't purchased any tickets yet.</p>
+              <p className="text-gray-500 mb-4">You haven&apos;t purchased any tickets yet.</p>
               <Link
                 href="/events"
                 className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700"
@@ -500,7 +525,7 @@ function AttendeeDashboard({ user }: { user: User }) {
               <h3 className="text-xl font-bold mb-4 text-center">Your Ticket QR Code</h3>
               <div ref={qrRef} className="flex justify-center mb-4">
                 <QRCodeCanvas
-                  value={selectedTicket.qr_code_data || selectedTicket.id}
+                  value={selectedTicket!.qr_code_data || selectedTicket!.id}
                   size={220}
                   bgColor="#fff"
                   fgColor="#1e40af"
