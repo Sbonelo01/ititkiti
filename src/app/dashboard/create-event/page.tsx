@@ -12,6 +12,7 @@ interface EventFormData {
   location: string;
   price: number;
   total_tickets: number;
+  poster_url?: string;
 }
 
 export default function CreateEvent() {
@@ -31,6 +32,9 @@ export default function CreateEvent() {
     price: 0,
     total_tickets: 0,
   });
+
+  const [posterFile, setPosterFile] = useState<File | null>(null);
+  const [posterPreview, setPosterPreview] = useState<string | null>(null);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -63,6 +67,37 @@ export default function CreateEvent() {
     }));
   };
 
+  const handlePosterChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] || null;
+    setPosterFile(file);
+    if (file) {
+      setPosterPreview(URL.createObjectURL(file));
+    } else {
+      setPosterPreview(null);
+    }
+  };
+
+  const handlePosterUpload = async (file: File) => {
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${Date.now()}.${fileExt}`;
+    const { data, error } = await supabase.storage
+      .from('event-posters')
+      .upload(fileName, file);
+    if (error) {
+      console.error('Poster upload error:', error);
+      throw error;
+    }
+    const { data: publicUrlData, error: publicUrlError } = supabase
+      .storage
+      .from('event-posters')
+      .getPublicUrl(fileName);
+    if (publicUrlError) {
+      console.error('Get public URL error:', publicUrlError);
+      throw publicUrlError;
+    }
+    return publicUrlData.publicUrl;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
@@ -84,7 +119,17 @@ export default function CreateEvent() {
     try {
       // Combine date and time
       const eventDateTime = new Date(`${formData.date}T${formData.time}`).toISOString();
-
+      let posterUrl = formData.poster_url || null;
+      if (posterFile) {
+        try {
+          posterUrl = await handlePosterUpload(posterFile);
+        } catch (uploadError) {
+          console.error('Poster upload failed:', uploadError);
+          setError('Poster upload failed: ' + (uploadError instanceof Error ? uploadError.message : String(uploadError)));
+          setSubmitting(false);
+          return;
+        }
+      }
       const eventData = {
         title: formData.title,
         description: formData.description,
@@ -93,16 +138,18 @@ export default function CreateEvent() {
         price: formData.price,
         total_tickets: formData.total_tickets,
         organizer_id: user?.id,
+        poster_url: posterUrl,
       };
 
       console.log('Creating event with data:', eventData); // Debug log
 
-      const { error } = await supabase
+      const { error: insertError } = await supabase
         .from('events')
         .insert([eventData]);
 
-      if (error) {
-        throw error;
+      if (insertError) {
+        console.error('Event insert error:', insertError);
+        throw insertError;
       }
 
       console.log('Event created successfully!'); // Debug log
@@ -277,6 +324,20 @@ export default function CreateEvent() {
                   required
                 />
               </div>
+            </div>
+
+            {/* Poster Upload */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Event Poster</label>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handlePosterChange}
+                className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+              />
+              {posterPreview && (
+                <img src={posterPreview} alt="Poster Preview" className="mt-4 rounded w-full max-h-64 object-contain border" />
+              )}
             </div>
 
             {/* Error Message */}

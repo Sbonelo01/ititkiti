@@ -16,6 +16,7 @@ interface DashboardEvent {
   price: number;
   total_tickets: number;
   organizer_id: string;
+  poster_url?: string;
 }
 
 interface DashboardTicket {
@@ -105,7 +106,7 @@ function OrganizerDashboard({ user, router }: { user: User; router: AppRouterIns
         .from('events')
         .select('*')
         .eq('organizer_id', user.id)
-        .order('date', { ascending: true });
+        .order('created_at', { ascending: false });
 
       console.log('Organizer events result:', { data, error }); // Debug log
 
@@ -126,7 +127,7 @@ function OrganizerDashboard({ user, router }: { user: User; router: AppRouterIns
     fetchOrganizerEvents();
   }, [fetchOrganizerEvents]);
 
-  const handleDeleteEvent = async (eventId: string) => {
+  const handleDeleteEvent = async (eventId: string, posterUrl?: string) => {
     if (!confirm('Are you sure you want to delete this event? This action cannot be undone.')) {
       return;
     }
@@ -134,6 +135,21 @@ function OrganizerDashboard({ user, router }: { user: User; router: AppRouterIns
     setDeletingEventId(eventId);
     
     try {
+      // 1. Delete the poster from storage if it exists
+      if (posterUrl) {
+        // Extract the path after the bucket name
+        const path = posterUrl.split('/event-posters/')[1];
+        if (path) {
+          const { error: storageError } = await supabase.storage
+            .from('event-posters')
+            .remove([path]);
+          if (storageError) {
+            console.error('Error deleting poster from storage:', storageError);
+          }
+        }
+      }
+
+      // 2. Delete the event from the database
       const { error } = await supabase
         .from('events')
         .delete()
@@ -237,6 +253,9 @@ function OrganizerDashboard({ user, router }: { user: User; router: AppRouterIns
               {events.map((event) => (
                 <div key={event.id} className="bg-white rounded-lg shadow overflow-hidden hover:shadow-lg transition-shadow">
                   <div className="p-6">
+                    {event.poster_url && (
+                      <img src={event.poster_url} alt={event.title + ' poster'} className="w-full h-40 object-cover rounded-t mb-4" />
+                    )}
                     <h3 className="text-xl font-semibold text-gray-900 mb-2">{event.title}</h3>
                     <p className="text-gray-600 text-sm mb-4 line-clamp-3">{event.description}</p>
                     
@@ -280,7 +299,7 @@ function OrganizerDashboard({ user, router }: { user: User; router: AppRouterIns
                           Edit
                         </button>
                         <button 
-                          onClick={() => handleDeleteEvent(event.id)}
+                          onClick={() => handleDeleteEvent(event.id, event.poster_url)}
                           disabled={deletingEventId === event.id}
                           className="bg-red-600 text-white px-3 py-1 rounded text-sm hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
                         >

@@ -12,6 +12,7 @@ interface Event {
   price: number;
   total_tickets: number;
   organizer_id: string;
+  poster_url?: string;
 }
 
 export default function Home() {
@@ -43,7 +44,7 @@ export default function Home() {
       const { data, error } = await supabase
         .from('events')
         .select('*')
-        .order('date', { ascending: true });
+        .order('created_at', { ascending: false });
 
       console.log('Query result:', { data, error }); // Debug log
 
@@ -179,6 +180,9 @@ export default function Home() {
                             </div>
                           </div>
                         </div>
+                        {event.poster_url && (
+                          <img src={event.poster_url} alt={event.title + ' poster'} className="w-full h-48 object-cover rounded-t mb-4" />
+                        )}
                       </div>
                     </div>
                   ))}
@@ -239,6 +243,9 @@ export default function Home() {
             {allEvents.map((event) => (
               <div key={event.id} className="bg-white rounded-lg shadow overflow-hidden hover:shadow-lg transition-shadow">
                 <div className="p-6">
+                  {event.poster_url && (
+                    <img src={event.poster_url} alt={event.title + ' poster'} className="w-full h-48 object-cover rounded-t mb-4" />
+                  )}
                   <h3 className="text-xl font-semibold text-gray-900 mb-2">{event.title}</h3>
                   <p className="text-gray-600 mb-4 line-clamp-3">{event.description}</p>
                   

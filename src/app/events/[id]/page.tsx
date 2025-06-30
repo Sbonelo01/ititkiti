@@ -14,6 +14,7 @@ interface Event {
   price: number;
   total_tickets: number;
   organizer_id: string;
+  poster_url?: string;
 }
 
 export default function EventDetail() {
@@ -252,6 +253,10 @@ export default function EventDetail() {
             <div className="lg:col-span-2">
               <div className="bg-white rounded-lg shadow p-6">
                 <h2 className="text-2xl font-semibold text-gray-900 mb-4">Event Details</h2>
+                
+                {event.poster_url && (
+                  <img src={event.poster_url} alt={event.title + ' poster'} className="w-full max-h-96 object-cover rounded mb-8" />
+                )}
                 
                 <div className="space-y-4">
                   <div>
