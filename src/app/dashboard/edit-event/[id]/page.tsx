@@ -188,10 +188,10 @@ export default function EditEvent() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="min-h-screen flex items-center justify-center bg-background text-foreground">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading event...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-spotify-green mx-auto"></div>
+          <p className="mt-4 text-foreground">Loading event...</p>
         </div>
       </div>
     );
@@ -199,13 +199,13 @@ export default function EditEvent() {
 
   if (eventNotFound) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="min-h-screen flex items-center justify-center bg-background text-foreground">
         <div className="text-center">
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Event Not Found</h2>
-          <p className="text-gray-600 mb-4">The event you&apos;re looking for doesn&apos;t exist or you don&apos;t have permission to edit it.</p>
+          <h2 className="text-2xl font-bold text-text-light mb-2">Event Not Found</h2>
+          <p className="text-foreground mb-4">The event you&apos;re looking for doesn&apos;t exist or you don&apos;t have permission to edit it.</p>
           <button
             onClick={() => router.push('/dashboard')}
-            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+            className="bg-green-500 text-white px-4 py-2 rounded-[10px] hover:bg-green-400 transition-colors duration-200 font-semibold"
           >
             Back to Dashboard
           </button>
@@ -216,36 +216,36 @@ export default function EditEvent() {
 
   if (success) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="min-h-screen flex items-center justify-center bg-background text-foreground">
         <div className="text-center">
-          <div className="text-green-600 text-6xl mb-4">✓</div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Event Updated Successfully!</h2>
-          <p className="text-gray-600">Redirecting to dashboard...</p>
+          <div className="text-spotify-green text-6xl mb-4">✓</div>
+          <h2 className="text-2xl font-bold text-text-light mb-2">Event Updated Successfully!</h2>
+          <p className="text-foreground">Redirecting to dashboard...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
+    <div className="min-h-screen bg-background py-8">
       <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Edit Event</h1>
+          <h1 className="text-3xl font-bold text-text-light">Edit Event</h1>
           <button
             onClick={() => router.push('/dashboard')}
-            className="text-gray-600 hover:text-gray-900"
+            className="text-green-500 hover:text-green-600 transition-colors duration-200"
           >
             ← Back to Dashboard
           </button>
         </div>
 
         {/* Form */}
-        <div className="bg-white rounded-lg shadow p-6">
+        <div className="bg-card-background rounded-lg shadow-xl p-6">
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Event Title */}
             <div>
-              <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="title" className="block text-sm font-medium text-text-light mb-2">
                 Event Title *
               </label>
               <input
@@ -254,7 +254,7 @@ export default function EditEvent() {
                 name="title"
                 value={formData.title}
                 onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 bg-input-background text-foreground shadow-md rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:shadow-lg"
                 placeholder="Enter event title"
                 required
               />
@@ -262,7 +262,7 @@ export default function EditEvent() {
 
             {/* Description */}
             <div>
-              <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="description" className="block text-sm font-medium text-text-light mb-2">
                 Description *
               </label>
               <textarea
@@ -271,7 +271,7 @@ export default function EditEvent() {
                 value={formData.description}
                 onChange={handleInputChange}
                 rows={4}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 bg-input-background text-foreground shadow-md rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:shadow-lg"
                 placeholder="Describe your event..."
                 required
               />
@@ -280,7 +280,7 @@ export default function EditEvent() {
             {/* Date and Time */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label htmlFor="date" className="block text-sm font-medium text-gray-700 mb-2">
+                <label htmlFor="date" className="block text-sm font-medium text-text-light mb-2">
                   Date *
                 </label>
                 <input
@@ -289,12 +289,12 @@ export default function EditEvent() {
                   name="date"
                   value={formData.date}
                   onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 bg-input-background text-foreground shadow-md rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:shadow-lg datepicker-icon"
                   required
                 />
               </div>
               <div>
-                <label htmlFor="time" className="block text-sm font-medium text-gray-700 mb-2">
+                <label htmlFor="time" className="block text-sm font-medium text-text-light mb-2">
                   Time *
                 </label>
                 <input
@@ -303,7 +303,7 @@ export default function EditEvent() {
                   name="time"
                   value={formData.time}
                   onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 bg-input-background text-foreground shadow-md rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:shadow-lg"
                   required
                 />
               </div>
@@ -311,7 +311,7 @@ export default function EditEvent() {
 
             {/* Venue */}
             <div>
-              <label htmlFor="location" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="location" className="block text-sm font-medium text-text-light mb-2">
                 Venue/Location *
               </label>
               <input
@@ -320,7 +320,7 @@ export default function EditEvent() {
                 name="location"
                 value={formData.location}
                 onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 bg-input-background text-foreground shadow-md rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:shadow-lg"
                 placeholder="Enter venue or location"
                 required
               />
@@ -329,7 +329,7 @@ export default function EditEvent() {
             {/* Ticket Price and Quantity */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label htmlFor="price" className="block text-sm font-medium text-gray-700 mb-2">
+                <label htmlFor="price" className="block text-sm font-medium text-text-light mb-2">
                   Ticket Price (R) *
                 </label>
                 <input
@@ -340,13 +340,13 @@ export default function EditEvent() {
                   onChange={handleInputChange}
                   min="0"
                   step="0.01"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 bg-input-background text-foreground shadow-md rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:shadow-lg"
                   placeholder="0.00"
                   required
                 />
               </div>
               <div>
-                <label htmlFor="total_tickets" className="block text-sm font-medium text-gray-700 mb-2">
+                <label htmlFor="total_tickets" className="block text-sm font-medium text-text-light mb-2">
                   Total Tickets *
                 </label>
                 <input
@@ -356,7 +356,7 @@ export default function EditEvent() {
                   value={formData.total_tickets}
                   onChange={handleInputChange}
                   min="1"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 bg-input-background text-foreground shadow-md rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:shadow-lg"
                   placeholder="100"
                   required
                 />
@@ -365,24 +365,24 @@ export default function EditEvent() {
 
             {/* Error Message */}
             {error && (
-              <div className="text-red-600 text-sm bg-red-50 p-3 rounded-md">
+              <div className="text-red-500 text-sm bg-red-900 bg-opacity-30 p-3 rounded-md border border-red-700">
                 {error}
               </div>
             )}
 
-            {/* Submit Button */}
+            {/* Submit Buttons */}
             <div className="flex justify-end gap-4">
               <button
                 type="button"
                 onClick={() => router.push('/dashboard')}
-                className="bg-gray-600 text-white px-6 py-2 rounded-md hover:bg-gray-700"
+                className="bg-green-500 text-white px-6 py-2 rounded-[10px] hover:bg-green-700 transition-colors duration-200 font-semibold"
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={submitting}
-                className="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="bg-green-500 text-white px-6 py-2 rounded-[10px] font-semibold hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
               >
                 {submitting ? "Updating Event..." : "Update Event"}
               </button>
@@ -392,4 +392,4 @@ export default function EditEvent() {
       </div>
     </div>
   );
-} 
+}
