@@ -3,6 +3,15 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/utils/supabaseClient";
 import Image from "next/image";
+import { 
+  TicketIcon, 
+  UserIcon, 
+  BuildingOfficeIcon,
+  SparklesIcon,
+  ShieldCheckIcon,
+  CreditCardIcon,
+  UserGroupIcon
+} from '@heroicons/react/24/outline';
 
 export default function Login() {
   const [isLogin, setIsLogin] = useState(true);
@@ -186,323 +195,422 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-background text-foreground flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
-        <div>
-          {/* Spotify-like logo/icon area */}
-          <div className="mx-auto h-12 w-12 bg-spotify-green rounded-full flex items-center justify-center shadow-lg">
-          <div className="h-9 w-9 rounded-full bg-spotify-green flex items-center justify-center shadow-lg">
-            <svg className="h-6 w-6 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z" />
-            </svg>
-          </div>
-          <span className="text-2xl font-bold tracking-tight text-green-500">Tikiti</span>
-          </div>
-          <h2 className="mt-6 text-center text-3xl font-bold text-green-500">
-            {isLogin ? "Sign in to your account" : "Create your account"}
-          </h2>
-          <p className="mt-2 text-center text-sm text-green-500">
-            {isLogin ? "Don't have an account? " : "Already have an account? "}
-            <button
-              onClick={handleToggle}
-              className="font-medium text-green-600 hover:text-green-700 transition duration-200"
-            >
-              {isLogin ? "Sign up" : "Sign in"}
-            </button>
-          </p>
+    <div className="min-h-screen bg-gradient-to-br from-green-50 to-white">
+      {/* Hero Section */}
+      <section className="relative bg-gradient-to-br from-green-600 via-green-700 to-green-800 py-16 overflow-hidden">
+        {/* Animated background elements */}
+        <div className="absolute inset-0 opacity-10">
+          <div className="absolute top-10 left-10 w-32 h-32 bg-white rounded-full animate-bounce"></div>
+          <div className="absolute top-20 right-20 w-24 h-24 bg-green-200 rounded-full animate-pulse"></div>
+          <div className="absolute bottom-10 left-1/4 w-20 h-20 bg-emerald-200 rounded-full animate-spin"></div>
+          <div className="absolute bottom-20 right-1/3 w-28 h-28 bg-teal-200 rounded-full animate-bounce"></div>
         </div>
-        <form
-          className="mt-8 space-y-6 bg-white p-8 rounded-lg shadow-xl"
-          onSubmit={handleAuth}
-        >
-          {/* Error/Success Messages */}
-          {(error || message) && (
-            <div className="mb-4">
-              {error && (
-                <div
-                  className="text-red-400 text-sm bg-red-900 bg-opacity-30 p-3 rounded-md mb-2 border border-red-700"
-                  role="alert"
-                >
-                  {error}
-                </div>
-              )}
-              {message && (
-                <div
-                  className="text-spotify-green text-sm bg-green-900 bg-opacity-30 p-3 rounded-md border border-spotify-green"
-                  role="status"
-                >
-                  {message}
-                </div>
-              )}
+        
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+          <div className="text-center">
+            <div className="flex items-center justify-center mb-6">
+              <SparklesIcon className="h-8 w-8 text-yellow-300 mr-3" />
+              <span className="bg-white/20 backdrop-blur-sm text-white px-4 py-2 rounded-full text-sm font-semibold">
+                Welcome to Tikiti
+              </span>
+              <SparklesIcon className="h-8 w-8 text-yellow-300 ml-3" />
             </div>
-          )}
-
-          {/* Role Selection - always at the top in signup mode */}
-          {!isLogin && (
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-foreground mb-2">
-                I am a:
-              </label>
-              <div className="flex space-x-4">
-                <label className="flex items-center">
-                  <input
-                    type="radio"
-                    name="role"
-                    value="attendee"
-                    checked={role === "attendee"}
-                    onChange={(e) =>
-                      setRole(e.target.value as "organizer" | "attendee")
-                    }
-                    className="h-4 w-4 text-spotify-green focus:ring-spotify-green border-gray-600 bg-card-background checked:bg-spotify-green checked:border-transparent"
-                  />
-                  <span className="ml-2 text-sm text-foreground">Attendee</span>
-                </label>
-                <label className="flex items-center">
-                  <input
-                    type="radio"
-                    name="role"
-                    value="organizer"
-                    checked={role === "organizer"}
-                    onChange={(e) =>
-                      setRole(e.target.value as "organizer" | "attendee")
-                    }
-                    className="h-4 w-4 text-spotify-green focus:ring-spotify-green border-gray-600 bg-card-background checked:bg-spotify-green checked:border-transparent"
-                  />
-                  <span className="ml-2 text-sm text-foreground">Organizer</span>
-                </label>
-              </div>
-            </div>
-          )}
-
-          {/* Account Information Section */}
-          <div className="mb-6">
-                          <h3 className="text-lg font-semibold text-green-500 mb-2">
-                Account Information
-              </h3>
-            <div className="space-y-4">
-              <div>
-                <label htmlFor="email" className="block text-sm font-medium text-foreground">
-                  Email address
-                </label>
-                <input
-                  id="email"
-                  name="email"
-                  type="email"
-                  autoComplete="email"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="mt-1 block w-full px-4 py-2 rounded-md shadow placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 sm:text-sm bg-input-background text-foreground"
-                  placeholder="Email address"
-                  aria-required={true}
-                />
-                <p className="text-xs text-text-faded mt-1">
-                  We will send a confirmation email to this address.
-                </p>
-              </div>
-              <div>
-                <label htmlFor="password" className="block text-sm font-medium text-foreground">
-                  Password
-                </label>
-                <input
-                  id="password"
-                  name="password"
-                  type="password"
-                  autoComplete="current-password"
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="mt-1 block w-full px-4 py-2 rounded-md shadow placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 sm:text-sm bg-input-background text-foreground"
-                  placeholder="Password"
-                  aria-required={true}
-                />
-                <p className="text-xs text-text-faded mt-1">
-                  Must be at least 6 characters.
-                </p>
-              </div>
-            </div>
+            
+            <h1 className="text-5xl md:text-6xl font-bold text-white mb-6 leading-tight">
+              {isLogin ? "Welcome Back!" : "Join Tikiti Today"}
+            </h1>
+            
+            <p className="text-xl text-white/90 mb-8 max-w-2xl mx-auto">
+              {isLogin 
+                ? "Sign in to access your events and manage your tickets"
+                : "Create your account and start discovering amazing events or organizing your own"
+              }
+            </p>
           </div>
+        </div>
+      </section>
 
-          {/* Personal Information Section */}
-          {!isLogin && (
-            <div className="mb-6">
-              <h3 className="text-lg font-semibold text-green-500 mb-2">
-                Personal Information
-              </h3>
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-foreground">Name</label>
-                  <input
-                    type="text"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    required
-                    className="mt-1 block w-full px-4 py-2 rounded-md shadow placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 sm:text-sm bg-input-background text-foreground"
-                    placeholder="Your name"
-                    aria-required={true}
-                  />
+      {/* Login/Signup Form Section */}
+      <section className="py-16">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+            {/* Form Side */}
+            <div className="bg-white rounded-2xl shadow-xl p-8">
+              <div className="text-center mb-8">
+                <div className="flex items-center justify-center mb-4">
+                  <div className="bg-green-500 w-16 h-16 rounded-2xl flex items-center justify-center shadow-lg">
+                    <TicketIcon className="h-8 w-8 text-white" />
+                  </div>
                 </div>
-                {/* Organizer-only Surname */}
-                {role === "organizer" && (
-                  <div>
-                    <label className="block text-sm font-medium text-foreground">Surname</label>
-                    <input
-                      type="text"
-                      value={surname}
-                      onChange={(e) => setSurname(e.target.value)}
-                      required
-                      className="mt-1 block w-full px-4 py-2 rounded-md shadow placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 sm:text-sm bg-input-background text-foreground"
-                      placeholder="Your surname"
-                      aria-required={true}
-                    />
+                <h2 className="text-3xl font-bold text-gray-800 mb-2">
+                  {isLogin ? "Sign In" : "Create Account"}
+                </h2>
+                <p className="text-gray-600">
+                  {isLogin ? "Welcome back to Tikiti" : "Join thousands of event organizers and attendees"}
+                </p>
+              </div>
+
+              <form onSubmit={handleAuth} className="space-y-6">
+                {/* Error/Success Messages */}
+                {(error || message) && (
+                  <div className="mb-6">
+                    {error && (
+                      <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm">
+                        {error}
+                      </div>
+                    )}
+                    {message && (
+                      <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-xl text-sm">
+                        {message}
+                      </div>
+                    )}
                   </div>
                 )}
-                <div>
-                  <label className="block text-sm font-medium text-foreground">
-                    Cellphone Number
-                  </label>
-                  <input
-                    type="tel"
-                    value={cellphone}
-                    onChange={(e) => setCellphone(e.target.value)}
-                    required
-                    className="mt-1 block w-full px-4 py-2 rounded-md shadow placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 sm:text-sm bg-input-background text-foreground"
-                    placeholder="e.g. 0123456789"
-                    aria-required={true}
-                  />
-                  <p className="text-xs text-text-faded mt-1">
-                    We will use this to contact you about your tickets.
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
 
-          {/* Organization Details Section (Organizer only) */}
-          {!isLogin && role === "organizer" && (
-            <div className="mb-6">
-              <h3 className="text-lg font-semibold text-green-500 mb-2">
-                Organization Details
-              </h3>
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-foreground">
-                    Company Name
-                  </label>
-                  <input
-                    type="text"
-                    value={companyName}
-                    onChange={(e) => setCompanyName(e.target.value)}
-                    required
-                    className="mt-1 block w-full px-4 py-2 rounded-md shadow placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 sm:text-sm bg-input-background text-foreground"
-                    placeholder="Your company name"
-                    aria-required={true}
-                  />
+                {/* Role Selection - only in signup mode */}
+                {!isLogin && (
+                  <div className="bg-gray-50 p-6 rounded-xl">
+                    <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                      <UserGroupIcon className="h-5 w-5 mr-2 text-green-500" />
+                      I am a:
+                    </h3>
+                    <div className="grid grid-cols-2 gap-4">
+                      <label className="flex items-center p-4 bg-white rounded-xl border-2 border-gray-200 hover:border-green-500 cursor-pointer transition-all duration-200">
+                        <input
+                          type="radio"
+                          name="role"
+                          value="attendee"
+                          checked={role === "attendee"}
+                          onChange={(e) =>
+                            setRole(e.target.value as "organizer" | "attendee")
+                          }
+                          className="h-4 w-4 text-green-500 focus:ring-green-500 border-gray-300"
+                        />
+                        <div className="ml-3">
+                          <div className="flex items-center">
+                            <UserIcon className="h-5 w-5 text-green-500 mr-2" />
+                            <span className="font-semibold text-gray-800">Attendee</span>
+                          </div>
+                          <p className="text-sm text-gray-600 mt-1">I want to buy tickets</p>
+                        </div>
+                      </label>
+                      <label className="flex items-center p-4 bg-white rounded-xl border-2 border-gray-200 hover:border-green-500 cursor-pointer transition-all duration-200">
+                        <input
+                          type="radio"
+                          name="role"
+                          value="organizer"
+                          checked={role === "organizer"}
+                          onChange={(e) =>
+                            setRole(e.target.value as "organizer" | "attendee")
+                          }
+                          className="h-4 w-4 text-green-500 focus:ring-green-500 border-gray-300"
+                        />
+                        <div className="ml-3">
+                          <div className="flex items-center">
+                            <BuildingOfficeIcon className="h-5 w-5 text-green-500 mr-2" />
+                            <span className="font-semibold text-gray-800">Organizer</span>
+                          </div>
+                          <p className="text-sm text-gray-600 mt-1">I want to create events</p>
+                        </div>
+                      </label>
+                    </div>
+                  </div>
+                )}
+
+                {/* Account Information */}
+                <div className="space-y-4">
+                  <div>
+                    <label htmlFor="email" className="block text-sm font-semibold text-gray-700 mb-2">
+                      Email Address
+                    </label>
+                    <input
+                      id="email"
+                      name="email"
+                      type="email"
+                      autoComplete="email"
+                      required
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 bg-white text-gray-800 placeholder-gray-500"
+                      placeholder="Enter your email"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="password" className="block text-sm font-semibold text-gray-700 mb-2">
+                      Password
+                    </label>
+                    <input
+                      id="password"
+                      name="password"
+                      type="password"
+                      autoComplete="current-password"
+                      required
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 bg-white text-gray-800 placeholder-gray-500"
+                      placeholder="Enter your password"
+                    />
+                  </div>
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-foreground">
-                    Company Logo (optional)
-                  </label>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleLogoChange}
-                    className="block w-full text-sm text-foreground file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-spotify-green file:text-black hover:file:bg-green-400"
-                  />
-                  {companyLogoPreview && (
-                    <div
-                      className="mt-4 rounded w-full max-h-32 object-contain border border-gray-600 relative overflow-hidden"
-                      style={{ height: 128 }}
-                    >
-                      <Image
-                        src={companyLogoPreview}
-                        alt="Company Logo Preview"
-                        layout="fill"
-                        objectFit="contain"
-                        className="rounded"
+
+                {/* Personal Information - only in signup mode */}
+                {!isLogin && (
+                  <div className="bg-gray-50 p-6 rounded-xl space-y-4">
+                    <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                      <UserIcon className="h-5 w-5 mr-2 text-green-500" />
+                      Personal Information
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-semibold text-gray-700 mb-2">
+                          First Name
+                        </label>
+                        <input
+                          type="text"
+                          value={name}
+                          onChange={(e) => setName(e.target.value)}
+                          required
+                          className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 bg-white text-gray-800 placeholder-gray-500"
+                          placeholder="Your first name"
+                        />
+                      </div>
+                      {role === "organizer" && (
+                        <div>
+                          <label className="block text-sm font-semibold text-gray-700 mb-2">
+                            Last Name
+                          </label>
+                          <input
+                            type="text"
+                            value={surname}
+                            onChange={(e) => setSurname(e.target.value)}
+                            required
+                            className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 bg-white text-gray-800 placeholder-gray-500"
+                            placeholder="Your last name"
+                          />
+                        </div>
+                      )}
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">
+                        Phone Number
+                      </label>
+                      <input
+                        type="tel"
+                        value={cellphone}
+                        onChange={(e) => setCellphone(e.target.value)}
+                        required
+                        className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 bg-white text-gray-800 placeholder-gray-500"
+                        placeholder="e.g. 0123456789"
                       />
                     </div>
+                  </div>
+                )}
+
+                {/* Organization Details - only for organizers */}
+                {!isLogin && role === "organizer" && (
+                  <div className="bg-gray-50 p-6 rounded-xl space-y-4">
+                    <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                      <BuildingOfficeIcon className="h-5 w-5 mr-2 text-green-500" />
+                      Organization Details
+                    </h3>
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">
+                        Company Name
+                      </label>
+                      <input
+                        type="text"
+                        value={companyName}
+                        onChange={(e) => setCompanyName(e.target.value)}
+                        required
+                        className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 bg-white text-gray-800 placeholder-gray-500"
+                        placeholder="Your company name"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">
+                        Company Logo (Optional)
+                      </label>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleLogoChange}
+                        className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 bg-white text-gray-800 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-green-500 file:text-white hover:file:bg-green-600"
+                      />
+                      {companyLogoPreview && (
+                        <div className="mt-4 w-full h-32 relative rounded-xl overflow-hidden border border-gray-200">
+                          <Image
+                            src={companyLogoPreview}
+                            alt="Company Logo Preview"
+                            fill
+                            className="object-contain"
+                          />
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Submit Button */}
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full bg-gradient-to-r from-green-500 to-green-600 text-white py-4 px-6 rounded-xl font-semibold hover:from-green-600 hover:to-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 transform hover:scale-105 shadow-lg hover:shadow-xl"
+                >
+                  {loading ? (
+                    <div className="flex items-center justify-center">
+                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                      {isLogin ? "Signing In..." : "Creating Account..."}
+                    </div>
+                  ) : (
+                    isLogin ? "Sign In" : "Create Account"
                   )}
+                </button>
+
+                {/* Toggle between login/signup */}
+                <div className="text-center">
+                  <p className="text-gray-600">
+                    {isLogin ? "Don&apos;t have an account? " : "Already have an account? "}
+                    <button
+                      type="button"
+                      onClick={handleToggle}
+                      className="text-green-600 hover:text-green-700 font-semibold transition-colors duration-200"
+                    >
+                      {isLogin ? "Sign up" : "Sign in"}
+                    </button>
+                  </p>
+                </div>
+              </form>
+            </div>
+
+            {/* Features Side */}
+            <div className="space-y-8">
+              <div className="bg-gradient-to-br from-green-50 to-white p-8 rounded-2xl shadow-lg">
+                <h3 className="text-2xl font-bold text-gray-800 mb-6">
+                  Why Choose Tikiti?
+                </h3>
+                <div className="space-y-6">
+                  <div className="flex items-start">
+                    <div className="bg-green-500 w-10 h-10 rounded-xl flex items-center justify-center mr-4 flex-shrink-0">
+                      <ShieldCheckIcon className="h-5 w-5 text-white" />
+                    </div>
+                    <div>
+                      <h4 className="font-semibold text-gray-800 mb-1">Secure & Safe</h4>
+                      <p className="text-gray-600 text-sm">Bank-level security for all transactions</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start">
+                    <div className="bg-green-500 w-10 h-10 rounded-xl flex items-center justify-center mr-4 flex-shrink-0">
+                      <CreditCardIcon className="h-5 w-5 text-white" />
+                    </div>
+                    <div>
+                      <h4 className="font-semibold text-gray-800 mb-1">Instant Delivery</h4>
+                      <p className="text-gray-600 text-sm">Get your tickets instantly via email</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start">
+                    <div className="bg-green-500 w-10 h-10 rounded-xl flex items-center justify-center mr-4 flex-shrink-0">
+                      <UserGroupIcon className="h-5 w-5 text-white" />
+                    </div>
+                    <div>
+                      <h4 className="font-semibold text-gray-800 mb-1">Easy Management</h4>
+                      <p className="text-gray-600 text-sm">Create and manage events effortlessly</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-gradient-to-br from-blue-50 to-white p-8 rounded-2xl shadow-lg">
+                <h3 className="text-2xl font-bold text-gray-800 mb-4">
+                  Join Thousands of Users
+                </h3>
+                <div className="grid grid-cols-2 gap-4 text-center">
+                  <div>
+                    <div className="text-3xl font-bold text-green-600 mb-1">10K+</div>
+                    <div className="text-sm text-gray-600">Events Created</div>
+                  </div>
+                  <div>
+                    <div className="text-3xl font-bold text-green-600 mb-1">50K+</div>
+                    <div className="text-sm text-gray-600">Tickets Sold</div>
+                  </div>
                 </div>
               </div>
             </div>
-          )}
-
-          {/* Submit Button */}
-          <div>
-            <button
-              type="submit"
-              disabled={loading}
-              className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-md font-bold rounded-[10px] text-white bg-green-500 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed transition duration-200"
-            >
-              {loading ? (
-                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-black"></div>
-              ) : (
-                isLogin ? "Sign in" : "Sign up"
-              )}
-            </button>
           </div>
-        </form>
+        </div>
+      </section>
 
-        {/* Logo Upload Prompt Modal */}
-        {showLogoPrompt && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-70">
-            <div className="bg-card-background rounded-lg shadow-lg p-8 max-w-sm w-full text-foreground">
-              <h3 className="text-xl font-bold mb-4 text-text-light">
+      {/* Logo Upload Prompt Modal */}
+      {showLogoPrompt && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-70">
+          <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full mx-4">
+            <div className="text-center mb-6">
+              <div className="bg-green-500 w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                <BuildingOfficeIcon className="h-8 w-8 text-white" />
+              </div>
+              <h3 className="text-2xl font-bold text-gray-800 mb-2">
                 Upload Company Logo
               </h3>
-              <p className="mb-6 text-sm text-text-faded">
-                You selected a company logo during sign up. Would you like to upload
-                it now?
+              <p className="text-gray-600">
+                You selected a company logo during sign up. Would you like to upload it now?
               </p>
-              {companyLogoPreview && (
-                <div
-                  className="mb-4 rounded w-full max-h-32 object-contain border border-gray-600 relative overflow-hidden"
-                  style={{ height: 128 }}
-                >
-                  <Image
-                    src={companyLogoPreview}
-                    alt="Company Logo Preview"
-                    layout="fill"
-                    objectFit="contain"
-                    className="rounded"
-                  />
-                </div>
-              )}
-              {error && (
-                <div className="text-red-400 text-sm bg-red-900 bg-opacity-30 p-2 rounded mb-2 border border-red-700">
-                  {error}
-                </div>
-              )}
-              {message && (
-                <div className="text-spotify-green text-sm bg-green-900 bg-opacity-30 p-2 rounded mb-2 border border-spotify-green">
-                  {message}
-                </div>
-              )}
-              <div className="flex justify-end space-x-3 mt-6">
-                <button
-                  className="px-5 py-2 rounded-[10px] bg-green-500 text-white hover:bg-green-700 transition duration-200"
-                  onClick={() => {
-                    setShowLogoPrompt(false);
-                    setCompanyLogo(null);
-                    setCompanyLogoPreview(null);
-                  }}
-                  disabled={logoUploadLoading}
-                >
-                  Skip
-                </button>
-                <button
-                  className="px-5 py-2 rounded-[10px] bg-green-500 text-white font-semibold hover:bg-green-700 disabled:opacity-50 transition duration-200"
-                  onClick={handleLogoUploadAfterAuth}
-                  disabled={logoUploadLoading}
-                >
-                  {logoUploadLoading ? "Uploading..." : "Upload Logo"}
-                </button>
+            </div>
+            
+            {companyLogoPreview && (
+              <div className="mb-6 w-full h-32 relative rounded-xl overflow-hidden border border-gray-200">
+                <Image
+                  src={companyLogoPreview}
+                  alt="Company Logo Preview"
+                  fill
+                  className="object-contain"
+                />
               </div>
+            )}
+            
+            {(error || message) && (
+              <div className="mb-6">
+                {error && (
+                  <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm">
+                    {error}
+                  </div>
+                )}
+                {message && (
+                  <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-xl text-sm">
+                    {message}
+                  </div>
+                )}
+              </div>
+            )}
+            
+            <div className="flex gap-4">
+              <button
+                className="flex-1 px-6 py-3 rounded-xl border border-gray-300 text-gray-700 hover:bg-gray-50 transition-all duration-200"
+                onClick={() => {
+                  setShowLogoPrompt(false);
+                  setCompanyLogo(null);
+                  setCompanyLogoPreview(null);
+                }}
+                disabled={logoUploadLoading}
+              >
+                Skip
+              </button>
+              <button
+                className="flex-1 px-6 py-3 rounded-xl bg-gradient-to-r from-green-500 to-green-600 text-white font-semibold hover:from-green-600 hover:to-green-700 transition-all duration-200"
+                onClick={handleLogoUploadAfterAuth}
+                disabled={logoUploadLoading}
+              >
+                {logoUploadLoading ? (
+                  <div className="flex items-center justify-center">
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    Uploading...
+                  </div>
+                ) : (
+                  "Upload Logo"
+                )}
+              </button>
             </div>
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }

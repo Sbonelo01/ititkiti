@@ -189,7 +189,7 @@ export default function EventDetail() {
           <div className="bg-white rounded-2xl shadow-2xl p-8">
             <div className="text-red-500 text-6xl mb-4">⚠️</div>
             <h2 className="text-2xl font-bold text-gray-800 mb-4">Event Not Found</h2>
-            <p className="text-gray-600 mb-6">{error || 'The event you\'re looking for doesn\'t exist.'}</p>
+            <p className="text-gray-600 mb-6">{error || 'The event you&apos;re looking for doesn&apos;t exist.'}</p>
             <Link
               href="/events"
               className="inline-flex items-center text-green-500 hover:text-green-600 transition-colors duration-200 font-semibold"
