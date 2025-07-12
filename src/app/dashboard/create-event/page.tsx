@@ -116,9 +116,10 @@ export default function CreateEvent() {
       !formData.description ||
       !formData.date ||
       !formData.time ||
-      !formData.location
+      !formData.location ||
+      !posterFile
     ) {
-      setError("Please fill in all required fields");
+      setError("Please fill in all required fields including the event poster");
       setSubmitting(false);
       return;
     }
@@ -220,7 +221,7 @@ export default function CreateEvent() {
           </h1>
           <button
             onClick={() => router.push("/dashboard")}
-            className="text-text-faded hover:text-text-light transition-colors duration-200"
+            className="text-green-500 hover:text-green-600 transition-colors duration-200"
           >
             ← Back to Dashboard
           </button>
@@ -243,7 +244,7 @@ export default function CreateEvent() {
                 name="title"
                 value={formData.title}
                 onChange={handleInputChange}
-                className="w-full px-3 py-2 bg-input-background text-foreground border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-spotify-green"
+                className="w-full px-3 py-2 bg-input-background text-foreground shadow-md rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:shadow-lg"
                 placeholder="Enter event title"
                 required
               />
@@ -263,7 +264,7 @@ export default function CreateEvent() {
                 value={formData.description}
                 onChange={handleInputChange}
                 rows={4}
-                className="w-full px-3 py-2 bg-input-background text-foreground border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-spotify-green"
+                className="w-full px-3 py-2 bg-input-background text-foreground shadow-md rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:shadow-lg"
                 placeholder="Describe your event..."
                 required
               />
@@ -284,7 +285,7 @@ export default function CreateEvent() {
                   name="date"
                   value={formData.date}
                   onChange={handleInputChange}
-                  className="w-full px-3 py-2 bg-input-background text-foreground border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-spotify-green datepicker-icon"
+                  className="w-full px-3 py-2 bg-input-background text-foreground shadow-md rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:shadow-lg datepicker-icon"
                   required
                 />
               </div>
@@ -301,7 +302,7 @@ export default function CreateEvent() {
                   name="time"
                   value={formData.time}
                   onChange={handleInputChange}
-                  className="w-full px-3 py-2 bg-input-background text-foreground border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-spotify-green"
+                  className="w-full px-3 py-2 bg-input-background text-foreground shadow-md rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:shadow-lg"
                   required
                 />
               </div>
@@ -321,7 +322,7 @@ export default function CreateEvent() {
                 name="location"
                 value={formData.location}
                 onChange={handleInputChange}
-                className="w-full px-3 py-2 bg-input-background text-foreground border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-spotify-green"
+                className="w-full px-3 py-2 bg-input-background text-foreground shadow-md rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:shadow-lg"
                 placeholder="Enter venue or location"
                 required
               />
@@ -344,7 +345,7 @@ export default function CreateEvent() {
                   onChange={handleInputChange}
                   min="0"
                   step="0.01"
-                  className="w-full px-3 py-2 bg-input-background text-foreground border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-spotify-green"
+                  className="w-full px-3 py-2 bg-input-background text-foreground shadow-md rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:shadow-lg"
                   placeholder="0.00"
                   required
                 />
@@ -363,7 +364,7 @@ export default function CreateEvent() {
                   value={formData.total_tickets}
                   onChange={handleInputChange}
                   min="1"
-                  className="w-full px-3 py-2 bg-input-background text-foreground border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-spotify-green"
+                  className="w-full px-3 py-2 bg-input-background text-foreground shadow-md rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:shadow-lg"
                   placeholder="100"
                   required
                 />
@@ -373,17 +374,18 @@ export default function CreateEvent() {
             {/* Poster Upload */}
             <div>
               <label className="block text-sm font-medium text-text-light mb-2">
-                Event Poster
+                Event Poster *
               </label>
               <input
                 type="file"
                 accept="image/*"
                 onChange={handlePosterChange}
+                required
                 className="block w-full text-sm text-text-faded
                            file:mr-4 file:py-2 file:px-4
                            file:rounded-full file:border-0
                            file:text-sm file:font-semibold
-                           file:bg-spotify-green file:text-black
+                           file:bg-green-500 file:text-white
                            hover:file:bg-green-400 cursor-pointer"
               />
               {posterPreview && (

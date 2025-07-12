@@ -219,12 +219,12 @@ function OrganizerDashboard({
       <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
         <div className="px-4 py-6 sm:px-0">
           <div className="flex justify-between items-center mb-6">
-            <h2 className="text-2xl font-semibold text-green-500">
+            <h2 className="text-2xl font-semibold">
               Your Events
             </h2>
             <Link
               href="/dashboard/create-event"
-              className="bg-green-500 text-white px-4 py-2 rounded-full hover:bg-green-700 transition-colors duration-200 font-semibold"
+              className="bg-green-500 text-white px-4 py-2 rounded-[5px] hover:bg-green-700 transition-colors duration-200 font-semibold"
             >
               Create New Event
             </Link>
@@ -242,7 +242,7 @@ function OrganizerDashboard({
               </p>
               <Link
                 href="/dashboard/create-event"
-                className="bg-green-500 text-white px-6 py-2 rounded-[10px] hover:bg-green-400 transition-colors duration-200 font-semibold"
+                className="bg-green-500 text-white px-6 py-2 rounded-[5px] hover:bg-green-400 transition-colors duration-200 font-semibold"
               >
                 Create Your First Event
               </Link>
@@ -276,7 +276,7 @@ function OrganizerDashboard({
                     <div className="space-y-2 mb-4">
                       <div className="flex items-center text-sm text-text-faded">
                         <svg
-                          className="w-4 h-4 mr-2 text-spotify-green"
+                          className="w-4 h-4 mr-2 text-green-500"
                           fill="none"
                           stroke="currentColor"
                           viewBox="0 0 24 24"
@@ -292,7 +292,7 @@ function OrganizerDashboard({
                       </div>
                       <div className="flex items-center text-sm text-text-faded">
                         <svg
-                          className="w-4 h-4 mr-2 text-spotify-green"
+                          className="w-4 h-4 mr-2 text-green-500"
                           fill="none"
                           stroke="currentColor"
                           viewBox="0 0 24 24"
@@ -314,7 +314,7 @@ function OrganizerDashboard({
                       </div>
                       <div className="flex items-center text-sm text-text-faded">
                         <svg
-                          className="w-4 h-4 mr-2 text-spotify-green"
+                          className="w-4 h-4 mr-2 text-green-500"
                           fill="none"
                           stroke="currentColor"
                           viewBox="0 0 24 24"
@@ -330,7 +330,7 @@ function OrganizerDashboard({
                       </div>
                       <div className="flex items-center text-sm text-text-faded">
                         <svg
-                          className="w-4 h-4 mr-2 text-spotify-green"
+                          className="w-4 h-4 mr-2 text-green-500"
                           fill="none"
                           stroke="currentColor"
                           viewBox="0 0 24 24"
@@ -347,20 +347,20 @@ function OrganizerDashboard({
                     </div>
 
                     <div className="flex justify-between items-center">
-                      <span className="text-lg font-semibold text-spotify-green">
+                      <span className="text-lg font-semibold">
                         {formatPrice(event.price)}
                       </span>
                       <div className="flex gap-2">
                         <button
                           onClick={() => handleEditEvent(event.id)}
-                          className="bg-blue-400 text-white px-3 py-1 rounded-full text-sm hover:bg-blue-500 transition-colors duration-200"
+                          className="bg-blue-400 text-white px-3 py-1 rounded-[5px] text-sm hover:bg-blue-500 transition-colors duration-200"
                         >
                           Edit
                         </button>
                         <button
                           onClick={() => handleDeleteEvent(event.id, event.poster_url)}
                           disabled={deletingEventId === event.id}
-                          className="bg-red-400 text-white px-3 py-1 rounded-full text-sm hover:bg-red-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
+                          className="bg-red-400 text-white px-3 py-1 rounded-[5px] text-sm hover:bg-red-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
                         >
                           {deletingEventId === event.id ? "Deleting..." : "Delete"}
                         </button>
@@ -507,11 +507,11 @@ function AttendeeDashboard({ user }: { user: User }) {
         <div className="px-4 py-6 sm:px-0">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-2xl font-semibold text-text-light">
-              Your Tickets
+              Your Ticket Purchases
             </h2>
             <Link
               href="/events"
-              className="bg-green-500 text-white px-4 py-2 rounded-[10px] hover:bg-green-700 transition-colors duration-200 font-semibold"
+              className="bg-green-500 text-white px-4 py-2 rounded-[5px] hover:bg-green-700 transition-colors duration-200 font-semibold"
             >
               Browse Events
             </Link>
@@ -529,7 +529,7 @@ function AttendeeDashboard({ user }: { user: User }) {
               </p>
               <Link
                 href="/events"
-                className="bg-green-500 text-white px-6 py-2 rounded-[10px] hover:bg-green-400 transition-colors duration-200 font-semibold"
+                className="bg-green-500 text-white px-6 py-2 rounded-[5px] hover:bg-green-400 transition-colors duration-200 font-semibold"
               >
                 Browse Available Events
               </Link>
@@ -544,6 +544,7 @@ function AttendeeDashboard({ user }: { user: User }) {
                 >
                   ← Back to Events
                 </button>
+                
                 <h3 className="text-xl font-semibold text-green-500">
                   {selectedEventTickets[0]?.events?.title} - Tickets
                 </h3>
@@ -598,7 +599,7 @@ function AttendeeDashboard({ user }: { user: User }) {
                         <div className="space-y-2 mb-4">
                           <div className="flex items-center text-sm text-text-faded">
                             <svg
-                              className="w-4 h-4 mr-2 text-spotify-green"
+                              className="w-4 h-4 mr-2 text-green-500"
                               fill="none"
                               stroke="currentColor"
                               viewBox="0 0 24 24"
@@ -614,7 +615,7 @@ function AttendeeDashboard({ user }: { user: User }) {
                           </div>
                           <div className="flex items-center text-sm text-text-faded">
                             <svg
-                              className="w-4 h-4 mr-2 text-spotify-green"
+                              className="w-4 h-4 mr-2 text-green-500"
                               fill="none"
                               stroke="currentColor"
                               viewBox="0 0 24 24"
@@ -636,7 +637,7 @@ function AttendeeDashboard({ user }: { user: User }) {
                           </div>
                           <div className="flex items-center text-sm text-text-faded">
                             <svg
-                              className="w-4 h-4 mr-2 text-spotify-green"
+                              className="w-4 h-4 mr-2 text-green-500"
                               fill="none"
                               stroke="currentColor"
                               viewBox="0 0 24 24"
@@ -652,7 +653,7 @@ function AttendeeDashboard({ user }: { user: User }) {
                           </div>
                           <div className="flex items-center text-sm text-text-faded">
                             <svg
-                              className="w-4 h-4 mr-2 text-spotify-green"
+                              className="w-4 h-4 mr-2 text-green-500"
                               fill="none"
                               stroke="currentColor"
                               viewBox="0 0 24 24"
@@ -668,7 +669,7 @@ function AttendeeDashboard({ user }: { user: User }) {
                           </div>
                           <div className="flex items-center text-sm text-text-faded">
                             <svg
-                              className="w-4 h-4 mr-2 text-spotify-green"
+                              className="w-4 h-4 mr-2 text-green-500"
                               fill="none"
                               stroke="currentColor"
                               viewBox="0 0 24 24"
@@ -686,12 +687,12 @@ function AttendeeDashboard({ user }: { user: User }) {
                       )}
 
                       <div className="flex justify-between items-center">
-                        <span className="text-lg font-semibold text-spotify-green">
+                        <span className="text-lg font-semibold">
                           {ticket.events ? formatPrice(ticket.events.price) : "N/A"}
                         </span>
                         <div className="flex gap-2">
                                                   <button
-                          className="bg-green-500 text-white px-3 py-1 rounded-[10px] text-sm hover:bg-green-700 transition-colors duration-200 font-semibold"
+                          className="bg-green-500 text-white px-3 py-1 rounded-[5px] text-sm hover:bg-green-700 transition-colors duration-200 font-semibold"
                           onClick={() => handleViewQR(ticket)}
                         >
                           View QR
@@ -729,7 +730,7 @@ function AttendeeDashboard({ user }: { user: User }) {
                         {event.title}
                       </h3>
                       <div className="flex flex-col gap-1 items-end">
-                        <span className="px-3 py-1 rounded-[10px] text-xs font-medium bg-green-500 text-white">
+                        <span className="px-3 py-1 rounded-[5px] text-xs font-medium bg-purple-400 text-white">
                           {eventTickets.length} {eventTickets.length === 1 ? 'ticket' : 'tickets'}
                         </span>
                       </div>
@@ -798,7 +799,7 @@ function AttendeeDashboard({ user }: { user: User }) {
                       </span>
                       <div className="flex gap-2">
                         <button
-                          className="bg-green-500 text-white px-3 py-1 rounded-[10px] text-sm hover:bg-green-700 transition-colors duration-200 font-semibold"
+                          className="bg-green-500 text-white px-3 py-1 rounded-[5px] text-sm hover:bg-green-700 transition-colors duration-200 font-semibold"
                           onClick={(e) => {
                             e.stopPropagation();
                             handleEventClick(eventTickets);
@@ -852,7 +853,7 @@ function AttendeeDashboard({ user }: { user: User }) {
               </div>
               <div className="flex justify-center">
                 <button
-                  className="bg-green-500 text-white px-4 py-2 rounded-[10px] hover:bg-green-700 transition-colors duration-200 font-semibold"
+                  className="bg-green-500 text-white px-4 py-2 rounded-[5px] hover:bg-green-700 transition-colors duration-200 font-semibold"
                   onClick={handleDownloadQR}
                 >
                   Download QR

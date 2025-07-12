@@ -1,6 +1,13 @@
 import type { Metadata } from "next";
+import { Roboto } from "next/font/google";
 import "./globals.css";
 import Navbar from "@/components/Navbar";
+
+const roboto = Roboto({
+  subsets: ["latin"],
+  weight: ["300", "400", "500", "700"],
+  variable: "--font-roboto",
+});
 
 export const metadata: Metadata = {
   title: "Tikiti - Your Event Companion",
@@ -15,7 +22,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={"antialiased bg-background text-foreground font-sans"}
+        className={`${roboto.variable} antialiased bg-background text-foreground font-sans`}
       >
         <Navbar />
         {/* Main content with padding for navbars */}

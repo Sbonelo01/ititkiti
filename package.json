@@ -9,6 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@heroicons/react": "^2.2.0",
     "@supabase/supabase-js": "^2.50.2",
     "next": "15.3.4",
     "qrcode.react": "^4.2.0",

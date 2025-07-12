@@ -375,14 +375,14 @@ export default function EditEvent() {
               <button
                 type="button"
                 onClick={() => router.push('/dashboard')}
-                className="bg-green-500 text-white px-6 py-2 rounded-[10px] hover:bg-green-700 transition-colors duration-200 font-semibold"
+                className="bg-yellow-500 text-white px-6 py-2 rounded-[5px] hover:bg-yellow-700 transition-colors duration-200 font-semibold"
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={submitting}
-                className="bg-green-500 text-white px-6 py-2 rounded-[10px] font-semibold hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
+                className="bg-green-500 text-white px-6 py-2 rounded-[5px] font-semibold hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
               >
                 {submitting ? "Updating Event..." : "Update Event"}
               </button>

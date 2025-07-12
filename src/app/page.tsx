@@ -119,18 +119,25 @@ export default function Home() {
     <div className="min-h-screen bg-background text-foreground">
       {/* Hero Section with Latest Events Carousel */}
       {latestEvents.length > 0 && (
-        <section className="bg-card-background py-16 shadow-lg"> {/* Changed gradient to solid dark card background */}
+        <section className="bg-gradient-to-br from-green-400 via-emerald-500 to-teal-600 py-16 shadow-lg relative overflow-hidden">
+          {/* Playful background elements */}
+          <div className="absolute inset-0 opacity-10">
+            <div className="absolute top-10 left-10 w-20 h-20 bg-white rounded-full animate-bounce"></div>
+            <div className="absolute top-20 right-20 w-16 h-16 bg-green-200 rounded-full animate-pulse"></div>
+            <div className="absolute bottom-10 left-1/4 w-12 h-12 bg-emerald-200 rounded-full animate-spin"></div>
+            <div className="absolute bottom-20 right-1/3 w-14 h-14 bg-teal-200 rounded-full animate-bounce"></div>
+          </div>
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center mb-12">
-              <h2 className="text-4xl font-bold text-text-light mb-4">
+            <div className="text-center mb-12 relative z-10">
+              <h2 className="text-4xl font-bold text-white mb-4">
                 Latest Events
               </h2>
-              <p className="text-xl text-foreground mb-6">
+              <p className="text-xl text-white opacity-90 mb-6">
                 Discover the newest events happening around you
               </p>
               <Link
                 href="/events"
-                className="inline-flex items-center px-6 py-3 border border-transparent text-base font-semibold rounded-[10px] text-white bg-green-500 hover:bg-green-600 transition-colors duration-200"
+                className="inline-flex items-center px-6 py-3 border border-transparent text-base font-semibold rounded-[10px] text-green-500 bg-white hover:bg-gray-50 transition-all duration-200 shadow-lg hover:shadow-xl"
               >
                 View All Events
                 <svg
@@ -159,28 +166,23 @@ export default function Home() {
                     <div key={event.id} className="w-full flex-shrink-0">
                       <div className="bg-card-background rounded-lg shadow-xl p-8 mx-4"> {/* Card background, subtle border */}
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
-                          <div>
-                            {event.poster_url && (
-                              <div className="w-full h-64 relative mb-4 rounded-lg overflow-hidden">
-                                <Image
-                                  src={event.poster_url}
-                                  alt={event.title + " poster"}
-                                  layout="fill"
-                                  objectFit="cover"
-                                  className="rounded-lg"
-                                />
-                              </div>
-                            )}
-                            <h3 className="text-3xl font-bold text-text-light mb-4">
+                          <div className="relative">
+                            {/* Tickets Available Tag */}
+                            <div className="absolute top-0 right-0 z-10">
+                              <span className="bg-white text-green-500 px-3 py-1 rounded-full text-sm font-semibold shadow-lg">
+                                {event.total_tickets} tickets
+                              </span>
+                            </div>
+                            <h3 className="text-3xl font-bold text-white mb-4">
                               {event.title}
                             </h3>
-                            <p className="text-foreground mb-6 line-clamp-3">
+                            <p className="text-white opacity-90 mb-6 line-clamp-3">
                               {event.description}
                             </p>
                             <div className="space-y-3 mb-6">
-                              <div className="flex items-center text-text-faded">
+                              <div className="flex items-center text-white opacity-80">
                                 <svg
-                                  className="w-5 h-5 mr-3 text-spotify-green" // Icon color
+                                  className="w-5 h-5 mr-3 text-white" // Icon color
                                   fill="none"
                                   stroke="currentColor"
                                   viewBox="0 0 24 24"
@@ -194,9 +196,9 @@ export default function Home() {
                                 </svg>
                                 {formatDate(event.date)}
                               </div>
-                              <div className="flex items-center text-text-faded">
+                              <div className="flex items-center text-white opacity-80">
                                 <svg
-                                  className="w-5 h-5 mr-3 text-spotify-green" // Icon color
+                                  className="w-5 h-5 mr-3 text-white" // Icon color
                                   fill="none"
                                   stroke="currentColor"
                                   viewBox="0 0 24 24"
@@ -216,9 +218,9 @@ export default function Home() {
                                 </svg>
                                 {event.location}
                               </div>
-                              <div className="flex items-center text-text-faded">
+                              <div className="flex items-center text-white opacity-80">
                                 <svg
-                                  className="w-5 h-5 mr-3 text-spotify-green" // Icon color
+                                  className="w-5 h-5 mr-3 text-white" // Icon color
                                   fill="none"
                                   stroke="currentColor"
                                   viewBox="0 0 24 24"
@@ -234,23 +236,40 @@ export default function Home() {
                               </div>
                             </div>
                             <div className="flex items-center justify-between">
-                              <span className="text-2xl font-bold text-spotify-green">
+                              <span className="text-2xl font-bold text-white">
                                 {formatPrice(event.price)}
                               </span>
                               <Link
                                 href={`/events/${event.id}`}
-                                className="bg-green-500 text-white px-6 py-3 rounded-[10px] hover:bg-green-600 transition-colors font-semibold"
+                                className="bg-white text-green-500 px-6 py-3 rounded-[10px] hover:bg-gray-50 transition-all duration-200 font-semibold shadow-lg hover:shadow-xl"
                               >
                                 Get Tickets
                               </Link>
                             </div>
                           </div>
                           {/* Tickets Available Section */}
-                          <div className="bg-background rounded-lg p-8 text-center flex flex-col justify-center items-center h-full shadow">
-                            <div className="text-6xl font-bold text-spotify-green mb-2">
-                              {event.total_tickets}
+                          <div className="relative rounded-lg p-8 text-center flex flex-col justify-center items-center h-full shadow overflow-hidden">
+                            {/* Background Image */}
+                            {event.poster_url && (
+                              <div className="absolute inset-0">
+                                <Image
+                                  src={event.poster_url}
+                                  alt={event.title + " poster"}
+                                  layout="fill"
+                                  objectFit="cover"
+                                  className="rounded-lg"
+                                />
+                                {/* Overlay for better text readability */}
+                                <div className="absolute inset-0 bg-opacity-50"></div>
+                              </div>
+                            )}
+                            {/* Content */}
+                            <div className="relative z-10">
+                              <div className="text-6xl font-bold text-white mb-2">
+                                {event.total_tickets}
+                              </div>
+                              <div className="text-white opacity-90">Tickets Available</div>
                             </div>
-                            <div className="text-foreground">Tickets Available</div>
                           </div>
                         </div>
                       </div>
@@ -267,7 +286,7 @@ export default function Home() {
                     onClick={() => setCurrentCarouselIndex(index)}
                     className={`w-3 h-3 rounded-full transition-colors ${
                       index === currentCarouselIndex
-                        ? "bg-spotify-green" // Active dot is Spotify green
+                        ? "bg-white" // Active dot is Spotify green
                         : "bg-gray-700 hover:bg-gray-600" // Inactive dots are dark gray
                     }`}
                   />
@@ -281,19 +300,34 @@ export default function Home() {
       {/* All Events Section */}
       <main className="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
         <div className="mb-8">
-          <h2 className="text-3xl font-bold text-text-light mb-6">
+          <h2 className="text-3xl font-bold text-text-light text-green-500 mb-6">
             All Events
           </h2>
 
           {/* Search and Filter */}
           <div className="flex flex-col sm:flex-row gap-4 mb-6">
-            <div className="flex-1">
+            <div className="flex-1 relative">
+              <div className="absolute inset-y-0 right-0 flex items-center pt-0 pr-3 pointer-events-none">
+                <svg
+                  className="h-5 w-5 text-green-400"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                  />
+                </svg>
+              </div>
               <input
                 type="text"
                 placeholder="Search events..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full px-4 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 bg-card-background text-foreground placeholder-gray-500 shadow"
+                className="w-full pl-4 pr-10 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 bg-card-background text-foreground placeholder-gray-500 shadow"
               />
             </div>
             <select
@@ -321,7 +355,7 @@ export default function Home() {
                 key={event.id}
                 className="bg-card-background rounded-lg shadow overflow-hidden hover:shadow-xl transition-shadow"
               >
-                <div className="p-6">
+                <div className="p-4">
                   {event.poster_url && (
                     <div className="w-full h-48 relative mb-4 rounded-lg overflow-hidden">
                       <Image
@@ -343,7 +377,7 @@ export default function Home() {
                   <div className="space-y-2 mb-4">
                     <div className="flex items-center text-sm text-text-faded">
                       <svg
-                        className="w-4 h-4 mr-2 text-spotify-green" // Icon color
+                        className="w-4 h-4 mr-2 text-green-500" // Icon color
                         fill="none"
                         stroke="currentColor"
                         viewBox="0 0 24 24"
@@ -359,7 +393,7 @@ export default function Home() {
                     </div>
                     <div className="flex items-center text-sm text-text-faded">
                       <svg
-                        className="w-4 h-4 mr-2 text-spotify-green" // Icon color
+                        className="w-4 h-4 mr-2 text-green-500" // Icon color
                         fill="none"
                         stroke="currentColor"
                         viewBox="0 0 24 24"
@@ -381,7 +415,7 @@ export default function Home() {
                     </div>
                     <div className="flex items-center text-sm text-text-faded">
                       <svg
-                        className="w-4 h-4 mr-2 text-spotify-green" // Icon color
+                        className="w-4 h-4 mr-2 text-green-500" // Icon color
                         fill="none"
                         stroke="currentColor"
                         viewBox="0 0 24 24"

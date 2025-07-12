@@ -7,6 +7,9 @@ module.exports = {
   ],
   theme: {
     extend: {
+      fontFamily: {
+        sans: ['var(--font-roboto)', 'Helvetica Neue', 'Arial', 'sans-serif'],
+      },
       colors: {
         'spotify-green': '#1DB954',
         'background': 'var(--background)',
