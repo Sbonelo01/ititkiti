@@ -86,6 +86,36 @@ export default function Navbar() {
 
   return (
     <>
+      {/* Mobile Header with Logo */}
+      <header className="md:hidden fixed top-0 left-0 w-full h-16 bg-white/95 backdrop-blur-sm shadow-lg z-50 flex items-center justify-between px-4 border-b border-gray-100">
+        <Link href="/" className="flex items-center gap-3 group">
+          <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all duration-200 transform group-hover:scale-105">
+            <TicketIcon className="h-6 w-6 text-white" />
+          </div>
+          <span className="text-2xl font-bold tracking-tight bg-gradient-to-r from-green-600 to-green-700 bg-clip-text text-transparent">
+            Tikiti
+          </span>
+        </Link>
+        
+        {!loading && user && (
+          <div className="flex items-center gap-2">
+            {ticketCount > 0 && (
+              <div className="flex items-center gap-1 bg-green-100 px-3 py-1 rounded-lg">
+                <TicketIcon className="h-4 w-4 text-green-600" />
+                <span className="text-green-700 font-semibold text-sm">{ticketCount}</span>
+              </div>
+            )}
+            <button
+              onClick={handleSignOut}
+              className="bg-gradient-to-r from-green-500 to-green-600 text-white px-3 py-2 rounded-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105 flex items-center gap-1"
+            >
+              <ArrowRightOnRectangleIcon className="h-4 w-4" />
+              <span className="text-sm">Sign Out</span>
+            </button>
+          </div>
+        )}
+      </header>
+
       {/* Desktop Navbar */}
       <nav className="hidden md:flex fixed top-0 left-0 w-full h-20 bg-white/95 backdrop-blur-sm shadow-xl z-50 items-center justify-between px-8 border-b border-gray-100">
         <Link href="/" className="flex items-center gap-3 group">

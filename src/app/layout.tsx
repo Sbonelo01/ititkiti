@@ -26,7 +26,7 @@ export default function RootLayout({
       >
         <Navbar />
         {/* Main content with padding for navbars */}
-        <main className="md:pt-20 pb-24 md:pb-8 min-h-screen bg-background">
+        <main className="pt-16 md:pt-20 pb-24 md:pb-8 min-h-screen bg-background">
           {children}
         </main>
         {/* Footer (above mobile nav, below content on desktop) */}
