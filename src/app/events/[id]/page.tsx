@@ -152,7 +152,12 @@ export default function EventDetail() {
     return `R${price.toFixed(2)}`;
   };
 
-  const totalPrice = event ? event.price * ticketQuantity : 0;
+  // Service fee constants
+  const SERVICE_FEE_FIXED = 3;
+
+  // Calculate service fee and total
+  const serviceFee = event ? SERVICE_FEE_FIXED * ticketQuantity : 0;
+  const totalWithFee = event ? (event.price * ticketQuantity + serviceFee) : 0;
 
   if (loading) {
     return (
@@ -365,10 +370,14 @@ export default function EventDetail() {
                       <span className="text-gray-600">Quantity:</span>
                       <span className="font-semibold text-gray-800">{ticketQuantity}</span>
                     </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-600">Service fee (R3/ticket):</span>
+                      <span className="font-semibold text-gray-800">{formatPrice(serviceFee)}</span>
+                    </div>
                     <div className="border-t border-gray-200 pt-4">
                       <div className="flex justify-between items-center">
                         <span className="text-lg font-bold text-gray-800">Total:</span>
-                        <span className="text-2xl font-bold text-green-600">{formatPrice(totalPrice)}</span>
+                        <span className="text-2xl font-bold text-green-600">{formatPrice(totalWithFee)}</span>
                       </div>
                     </div>
                   </div>
@@ -419,7 +428,7 @@ export default function EventDetail() {
             <h3 className="text-xl font-bold mb-6 text-center text-gray-800">Complete Payment</h3>
             <PaystackPaymentButton
               email={user?.email || "guest@example.com"}
-              amount={event ? event.price * ticketQuantity * 100 : 0}
+              amount={Math.round(totalWithFee * 100)} // Paystack expects cents
               reference={paystackReference}
               onSuccess={handlePaystackSuccess}
               onClose={handlePaystackClose}

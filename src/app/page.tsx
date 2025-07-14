@@ -180,11 +180,11 @@ export default function Home() {
             {/* Stats */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto">
               <div className="text-center">
-                <div className="text-4xl font-bold text-white mb-2">10K+</div>
+                <div className="text-4xl font-bold text-white mb-2">100+</div>
                 <div className="text-white/80">Events Created</div>
               </div>
               <div className="text-center">
-                <div className="text-4xl font-bold text-white mb-2">50K+</div>
+                <div className="text-4xl font-bold text-white mb-2">70+</div>
                 <div className="text-white/80">Tickets Sold</div>
               </div>
               <div className="text-center">

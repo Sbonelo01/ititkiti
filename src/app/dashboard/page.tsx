@@ -118,6 +118,7 @@ function OrganizerDashboard({
   const [events, setEvents] = useState<DashboardEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [deletingEventId, setDeletingEventId] = useState<string | null>(null);
+  const [eventTicketCounts, setEventTicketCounts] = useState<Record<string, number>>({});
 
   const fetchOrganizerEvents = useCallback(async () => {
     try {
@@ -147,6 +148,26 @@ function OrganizerDashboard({
   useEffect(() => {
     fetchOrganizerEvents();
   }, [fetchOrganizerEvents]);
+
+  useEffect(() => {
+    async function fetchTicketCounts() {
+      if (events.length === 0) return;
+      const ids = events.map(e => e.id);
+      const { data, error } = await supabase
+        .from('tickets')
+        .select('event_id')
+        .in('event_id', ids)
+        .eq('payment_status', 'paid');
+      if (data) {
+        const counts: Record<string, number> = {};
+        data.forEach((row: any) => {
+          counts[row.event_id] = (counts[row.event_id] || 0) + 1;
+        });
+        setEventTicketCounts(counts);
+      }
+    }
+    fetchTicketCounts();
+  }, [events]);
 
   const handleDeleteEvent = async (eventId: string, posterUrl?: string) => {
     if (
@@ -325,7 +346,10 @@ function OrganizerDashboard({
                       {formatPrice(event.price)}
                     </span>
                     <span className="text-sm text-gray-500">
-                      {deletingEventId === event.id ? "Deleting..." : ""}
+                      {deletingEventId === event.id ? "Deleting..." :
+                        eventTicketCounts[event.id] !== undefined ?
+                          `Profit: ${formatPrice(event.price * (eventTicketCounts[event.id] || 0) * 0.95)}` :
+                          ""}
                     </span>
                   </div>
                 </div>

@@ -3,13 +3,13 @@ import { createClient } from "@supabase/supabase-js";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY! // Use service role for DB writes
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
 export async function POST(req: NextRequest) {
   try {
-    const { reference, eventId, quantity, user } = await req.json();
-    if (!reference || !eventId || !quantity || !user) {
+    const { reference, eventId, quantity, user: ticketUser } = await req.json();
+    if (!reference || !eventId || !quantity || !ticketUser) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
 
@@ -55,9 +55,9 @@ export async function POST(req: NextRequest) {
     for (let i = 0; i < quantity; i++) {
       tickets.push({
         event_id: eventId,
-        attendee_name: user.name || user.email?.split('@')[0] || 'Attendee',
-        email: user.email,
-        qr_code_data: `TICKET-${eventId}-${user.userId}-${Date.now()}-${i}`,
+        attendee_name: ticketUser.name || ticketUser.email?.split('@')[0] || 'Attendee',
+        email: ticketUser.email,
+        qr_code_data: `TICKET-${eventId}-${ticketUser.userId}-${Date.now()}-${i}`,
         used: false,
         payment_status: 'paid',
         created_at: new Date().toISOString(),
