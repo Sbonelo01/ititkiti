@@ -6,6 +6,7 @@ import Link from "next/link";
 import { User } from "@supabase/supabase-js";
 import Image from "next/image";
 import { CalendarIcon, MapPinIcon, TicketIcon, ClockIcon } from '@heroicons/react/24/outline';
+import PaystackPaymentButton from "@/components/PaystackButton";
 
 interface Event {
   id: string;
@@ -22,12 +23,13 @@ interface Event {
 export default function EventDetail() {
   const [event, setEvent] = useState<Event | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [ticketQuantity, setTicketQuantity] = useState(1);
-  const [purchasing, setPurchasing] = useState(false);
   const [purchaseError, setPurchaseError] = useState<string | null>(null);
   const [purchaseSuccess, setPurchaseSuccess] = useState(false);
+  const [showPaystack, setShowPaystack] = useState(false);
+  const [paystackReference, setPaystackReference] = useState<string>("");
+  const [verifyingPayment, setVerifyingPayment] = useState(false);
   const router = useRouter();
   const params = useParams();
   const eventId = params.id as string;
@@ -36,24 +38,22 @@ export default function EventDetail() {
     try {
       console.log('Loading event details for ID:', eventId);
       
-      const { data, error } = await supabase
+      const { data } = await supabase
         .from('events')
         .select('*')
         .eq('id', eventId)
         .single();
 
-      console.log('Event details result:', { data, error });
+      console.log('Event details result:', { data });
 
-      if (error || !data) {
-        console.error('Error loading event:', error);
-        setError('Event not found');
+      if (!data) {
+        console.error('Error loading event: No data returned');
         return;
       }
 
       setEvent(data);
     } catch (error) {
       console.error('Error:', error);
-      setError('Failed to load event');
     }
   }, [eventId]);
 
@@ -66,9 +66,8 @@ export default function EventDetail() {
         setUser(session?.user as User | null);
         
         setLoading(false);
-      } catch (error) {
-        console.error('Error:', error);
-        setError('Failed to load event');
+      } catch (e) {
+        console.error('Error:', e);
         setLoading(false);
       }
     };
@@ -87,69 +86,53 @@ export default function EventDetail() {
       return;
     }
 
-    setPurchasing(true);
+    // Instead of proceeding, trigger Paystack payment
+    setPaystackReference(`EVT-${eventId}-${user.id}-${Date.now()}-${Math.floor(Math.random() * 10000)}`);
+    setShowPaystack(true);
     setPurchaseError(null);
+  };
 
+  // Called after successful Paystack payment
+  const handlePaystackSuccess = async (reference: string) => {
+    setVerifyingPayment(true);
+    setShowPaystack(false);
+    setPurchaseError(null);
+    setPurchaseSuccess(false);
     try {
-      const { data: rpcResult, error: rpcError } = await supabase
-        .rpc('decrement_tickets', { event_id_param: eventId, quantity_param: ticketQuantity });
-
-      if (rpcError || !rpcResult) {
-        setPurchaseError('Not enough tickets available. Please try a lower quantity.');
-        setPurchasing(false);
-        return;
+      const res = await fetch("/api/purchase-tickets", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          reference,
+          eventId,
+          quantity: ticketQuantity,
+          user: {
+            email: user?.email,
+            name: user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Attendee',
+            userId: user?.id,
+          },
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        await loadEventData();
+        setPurchaseSuccess(true);
+        setTimeout(() => {
+          router.push('/dashboard');
+        }, 3000);
+      } else {
+        setPurchaseError(data.error || 'Payment verification or ticket creation failed.');
       }
-
-      const { data: latestEvent, error: latestEventError } = await supabase
-        .from('events')
-        .select('*')
-        .eq('id', eventId)
-        .single();
-
-      if (latestEventError || !latestEvent) {
-        setPurchaseError('Error loading event data after purchase.');
-        setPurchasing(false);
-        return;
-      }
-
-      setEvent(latestEvent);
-
-      const tickets = [];
-      for (let i = 0; i < ticketQuantity; i++) {
-        tickets.push({
-          event_id: eventId,
-          attendee_name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'Attendee',
-          email: user.email,
-          qr_code_data: `TICKET-${eventId}-${user.id}-${Date.now()}-${i}`,
-          used: false,
-          payment_status: 'paid',
-          created_at: new Date().toISOString()
-        });
-      }
-
-      const { error: ticketError } = await supabase
-        .from('tickets')
-        .insert(tickets)
-        .select();
-
-      if (ticketError) {
-        setPurchaseError('Failed to create tickets. Please try again.');
-        setPurchasing(false);
-        return;
-      }
-
-      await loadEventData();
-
-      setPurchaseSuccess(true);
-      setTimeout(() => {
-        router.push('/dashboard');
-      }, 3000);
-
-    } catch (error) {
-      setPurchaseError(error instanceof Error ? error.message : 'Failed to purchase tickets. Please try again.');
+    } catch {
+      setPurchaseError('Failed to verify payment or create tickets. Please try again.');
     } finally {
-      setPurchasing(false);
+      setVerifyingPayment(false);
     }
+  };
+
+  const handlePaystackClose = () => {
+    setShowPaystack(false);
+    setPurchaseError('Payment popup closed.');
   };
 
   const formatDate = (dateString: string) => {
@@ -182,14 +165,14 @@ export default function EventDetail() {
     );
   }
 
-  if (error || !event) {
+  if (!event) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-green-50 to-white flex items-center justify-center">
         <div className="text-center max-w-md mx-auto px-6">
           <div className="bg-white rounded-2xl shadow-2xl p-8">
             <div className="text-red-500 text-6xl mb-4">⚠️</div>
             <h2 className="text-2xl font-bold text-gray-800 mb-4">Event Not Found</h2>
-            <p className="text-gray-600 mb-6">{error || 'The event you&apos;re looking for doesn&apos;t exist.'}</p>
+            <p className="text-gray-600 mb-6">The event you&apos;re looking for doesn&apos;t exist.</p>
             <Link
               href="/events"
               className="inline-flex items-center text-green-500 hover:text-green-600 transition-colors duration-200 font-semibold"
@@ -398,10 +381,10 @@ export default function EventDetail() {
 
                   <button
                     onClick={handlePurchase}
-                    disabled={purchasing || event.total_tickets === 0}
+                    disabled={event.total_tickets === 0}
                     className="w-full bg-green-500 text-white py-4 rounded-xl hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed font-bold text-lg transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105"
                   >
-                    {event.total_tickets === 0 ? 'Sold Out' : (purchasing ? 'Processing Purchase...' : 'Purchase Tickets')}
+                    {event.total_tickets === 0 ? 'Sold Out' : 'Purchase Tickets'}
                   </button>
                 </div>
               ) : (
@@ -421,6 +404,30 @@ export default function EventDetail() {
           </div>
         </div>
       </div>
+      {showPaystack && paystackReference && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-grey bg-opacity-30">
+          <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full mx-4 relative flex flex-col items-center">
+            <button
+              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors"
+              onClick={handlePaystackClose}
+              aria-label="Close"
+            >
+              <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+            <h3 className="text-xl font-bold mb-6 text-center text-gray-800">Complete Payment</h3>
+            <PaystackPaymentButton
+              email={user?.email || "guest@example.com"}
+              amount={event ? event.price * ticketQuantity * 100 : 0}
+              reference={paystackReference}
+              onSuccess={handlePaystackSuccess}
+              onClose={handlePaystackClose}
+            />
+          </div>
+        </div>
+      )}
+      {verifyingPayment && <p>Verifying payment...</p>}
     </div>
   );
 }
