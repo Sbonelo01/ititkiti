@@ -1,7 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
 import { supabase } from "@/utils/supabaseClient";
-import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import QRScanner from "@/components/QRScanner";
@@ -53,7 +52,7 @@ export default function AdminDashboard() {
           .in("event_id", ids)
           .eq("payment_status", "paid");
         const counts: Record<string, number> = {};
-        (ticketsData || []).forEach((row: any) => {
+        (ticketsData || []).forEach((row: { event_id: string }) => {
           counts[row.event_id] = (counts[row.event_id] || 0) + 1;
         });
         setTicketCounts(counts);

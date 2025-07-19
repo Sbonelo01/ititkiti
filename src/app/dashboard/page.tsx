@@ -153,14 +153,14 @@ function OrganizerDashboard({
     async function fetchTicketCounts() {
       if (events.length === 0) return;
       const ids = events.map(e => e.id);
-      const { data, error } = await supabase
+      const { data } = await supabase
         .from('tickets')
         .select('event_id')
         .in('event_id', ids)
         .eq('payment_status', 'paid');
       if (data) {
         const counts: Record<string, number> = {};
-        data.forEach((row: any) => {
+        data.forEach((row: { event_id: string }) => {
           counts[row.event_id] = (counts[row.event_id] || 0) + 1;
         });
         setEventTicketCounts(counts);
