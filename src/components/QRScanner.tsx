@@ -26,8 +26,14 @@ export default function QRScanner({ onScan, onClose }: { onScan: (value: string)
     return () => {
       // Cleanup on unmount
       if (html5QrCodeRef.current) {
-        html5QrCodeRef.current.stop().catch(() => {});
-        html5QrCodeRef.current.clear().catch(() => {});
+        const stopResult = html5QrCodeRef.current.stop();
+        if (typeof stopResult === 'object' && stopResult !== null && typeof (stopResult as Promise<unknown>).catch === 'function') {
+          (stopResult as Promise<unknown>).catch(() => {});
+        }
+        const clearResult = html5QrCodeRef.current.clear();
+        if (typeof clearResult === 'object' && clearResult !== null && typeof (clearResult as Promise<unknown>).catch === 'function') {
+          (clearResult as Promise<unknown>).catch(() => {});
+        }
       }
     };
   }, []);
@@ -36,8 +42,14 @@ export default function QRScanner({ onScan, onClose }: { onScan: (value: string)
   useEffect(() => {
     if (!selectedCameraId || !containerRef.current) return;
     if (html5QrCodeRef.current) {
-      html5QrCodeRef.current.stop().catch(() => {});
-      html5QrCodeRef.current.clear().catch(() => {});
+      const stopResult = html5QrCodeRef.current.stop();
+      if (typeof stopResult === 'object' && stopResult !== null && typeof (stopResult as Promise<unknown>).catch === 'function') {
+        (stopResult as Promise<unknown>).catch(() => {});
+      }
+      const clearResult = html5QrCodeRef.current.clear();
+      if (typeof clearResult === 'object' && clearResult !== null && typeof (clearResult as Promise<unknown>).catch === 'function') {
+        (clearResult as Promise<unknown>).catch(() => {});
+      }
     }
     const qrCode = new Html5Qrcode("qr-reader");
     html5QrCodeRef.current = qrCode;
@@ -51,7 +63,10 @@ export default function QRScanner({ onScan, onClose }: { onScan: (value: string)
           formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE],
         } as Html5QrcodeCameraScanConfig,
         (decodedText) => {
-          qrCode.stop().catch(() => {});
+          const stopResult = qrCode.stop();
+          if (typeof stopResult === 'object' && stopResult !== null && typeof (stopResult as Promise<unknown>).catch === 'function') {
+            (stopResult as Promise<unknown>).catch(() => {});
+          }
           onScan(decodedText);
         },
         () => {
@@ -62,8 +77,16 @@ export default function QRScanner({ onScan, onClose }: { onScan: (value: string)
         setError("Failed to start camera: " + err);
       });
     return () => {
-      qrCode.stop().catch(() => {});
-      qrCode.clear().catch(() => {});
+      if (html5QrCodeRef.current) {
+        const stopResult = html5QrCodeRef.current.stop();
+        if (typeof stopResult === 'object' && stopResult !== null && typeof (stopResult as Promise<unknown>).catch === 'function') {
+          (stopResult as Promise<unknown>).catch(() => {});
+        }
+        const clearResult = html5QrCodeRef.current.clear();
+        if (typeof clearResult === 'object' && clearResult !== null && typeof (clearResult as Promise<unknown>).catch === 'function') {
+          (clearResult as Promise<unknown>).catch(() => {});
+        }
+      }
     };
   }, [selectedCameraId, onScan]);
 
