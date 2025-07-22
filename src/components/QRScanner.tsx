@@ -15,7 +15,12 @@ export default function QRScanner({ onScan, onClose }: { onScan: (value: string)
       .then((devices) => {
         setCameras(devices);
         if (devices.length > 0) {
-          setSelectedCameraId(devices[0].id);
+          // Try to find a back/environment camera
+          const backCam = devices.find(cam =>
+            cam.label.toLowerCase().includes('back') ||
+            cam.label.toLowerCase().includes('environment')
+          );
+          setSelectedCameraId((backCam && backCam.id) || devices[0].id);
         } else {
           setError("No cameras found on this device.");
         }
