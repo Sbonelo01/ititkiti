@@ -6,7 +6,6 @@ export default function QRScanner({ onScan, onClose }: { onScan: (value: string)
   const [error, setError] = useState<string | null>(null);
   const [cameras, setCameras] = useState<CameraDevice[]>([]);
   const [selectedCameraId, setSelectedCameraId] = useState<string | null>(null);
-  const [scanning, setScanning] = useState(false);
   const html5QrCodeRef = useRef<Html5Qrcode | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -42,7 +41,6 @@ export default function QRScanner({ onScan, onClose }: { onScan: (value: string)
     }
     const qrCode = new Html5Qrcode("qr-reader");
     html5QrCodeRef.current = qrCode;
-    setScanning(true);
     qrCode
       .start(
         { deviceId: { exact: selectedCameraId } },
@@ -53,7 +51,6 @@ export default function QRScanner({ onScan, onClose }: { onScan: (value: string)
           formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE],
         } as Html5QrcodeCameraScanConfig,
         (decodedText) => {
-          setScanning(false);
           qrCode.stop().catch(() => {});
           onScan(decodedText);
         },
@@ -63,7 +60,6 @@ export default function QRScanner({ onScan, onClose }: { onScan: (value: string)
       )
       .catch((err) => {
         setError("Failed to start camera: " + err);
-        setScanning(false);
       });
     return () => {
       qrCode.stop().catch(() => {});
