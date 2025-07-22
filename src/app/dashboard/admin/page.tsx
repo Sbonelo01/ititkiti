@@ -89,6 +89,7 @@ export default function AdminDashboard() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ qr_code_data: qrValue }),
+        credentials: "include",
       });
       const data = await res.json();
       if (data.success) {
