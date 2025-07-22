@@ -1,46 +1,75 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
-import { Html5QrcodeScanner } from "html5-qrcode";
+import { Html5Qrcode, Html5QrcodeSupportedFormats, Html5QrcodeCameraScanConfig, CameraDevice } from "html5-qrcode";
 
 export default function QRScanner({ onScan, onClose }: { onScan: (value: string) => void; onClose: () => void }) {
   const [error, setError] = useState<string | null>(null);
-  const scannerRef = useRef<Html5QrcodeScanner | null>(null);
+  const [cameras, setCameras] = useState<CameraDevice[]>([]);
+  const [selectedCameraId, setSelectedCameraId] = useState<string | null>(null);
+  const [scanning, setScanning] = useState(false);
+  const html5QrCodeRef = useRef<Html5Qrcode | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
+  // Enumerate cameras on mount
   useEffect(() => {
-    if (!containerRef.current) return;
-
-    try {
-      scannerRef.current = new Html5QrcodeScanner(
-        "qr-reader",
-        { 
-          fps: 10, 
-          qrbox: { width: 250, height: 250 },
-          aspectRatio: 1.0
-        },
-        false
-      );
-
-      scannerRef.current.render(
-        (decodedText) => {
-          onScan(decodedText);
-        },
-        (errorMessage) => {
-          // Ignore errors during scanning, only show critical errors
-          console.log("QR Scanner:", errorMessage);
+    Html5Qrcode.getCameras()
+      .then((devices) => {
+        setCameras(devices);
+        if (devices.length > 0) {
+          setSelectedCameraId(devices[0].id);
+        } else {
+          setError("No cameras found on this device.");
         }
-      );
-    } catch (err) {
-      console.error("Scanner initialization error:", err);
-      setError("Failed to initialize camera");
-    }
-
+      })
+      .catch((err) => {
+        setError("Unable to access cameras: " + err);
+      });
     return () => {
-      if (scannerRef.current) {
-        scannerRef.current.clear();
+      // Cleanup on unmount
+      if (html5QrCodeRef.current) {
+        html5QrCodeRef.current.stop().catch(() => {});
+        html5QrCodeRef.current.clear().catch(() => {});
       }
     };
-  }, [onScan]);
+  }, []);
+
+  // Start/stop scanning when camera changes
+  useEffect(() => {
+    if (!selectedCameraId || !containerRef.current) return;
+    if (html5QrCodeRef.current) {
+      html5QrCodeRef.current.stop().catch(() => {});
+      html5QrCodeRef.current.clear().catch(() => {});
+    }
+    const qrCode = new Html5Qrcode("qr-reader");
+    html5QrCodeRef.current = qrCode;
+    setScanning(true);
+    qrCode
+      .start(
+        { deviceId: { exact: selectedCameraId } },
+        {
+          fps: 10,
+          qrbox: { width: 250, height: 250 },
+          aspectRatio: 1.0,
+          formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE],
+        } as Html5QrcodeCameraScanConfig,
+        (decodedText) => {
+          setScanning(false);
+          qrCode.stop().catch(() => {});
+          onScan(decodedText);
+        },
+        (err) => {
+          // Optionally show error
+        }
+      )
+      .catch((err) => {
+        setError("Failed to start camera: " + err);
+        setScanning(false);
+      });
+    return () => {
+      qrCode.stop().catch(() => {});
+      qrCode.clear().catch(() => {});
+    };
+  }, [selectedCameraId, onScan]);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
@@ -56,6 +85,18 @@ export default function QRScanner({ onScan, onClose }: { onScan: (value: string)
         </button>
         <h3 className="text-xl font-bold mb-6 text-center text-gray-800">Scan Ticket QR Code</h3>
         <div className="w-full flex flex-col items-center">
+          {/* Camera selection dropdown */}
+          {cameras.length > 1 && (
+            <select
+              className="mb-4 px-4 py-2 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500"
+              value={selectedCameraId || ''}
+              onChange={e => setSelectedCameraId(e.target.value)}
+            >
+              {cameras.map(cam => (
+                <option key={cam.id} value={cam.id}>{cam.label || `Camera ${cam.id}`}</option>
+              ))}
+            </select>
+          )}
           <div ref={containerRef} id="qr-reader" className="w-full"></div>
           {error && <div className="text-red-600 mt-4">{error}</div>}
         </div>
