@@ -85,11 +85,15 @@ export default function AdminDashboard() {
     setValidating(true);
     setScanResult(null);
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const accessToken = session?.access_token;
       const res = await fetch("/api/validate-ticket", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+        },
         body: JSON.stringify({ qr_code_data: qrValue }),
-        credentials: "include",
       });
       const data = await res.json();
       if (data.success) {
