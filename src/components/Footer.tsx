@@ -1,5 +1,6 @@
 "use client";
 import Link from "next/link";
+// import Toast from "./";
 import { 
   TicketIcon,
   SparklesIcon,
@@ -12,7 +13,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { 
   FaFacebook, 
-  FaTwitter, 
+  // FaTwitter, 
   FaInstagram, 
   FaLinkedin, 
   FaYoutube 
@@ -190,14 +191,19 @@ export default function Footer() {
                 Get the latest updates on events, exclusive offers, and platform features delivered to your inbox.
               </p>
               <div className="flex flex-col sm:flex-row gap-3 max-w-md mx-auto">
-                <input
-                  type="email"
-                  placeholder="Enter your email"
-                  className="flex-1 px-4 py-3 bg-gray-800 text-white rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 border border-gray-700 placeholder-gray-400"
-                />
-                <button className="bg-gradient-to-r from-green-500 to-green-600 text-white px-6 py-3 rounded-xl font-semibold hover:from-green-600 hover:to-green-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105">
-                  Subscribe
-                </button>
+                <form onSubmit={(e) => {e.preventDefault()}} action="https://formspree.io/f/mrgvvqel"
+                method="POST">
+                  <input
+                    id="email"
+                    type="email"
+                    name="Email"
+                    placeholder="Enter your email"
+                    className="flex-1 px-4 py-3 bg-gray-800 text-white rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 border border-gray-700 placeholder-gray-400"
+                  />
+                  <button type="submit" className="bg-gradient-to-r from-green-500 to-green-600 text-white px-6 py-3 rounded-xl font-semibold hover:from-green-600 hover:to-green-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105">
+                    Subscribe
+                  </button>
+                </form>
               </div>
             </div>
           </div>
