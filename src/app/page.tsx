@@ -180,7 +180,7 @@ export default function Home() {
             {/* Stats */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto">
               <div className="text-center">
-                <div className="text-4xl font-bold text-white mb-2">100+</div>
+                <div className="text-4xl font-bold text-white mb-2">50+</div>
                 <div className="text-white/80">Events Created</div>
               </div>
               <div className="text-center">
@@ -225,7 +225,7 @@ export default function Home() {
               </div>
               <h3 className="text-xl font-bold text-gray-800 mb-4">Instant Delivery</h3>
               <p className="text-gray-600">
-                Get your tickets instantly via email or mobile app. No waiting, no delays.
+                Get your tickets instantly via QR code, stored safely within the app. No waiting, no delays.
               </p>
             </div>
             

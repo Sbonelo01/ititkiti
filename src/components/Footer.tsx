@@ -53,7 +53,7 @@ export default function Footer() {
               </p>
               <div className="flex items-center gap-2 text-gray-400">
                 <SparklesIcon className="h-5 w-5 text-yellow-400" />
-                <span className="text-sm">Powered by Funzilla</span>
+                <span className="text-sm">Powered by <a href="https://funzile.com" target="_blank" className="text-green-400 hover:text-green-300 transition-all duration-200">Funzile</a></span>
               </div>
             </div>
 
@@ -146,15 +146,15 @@ export default function Footer() {
               <div className="space-y-4">
                 <div className="flex items-center gap-3 text-gray-300">
                   <MapPinIcon className="h-5 w-5 text-green-400 flex-shrink-0" />
-                  <span className="text-sm">Johannesburg, South Africa</span>
+                  <span className="text-sm">Durban, South Africa</span>
                 </div>
                 <div className="flex items-center gap-3 text-gray-300">
                   <PhoneIcon className="h-5 w-5 text-green-400 flex-shrink-0" />
-                  <span className="text-sm">+27 11 123 4567</span>
+                  <span className="text-sm">+27 61 069 2364</span>
                 </div>
                 <div className="flex items-center gap-3 text-gray-300">
                   <EnvelopeIcon className="h-5 w-5 text-green-400 flex-shrink-0" />
-                  <span className="text-sm">hello@tikiti.co.za</span>
+                  <span className="text-sm">sbonelo.mkhize@funzile.com</span>
                 </div>
               </div>
 
@@ -162,19 +162,19 @@ export default function Footer() {
               <div className="mt-6">
                 <h4 className="text-white font-semibold mb-3">Follow Us</h4>
                 <div className="flex items-center gap-3">
-                  <a href="#" className="bg-gray-800 hover:bg-green-600 p-2 rounded-lg transition-all duration-200 transform hover:scale-110">
+                  <a href="https://www.facebook.com/tiikiitii" target="_blank" className="bg-gray-800 hover:bg-green-600 p-2 rounded-lg transition-all duration-200 transform hover:scale-110">
                     <FaFacebook className="h-5 w-5" />
                   </a>
-                  <a href="#" className="bg-gray-800 hover:bg-green-600 p-2 rounded-lg transition-all duration-200 transform hover:scale-110">
+                  {/* <a href="#" className="bg-gray-800 hover:bg-green-600 p-2 rounded-lg transition-all duration-200 transform hover:scale-110">
                     <FaTwitter className="h-5 w-5" />
-                  </a>
-                  <a href="#" className="bg-gray-800 hover:bg-green-600 p-2 rounded-lg transition-all duration-200 transform hover:scale-110">
+                  </a> */}
+                  <a href="https://www.instagram.com/tikiti_fun" className="bg-gray-800 hover:bg-green-600 p-2 rounded-lg transition-all duration-200 transform hover:scale-110">
                     <FaInstagram className="h-5 w-5" />
                   </a>
-                  <a href="#" className="bg-gray-800 hover:bg-green-600 p-2 rounded-lg transition-all duration-200 transform hover:scale-110">
+                  <a href="www.linkedin.com/in/sbonelo-mkhize-d" className="bg-gray-800 hover:bg-green-600 p-2 rounded-lg transition-all duration-200 transform hover:scale-110">
                     <FaLinkedin className="h-5 w-5" />
                   </a>
-                  <a href="#" className="bg-gray-800 hover:bg-green-600 p-2 rounded-lg transition-all duration-200 transform hover:scale-110">
+                  <a href="https://www.youtube.com/@tikiti_fun" className="bg-gray-800 hover:bg-green-600 p-2 rounded-lg transition-all duration-200 transform hover:scale-110">
                     <FaYoutube className="h-5 w-5" />
                   </a>
                 </div>
@@ -210,7 +210,7 @@ export default function Footer() {
               <div className="flex items-center gap-4 text-sm text-gray-400">
                 <span>&copy; {new Date().getFullYear()} Tikiti. All rights reserved.</span>
                 <span className="hidden md:inline">•</span>
-                <span className="hidden md:inline">Made with ❤️ by Funzilla</span>
+                <span className="hidden md:inline">Made with ❤️ by <a href="https://funzile.com" target="_blank" className="text-green-400 hover:text-green-300 transition-all duration-200">Funzile</a></span>
               </div>
               
               <div className="flex items-center gap-4">
