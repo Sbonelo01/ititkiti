@@ -72,7 +72,10 @@ export async function POST(req: NextRequest) {
       }
       
       // Update event total_tickets for backward compatibility
-      const totalQuantity = ticketSelections.reduce((sum: number, sel: any) => sum + sel.quantity, 0);
+      const totalQuantity = ticketSelections.reduce(
+        (sum: number, sel: { quantity: number }) => sum + sel.quantity,
+        0
+      );
       const { data: event } = await supabase
         .from('events')
         .select('total_tickets')

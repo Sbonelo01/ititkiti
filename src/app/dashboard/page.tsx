@@ -246,7 +246,7 @@ function OrganizerDashboard({
         let totalRevenue = 0;
         let totalServiceFees = 0;
 
-        tickets?.forEach((ticket: any) => {
+        tickets?.forEach((ticket) => {
           const eventId = ticket.event_id;
           if (!sales[eventId]) {
             sales[eventId] = {
@@ -260,8 +260,12 @@ function OrganizerDashboard({
 
           // Get ticket price from ticket type or fallback to event price
           let ticketPrice = 0;
-          if (ticket.ticket_type_id && ticket.ticket_types) {
-            ticketPrice = ticket.ticket_types.price || 0;
+          if (ticket.ticket_type_id && Array.isArray(ticket.ticket_types) && ticket.ticket_types.length > 0) {
+            // ticket_types is an array; use the first element's price
+            ticketPrice = ticket.ticket_types[0]?.price || 0;
+          } else if (!ticket.ticket_type_id && Array.isArray(ticket.ticket_types) && ticket.ticket_types.length > 0) {
+            // If ticket_type_id is falsy but there is a ticket_types array (for legacy tickets), use first price
+            ticketPrice = ticket.ticket_types[0]?.price || 0;
           } else {
             ticketPrice = eventPriceMap[eventId] || 0;
           }
