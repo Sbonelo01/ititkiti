@@ -20,7 +20,10 @@ import {
   TrashIcon,
   EyeIcon,
   ArrowLeftIcon,
-  QrCodeIcon
+  QrCodeIcon,
+  CurrencyDollarIcon,
+  ChartBarIcon,
+  BanknotesIcon
 } from '@heroicons/react/24/outline';
 
 interface DashboardEvent {
@@ -108,6 +111,21 @@ export default function Dashboard() {
   }
 }
 
+interface EventSalesData {
+  eventId: string;
+  ticketsSold: number;
+  revenue: number;
+  profit: number;
+  ticketTypeBreakdown: Record<string, { count: number; revenue: number }>;
+}
+
+interface SalesSummary {
+  totalTicketsSold: number;
+  totalRevenue: number;
+  totalProfit: number;
+  totalServiceFees: number;
+}
+
 function OrganizerDashboard({
   user,
   router,
@@ -119,6 +137,14 @@ function OrganizerDashboard({
   const [loading, setLoading] = useState(true);
   const [deletingEventId, setDeletingEventId] = useState<string | null>(null);
   const [eventTicketCounts, setEventTicketCounts] = useState<Record<string, number>>({});
+  const [eventSalesData, setEventSalesData] = useState<Record<string, EventSalesData>>({});
+  const [salesSummary, setSalesSummary] = useState<SalesSummary>({
+    totalTicketsSold: 0,
+    totalRevenue: 0,
+    totalProfit: 0,
+    totalServiceFees: 0,
+  });
+  const [loadingSales, setLoadingSales] = useState(true);
 
   const fetchOrganizerEvents = useCallback(async () => {
     try {
@@ -149,6 +175,8 @@ function OrganizerDashboard({
     fetchOrganizerEvents();
   }, [fetchOrganizerEvents]);
 
+  const SERVICE_FEE_PER_TICKET = 10;
+
   useEffect(() => {
     async function fetchTicketCounts() {
       if (events.length === 0) return;
@@ -167,6 +195,112 @@ function OrganizerDashboard({
       }
     }
     fetchTicketCounts();
+  }, [events]);
+
+  useEffect(() => {
+    async function fetchSalesData() {
+      if (events.length === 0) {
+        setLoadingSales(false);
+        return;
+      }
+
+      try {
+        const eventIds = events.map(e => e.id);
+        
+        // Fetch all paid tickets with their ticket type information
+        const { data: tickets, error: ticketsError } = await supabase
+          .from('tickets')
+          .select(`
+            id,
+            event_id,
+            ticket_type_id,
+            payment_status,
+            ticket_types (
+              id,
+              price
+            )
+          `)
+          .in('event_id', eventIds)
+          .eq('payment_status', 'paid');
+
+        if (ticketsError) {
+          console.error('Error fetching tickets:', ticketsError);
+          setLoadingSales(false);
+          return;
+        }
+
+        // Also fetch event prices for backward compatibility (tickets without ticket_type_id)
+        const { data: eventsData } = await supabase
+          .from('events')
+          .select('id, price')
+          .in('id', eventIds);
+
+        const eventPriceMap: Record<string, number> = {};
+        eventsData?.forEach(event => {
+          eventPriceMap[event.id] = event.price;
+        });
+
+        // Calculate sales data per event
+        const sales: Record<string, EventSalesData> = {};
+        let totalTicketsSold = 0;
+        let totalRevenue = 0;
+        let totalServiceFees = 0;
+
+        tickets?.forEach((ticket: any) => {
+          const eventId = ticket.event_id;
+          if (!sales[eventId]) {
+            sales[eventId] = {
+              eventId,
+              ticketsSold: 0,
+              revenue: 0,
+              profit: 0,
+              ticketTypeBreakdown: {},
+            };
+          }
+
+          // Get ticket price from ticket type or fallback to event price
+          let ticketPrice = 0;
+          if (ticket.ticket_type_id && ticket.ticket_types) {
+            ticketPrice = ticket.ticket_types.price || 0;
+          } else {
+            ticketPrice = eventPriceMap[eventId] || 0;
+          }
+
+          sales[eventId].ticketsSold += 1;
+          sales[eventId].revenue += ticketPrice;
+          
+          const ticketTypeKey = ticket.ticket_type_id || 'default';
+          if (!sales[eventId].ticketTypeBreakdown[ticketTypeKey]) {
+            sales[eventId].ticketTypeBreakdown[ticketTypeKey] = { count: 0, revenue: 0 };
+          }
+          sales[eventId].ticketTypeBreakdown[ticketTypeKey].count += 1;
+          sales[eventId].ticketTypeBreakdown[ticketTypeKey].revenue += ticketPrice;
+
+          totalTicketsSold += 1;
+          totalRevenue += ticketPrice;
+          totalServiceFees += SERVICE_FEE_PER_TICKET;
+        });
+
+        // Calculate profit for each event (revenue - service fees)
+        Object.keys(sales).forEach(eventId => {
+          sales[eventId].profit = sales[eventId].revenue - (sales[eventId].ticketsSold * SERVICE_FEE_PER_TICKET);
+        });
+
+        setEventSalesData(sales);
+        setSalesSummary({
+          totalTicketsSold,
+          totalRevenue,
+          totalProfit: totalRevenue - totalServiceFees,
+          totalServiceFees,
+        });
+      } catch (error) {
+        console.error('Error fetching sales data:', error);
+      } finally {
+        setLoadingSales(false);
+      }
+    }
+
+    fetchSalesData();
   }, [events]);
 
   const handleDeleteEvent = async (eventId: string, posterUrl?: string) => {
@@ -259,6 +393,65 @@ function OrganizerDashboard({
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Sales Summary Cards */}
+        {!loading && !loadingSales && events.length > 0 && (
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            <div className="bg-white rounded-2xl shadow-xl p-6 border-l-4 border-green-500">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-600">Total Tickets Sold</p>
+                  <p className="text-3xl font-bold text-gray-800 mt-2">{salesSummary.totalTicketsSold}</p>
+                </div>
+                <div className="bg-green-100 p-3 rounded-xl">
+                  <TicketIcon className="h-8 w-8 text-green-600" />
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-2xl shadow-xl p-6 border-l-4 border-blue-500">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-600">Total Revenue</p>
+                  <p className="text-3xl font-bold text-gray-800 mt-2">
+                    {formatPrice(salesSummary.totalRevenue)}
+                  </p>
+                </div>
+                <div className="bg-blue-100 p-3 rounded-xl">
+                  <CurrencyDollarIcon className="h-8 w-8 text-blue-600" />
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-2xl shadow-xl p-6 border-l-4 border-purple-500">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-600">Service Fees</p>
+                  <p className="text-3xl font-bold text-gray-800 mt-2">
+                    {formatPrice(salesSummary.totalServiceFees)}
+                  </p>
+                </div>
+                <div className="bg-purple-100 p-3 rounded-xl">
+                  <BanknotesIcon className="h-8 w-8 text-purple-600" />
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-2xl shadow-xl p-6 border-l-4 border-orange-500">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-600">Total Profit</p>
+                  <p className="text-3xl font-bold text-gray-800 mt-2">
+                    {formatPrice(salesSummary.totalProfit)}
+                  </p>
+                </div>
+                <div className="bg-orange-100 p-3 rounded-xl">
+                  <ChartBarIcon className="h-8 w-8 text-orange-600" />
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {loading ? (
           <div className="text-center py-12">
             <div className="animate-spin rounded-full h-12 w-12 border-4 border-green-200 border-t-green-500 mx-auto mb-4"></div>
@@ -341,16 +534,45 @@ function OrganizerDashboard({
                     </div>
                   </div>
 
-                  <div className="flex justify-between items-center pt-4 border-t border-gray-100">
-                    <span className="text-2xl font-bold text-green-600">
-                      {formatPrice(event.price)}
-                    </span>
-                    <span className="text-sm text-gray-500">
-                      {deletingEventId === event.id ? "Deleting..." :
-                        eventTicketCounts[event.id] !== undefined ?
-                          `Profit: ${formatPrice(event.price * (eventTicketCounts[event.id] || 0) * 0.95)}` :
-                          ""}
-                    </span>
+                  <div className="pt-4 border-t border-gray-100 space-y-3">
+                    <div className="flex justify-between items-center">
+                      <span className="text-2xl font-bold text-green-600">
+                        {formatPrice(event.price)}
+                      </span>
+                      {deletingEventId === event.id ? (
+                        <span className="text-sm text-gray-500">Deleting...</span>
+                      ) : eventSalesData[event.id] ? (
+                        <div className="text-right">
+                          <p className="text-sm text-gray-600">
+                            {eventSalesData[event.id].ticketsSold} sold
+                          </p>
+                          <p className="text-sm font-semibold text-green-600">
+                            Profit: {formatPrice(eventSalesData[event.id].profit)}
+                          </p>
+                        </div>
+                      ) : eventTicketCounts[event.id] !== undefined ? (
+                        <div className="text-right">
+                          <p className="text-sm text-gray-600">
+                            {eventTicketCounts[event.id]} sold
+                          </p>
+                        </div>
+                      ) : null}
+                    </div>
+                    
+                    {eventSalesData[event.id] && eventSalesData[event.id].ticketsSold > 0 && (
+                      <div className="bg-gray-50 rounded-lg p-3 space-y-1">
+                        <div className="flex justify-between text-xs text-gray-600">
+                          <span>Revenue:</span>
+                          <span className="font-semibold">{formatPrice(eventSalesData[event.id].revenue)}</span>
+                        </div>
+                        <div className="flex justify-between text-xs text-gray-600">
+                          <span>Service Fees:</span>
+                          <span className="font-semibold">
+                            {formatPrice(eventSalesData[event.id].ticketsSold * SERVICE_FEE_PER_TICKET)}
+                          </span>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>

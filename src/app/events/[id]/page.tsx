@@ -20,11 +20,27 @@ interface Event {
   poster_url?: string;
 }
 
+interface TicketType {
+  id: string;
+  event_id: string;
+  name: string;
+  price: number;
+  quantity: number;
+  available_quantity: number;
+  description?: string;
+}
+
+interface TicketSelection {
+  ticketTypeId: string;
+  quantity: number;
+}
+
 export default function EventDetail() {
   const [event, setEvent] = useState<Event | null>(null);
+  const [ticketTypes, setTicketTypes] = useState<TicketType[]>([]);
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<User | null>(null);
-  const [ticketQuantity, setTicketQuantity] = useState(1);
+  const [ticketSelections, setTicketSelections] = useState<Record<string, number>>({});
   const [purchaseError, setPurchaseError] = useState<string | null>(null);
   const [purchaseSuccess, setPurchaseSuccess] = useState(false);
   const [showPaystack, setShowPaystack] = useState(false);
@@ -38,20 +54,49 @@ export default function EventDetail() {
     try {
       console.log('Loading event details for ID:', eventId);
       
-      const { data } = await supabase
+      // Load event
+      const { data: eventData } = await supabase
         .from('events')
         .select('*')
         .eq('id', eventId)
         .single();
 
-      console.log('Event details result:', { data });
+      console.log('Event details result:', { eventData });
 
-      if (!data) {
+      if (!eventData) {
         console.error('Error loading event: No data returned');
         return;
       }
 
-      setEvent(data);
+      setEvent(eventData);
+
+      // Load ticket types
+      const { data: ticketTypesData } = await supabase
+        .from('ticket_types')
+        .select('*')
+        .eq('event_id', eventId)
+        .order('price', { ascending: true });
+
+      if (ticketTypesData && ticketTypesData.length > 0) {
+        setTicketTypes(ticketTypesData);
+        // Initialize selections with first ticket type
+        const initialSelections: Record<string, number> = {};
+        ticketTypesData.forEach((tt) => {
+          initialSelections[tt.id] = 0;
+        });
+        setTicketSelections(initialSelections);
+      } else {
+        // Fallback: create a default ticket type from event data (for backward compatibility)
+        setTicketTypes([{
+          id: 'default',
+          event_id: eventId,
+          name: 'General Admission',
+          price: eventData.price,
+          quantity: eventData.total_tickets,
+          available_quantity: eventData.total_tickets,
+        }]);
+        setTicketSelections({ 'default': 0 });
+      }
     } catch (error) {
       console.error('Error:', error);
     }
@@ -75,15 +120,43 @@ export default function EventDetail() {
     loadEventAndCheckAuth();
   }, [eventId, loadEventData]);
 
+  const handleTicketQuantityChange = (ticketTypeId: string, quantity: number) => {
+    setTicketSelections((prev) => ({
+      ...prev,
+      [ticketTypeId]: Math.max(0, quantity),
+    }));
+  };
+
+  const getTotalQuantity = () => {
+    return Object.values(ticketSelections).reduce((sum, qty) => sum + qty, 0);
+  };
+
+  const getTotalPrice = () => {
+    return ticketTypes.reduce((total, ticketType) => {
+      const quantity = ticketSelections[ticketType.id] || 0;
+      return total + (ticketType.price * quantity);
+    }, 0);
+  };
+
   const handlePurchase = async () => {
     if (!user) {
       router.push('/login');
       return;
     }
 
-    if (ticketQuantity < 1) {
+    const totalQty = getTotalQuantity();
+    if (totalQty < 1) {
       setPurchaseError('Please select at least 1 ticket');
       return;
+    }
+
+    // Validate quantities don't exceed available
+    for (const ticketType of ticketTypes) {
+      const selectedQty = ticketSelections[ticketType.id] || 0;
+      if (selectedQty > ticketType.available_quantity) {
+        setPurchaseError(`${ticketType.name}: Only ${ticketType.available_quantity} tickets available`);
+        return;
+      }
     }
 
     // Instead of proceeding, trigger Paystack payment
@@ -99,13 +172,21 @@ export default function EventDetail() {
     setPurchaseError(null);
     setPurchaseSuccess(false);
     try {
+      // Convert selections to array format
+      const ticketSelectionsArray: TicketSelection[] = Object.entries(ticketSelections)
+        .filter(([, qty]) => qty > 0)
+        .map(([ticketTypeId, quantity]) => ({
+          ticketTypeId,
+          quantity,
+        }));
+
       const res = await fetch("/api/purchase-tickets", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           reference,
           eventId,
-          quantity: ticketQuantity,
+          ticketSelections: ticketSelectionsArray,
           user: {
             email: user?.email,
             name: user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Attendee',
@@ -156,8 +237,10 @@ export default function EventDetail() {
   const SERVICE_FEE_FIXED = 10;
 
   // Calculate service fee and total
-  const serviceFee = event ? SERVICE_FEE_FIXED * ticketQuantity : 0;
-  const totalWithFee = event ? (event.price * ticketQuantity + serviceFee) : 0;
+  const totalQuantity = getTotalQuantity();
+  const subtotal = getTotalPrice();
+  const serviceFee = SERVICE_FEE_FIXED * totalQuantity;
+  const totalWithFee = subtotal + serviceFee;
 
   if (loading) {
     return (
@@ -197,7 +280,7 @@ export default function EventDetail() {
           <div className="bg-white rounded-2xl shadow-2xl p-8">
             <div className="text-green-500 text-6xl mb-4">🎉</div>
             <h2 className="text-2xl font-bold text-gray-800 mb-4">Tickets Purchased Successfully!</h2>
-            <p className="text-gray-600 mb-4">You have purchased {ticketQuantity} ticket(s) for {event.title}</p>
+            <p className="text-gray-600 mb-4">You have purchased {totalQuantity} ticket(s) for {event.title}</p>
             <p className="text-gray-500 text-sm">Redirecting to your dashboard...</p>
           </div>
         </div>
@@ -344,43 +427,85 @@ export default function EventDetail() {
               {user ? (
                 <div className="space-y-6">
                   <div>
-                    <label htmlFor="quantity" className="block text-sm font-semibold text-gray-700 mb-3">
-                      Number of Tickets
+                    <label className="block text-sm font-semibold text-gray-700 mb-3">
+                      Select Tickets
                     </label>
-                    <select
-                      id="quantity"
-                      value={ticketQuantity}
-                      onChange={(e) => setTicketQuantity(parseInt(e.target.value))}
-                      className="w-full px-4 py-3 bg-gray-50 text-gray-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:shadow-lg transition-all duration-200"
-                    >
-                      {[...Array(Math.min(10, event.total_tickets))].map((_, i) => (
-                        <option key={i + 1} value={i + 1}>
-                          {i + 1} {i === 0 ? 'ticket' : 'tickets'}
-                        </option>
+                    <div className="space-y-4">
+                      {ticketTypes.map((ticketType) => (
+                        <div
+                          key={ticketType.id}
+                          className="bg-gray-50 rounded-xl p-4 border-2 border-gray-200 hover:border-green-300 transition-all duration-200"
+                        >
+                          <div className="flex justify-between items-start mb-3">
+                            <div className="flex-1">
+                              <h3 className="font-semibold text-gray-800">{ticketType.name}</h3>
+                              <p className="text-green-600 font-bold text-lg mt-1">
+                                {formatPrice(ticketType.price)}
+                              </p>
+                              {ticketType.description && (
+                                <p className="text-sm text-gray-600 mt-1">{ticketType.description}</p>
+                              )}
+                              <p className="text-xs text-gray-500 mt-1">
+                                {ticketType.available_quantity} available
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <button
+                              type="button"
+                              onClick={() =>
+                                handleTicketQuantityChange(
+                                  ticketType.id,
+                                  (ticketSelections[ticketType.id] || 0) - 1
+                                )
+                              }
+                              disabled={(ticketSelections[ticketType.id] || 0) === 0}
+                              className="w-8 h-8 rounded-lg bg-white border-2 border-gray-300 flex items-center justify-center hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                            >
+                              −
+                            </button>
+                            <span className="w-12 text-center font-semibold text-gray-800">
+                              {ticketSelections[ticketType.id] || 0}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                handleTicketQuantityChange(
+                                  ticketType.id,
+                                  (ticketSelections[ticketType.id] || 0) + 1
+                                )
+                              }
+                              disabled={
+                                (ticketSelections[ticketType.id] || 0) >= ticketType.available_quantity
+                              }
+                              className="w-8 h-8 rounded-lg bg-green-500 text-white flex items-center justify-center hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                            >
+                              +
+                            </button>
+                          </div>
+                        </div>
                       ))}
-                    </select>
+                    </div>
                   </div>
 
-                  <div className="bg-gray-50 rounded-xl p-6 space-y-4">
-                    <div className="flex justify-between items-center">
-                      <span className="text-gray-600">Price per ticket:</span>
-                      <span className="font-semibold text-gray-800">{formatPrice(event.price)}</span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-gray-600">Quantity:</span>
-                      <span className="font-semibold text-gray-800">{ticketQuantity}</span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-gray-600">Service fee (R10/ticket):</span>
-                      <span className="font-semibold text-gray-800">{formatPrice(serviceFee)}</span>
-                    </div>
-                    <div className="border-t border-gray-200 pt-4">
+                  {totalQuantity > 0 && (
+                    <div className="bg-gray-50 rounded-xl p-6 space-y-4">
                       <div className="flex justify-between items-center">
-                        <span className="text-lg font-bold text-gray-800">Total:</span>
-                        <span className="text-2xl font-bold text-green-600">{formatPrice(totalWithFee)}</span>
+                        <span className="text-gray-600">Subtotal:</span>
+                        <span className="font-semibold text-gray-800">{formatPrice(subtotal)}</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-gray-600">Service fee (R10/ticket):</span>
+                        <span className="font-semibold text-gray-800">{formatPrice(serviceFee)}</span>
+                      </div>
+                      <div className="border-t border-gray-200 pt-4">
+                        <div className="flex justify-between items-center">
+                          <span className="text-lg font-bold text-gray-800">Total:</span>
+                          <span className="text-2xl font-bold text-green-600">{formatPrice(totalWithFee)}</span>
+                        </div>
                       </div>
                     </div>
-                  </div>
+                  )}
 
                   {purchaseError && (
                     <div className="bg-red-50 border border-red-200 rounded-xl p-4">
@@ -390,10 +515,10 @@ export default function EventDetail() {
 
                   <button
                     onClick={handlePurchase}
-                    disabled={event.total_tickets === 0}
+                    disabled={totalQuantity === 0 || ticketTypes.every(tt => tt.available_quantity === 0)}
                     className="w-full bg-green-500 text-white py-4 rounded-xl hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed font-bold text-lg transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105"
                   >
-                    {event.total_tickets === 0 ? 'Sold Out' : 'Purchase Tickets'}
+                    {ticketTypes.every(tt => tt.available_quantity === 0) ? 'Sold Out' : 'Purchase Tickets'}
                   </button>
                 </div>
               ) : (

@@ -17,8 +17,18 @@ import {
   DocumentTextIcon,
   MapPinIcon,
   PhotoIcon,
-  CloudArrowUpIcon
+  CloudArrowUpIcon,
+  TrashIcon,
+  TicketIcon
 } from '@heroicons/react/24/outline';
+
+interface TicketType {
+  id: string;
+  name: string;
+  price: number;
+  quantity: number;
+  description?: string;
+}
 
 interface EventFormData {
   title: string;
@@ -26,9 +36,8 @@ interface EventFormData {
   date: string;
   time: string;
   location: string;
-  price: number;
-  total_tickets: number;
   poster_url?: string;
+  ticket_types: TicketType[];
 }
 
 export default function CreateEvent() {
@@ -45,8 +54,15 @@ export default function CreateEvent() {
     date: "",
     time: "",
     location: "",
-    price: 0,
-    total_tickets: 0,
+    ticket_types: [
+      {
+        id: `ticket-${Date.now()}`,
+        name: "General Admission",
+        price: 0,
+        quantity: 0,
+        description: "",
+      },
+    ],
   });
 
   const [posterFile, setPosterFile] = useState<File | null>(null);
@@ -82,10 +98,45 @@ export default function CreateEvent() {
     const { name, value } = e.target;
     setFormData((prev) => ({
       ...prev,
-      [name]:
-        name === "price" || name === "total_tickets"
-          ? parseFloat(value) || 0
-          : value,
+      [name]: value,
+    }));
+  };
+
+  const handleTicketTypeChange = (
+    ticketId: string,
+    field: keyof TicketType,
+    value: string | number
+  ) => {
+    setFormData((prev) => ({
+      ...prev,
+      ticket_types: prev.ticket_types.map((ticket) =>
+        ticket.id === ticketId
+          ? { ...ticket, [field]: value }
+          : ticket
+      ),
+    }));
+  };
+
+  const addTicketType = () => {
+    setFormData((prev) => ({
+      ...prev,
+      ticket_types: [
+        ...prev.ticket_types,
+        {
+          id: `ticket-${Date.now()}-${Math.random()}`,
+          name: "",
+          price: 0,
+          quantity: 0,
+          description: "",
+        },
+      ],
+    }));
+  };
+
+  const removeTicketType = (ticketId: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      ticket_types: prev.ticket_types.filter((ticket) => ticket.id !== ticketId),
     }));
   };
 
@@ -137,10 +188,29 @@ export default function CreateEvent() {
       return;
     }
 
-    if (formData.price < 0 || formData.total_tickets <= 0) {
-      setError("Please enter valid ticket price and quantity");
+    if (formData.ticket_types.length === 0) {
+      setError("Please add at least one ticket type");
       setSubmitting(false);
       return;
+    }
+
+    // Validate ticket types
+    for (const ticketType of formData.ticket_types) {
+      if (!ticketType.name || ticketType.name.trim() === "") {
+        setError("Please provide a name for all ticket types");
+        setSubmitting(false);
+        return;
+      }
+      if (ticketType.price < 0) {
+        setError("Ticket prices cannot be negative");
+        setSubmitting(false);
+        return;
+      }
+      if (ticketType.quantity <= 0) {
+        setError("Each ticket type must have at least 1 ticket available");
+        setSubmitting(false);
+        return;
+      }
     }
 
     try {
@@ -163,26 +233,58 @@ export default function CreateEvent() {
           return;
         }
       }
+      // Calculate total tickets and base price (for backward compatibility)
+      const totalTickets = formData.ticket_types.reduce(
+        (sum, ticket) => sum + ticket.quantity,
+        0
+      );
+      const basePrice = formData.ticket_types.length > 0 
+        ? Math.min(...formData.ticket_types.map(t => t.price))
+        : 0;
+
       const eventData = {
         title: formData.title,
         description: formData.description,
         date: eventDateTime,
         location: formData.location,
-        price: formData.price,
-        total_tickets: formData.total_tickets,
+        price: basePrice, // Keep for backward compatibility
+        total_tickets: totalTickets, // Keep for backward compatibility
         organizer_id: user?.id,
         poster_url: posterUrl,
       };
 
       console.log("Creating event with data:", eventData);
 
-      const { error: insertError } = await supabase
+      const { data: eventResult, error: insertError } = await supabase
         .from("events")
-        .insert([eventData]);
+        .insert([eventData])
+        .select()
+        .single();
 
-      if (insertError) {
+      if (insertError || !eventResult) {
         console.error("Event insert error:", insertError);
-        throw insertError;
+        throw insertError || new Error("Failed to create event");
+      }
+
+      // Create ticket types
+      const ticketTypesData = formData.ticket_types.map((ticketType) => ({
+        event_id: eventResult.id,
+        name: ticketType.name,
+        price: ticketType.price,
+        quantity: ticketType.quantity,
+        available_quantity: ticketType.quantity,
+        description: ticketType.description || null,
+      }));
+
+      const { error: ticketTypesError } = await supabase
+        .from("ticket_types")
+        .insert(ticketTypesData);
+
+      if (ticketTypesError) {
+        console.error("Ticket types insert error:", ticketTypesError);
+        // Rollback event creation
+        await supabase.from("events").delete().eq("id", eventResult.id);
+        throw ticketTypesError;
       }
 
       console.log("Event created successfully!");
@@ -381,42 +483,126 @@ export default function CreateEvent() {
                   />
                 </div>
 
-                {/* Ticket Price and Quantity */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-3">
-                    <label htmlFor="price" className="flex items-center gap-2 text-lg font-semibold text-gray-800">
-                      <CurrencyDollarIcon className="h-5 w-5 text-green-500" />
-                      Ticket Price (R) *
+                {/* Ticket Types */}
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <label className="flex items-center gap-2 text-lg font-semibold text-gray-800">
+                      <TicketIcon className="h-5 w-5 text-green-500" />
+                      Ticket Types *
                     </label>
-                    <input
-                      type="number"
-                      id="price"
-                      name="price"
-                      value={formData.price}
-                      onChange={handleInputChange}
-                      min="0"
-                      step="0.01"
-                      className="w-full px-4 py-4 bg-gray-50 text-gray-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:shadow-lg border border-gray-200 hover:border-green-300 transition-all duration-200"
-                      placeholder="0.00"
-                      required
-                    />
+                    <button
+                      type="button"
+                      onClick={addTicketType}
+                      className="flex items-center gap-2 px-4 py-2 bg-green-500 text-white rounded-xl hover:bg-green-600 transition-all duration-200 text-sm font-semibold"
+                    >
+                      <PlusIcon className="h-4 w-4" />
+                      Add Ticket Type
+                    </button>
                   </div>
-                  <div className="space-y-3">
-                    <label htmlFor="total_tickets" className="flex items-center gap-2 text-lg font-semibold text-gray-800">
-                      <UserGroupIcon className="h-5 w-5 text-green-500" />
-                      Total Tickets *
-                    </label>
-                    <input
-                      type="number"
-                      id="total_tickets"
-                      name="total_tickets"
-                      value={formData.total_tickets}
-                      onChange={handleInputChange}
-                      min="1"
-                      className="w-full px-4 py-4 bg-gray-50 text-gray-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:shadow-lg border border-gray-200 hover:border-green-300 transition-all duration-200"
-                      placeholder="100"
-                      required
-                    />
+                  
+                  <div className="space-y-4">
+                    {formData.ticket_types.map((ticketType, index) => (
+                      <div
+                        key={ticketType.id}
+                        className="bg-gray-50 rounded-xl p-6 border-2 border-gray-200 hover:border-green-300 transition-all duration-200"
+                      >
+                        <div className="flex items-center justify-between mb-4">
+                          <h3 className="text-md font-semibold text-gray-700">
+                            Ticket Type {index + 1}
+                          </h3>
+                          {formData.ticket_types.length > 1 && (
+                            <button
+                              type="button"
+                              onClick={() => removeTicketType(ticketType.id)}
+                              className="text-red-500 hover:text-red-700 transition-colors"
+                              aria-label="Remove ticket type"
+                            >
+                              <TrashIcon className="h-5 w-5" />
+                            </button>
+                          )}
+                        </div>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                          <div className="space-y-2">
+                            <label className="block text-sm font-medium text-gray-700">
+                              Ticket Name *
+                            </label>
+                            <input
+                              type="text"
+                              value={ticketType.name}
+                              onChange={(e) =>
+                                handleTicketTypeChange(ticketType.id, "name", e.target.value)
+                              }
+                              className="w-full px-4 py-3 bg-white text-gray-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 border border-gray-300"
+                              placeholder="e.g., General Admission, VIP"
+                              required
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <label className="block text-sm font-medium text-gray-700">
+                              Price (R) *
+                            </label>
+                            <input
+                              type="number"
+                              value={ticketType.price}
+                              onChange={(e) =>
+                                handleTicketTypeChange(
+                                  ticketType.id,
+                                  "price",
+                                  parseFloat(e.target.value) || 0
+                                )
+                              }
+                              min="0"
+                              step="0.01"
+                              className="w-full px-4 py-3 bg-white text-gray-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 border border-gray-300"
+                              placeholder="0.00"
+                              required
+                            />
+                          </div>
+                        </div>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <label className="block text-sm font-medium text-gray-700">
+                              Quantity Available *
+                            </label>
+                            <input
+                              type="number"
+                              value={ticketType.quantity}
+                              onChange={(e) =>
+                                handleTicketTypeChange(
+                                  ticketType.id,
+                                  "quantity",
+                                  parseInt(e.target.value) || 0
+                                )
+                              }
+                              min="1"
+                              className="w-full px-4 py-3 bg-white text-gray-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 border border-gray-300"
+                              placeholder="100"
+                              required
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <label className="block text-sm font-medium text-gray-700">
+                              Description (Optional)
+                            </label>
+                            <input
+                              type="text"
+                              value={ticketType.description || ""}
+                              onChange={(e) =>
+                                handleTicketTypeChange(
+                                  ticketType.id,
+                                  "description",
+                                  e.target.value
+                                )
+                              }
+                              className="w-full px-4 py-3 bg-white text-gray-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 border border-gray-300"
+                              placeholder="e.g., Includes refreshments"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </div>
 

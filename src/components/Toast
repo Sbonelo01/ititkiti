@@ -1,0 +1,33 @@
+import React, { useState, useEffect } from "react";
+
+// Toast component
+export default function Toast({ message, type = "info", duration = 3000, onClose }) {
+  useEffect(() => {
+    const timer = setTimeout(onClose, duration);
+    return () => clearTimeout(timer);
+  }, [duration, onClose]);
+
+  const bgColors = {
+    success: "bg-green-500",
+    error: "bg-red-500",
+    warning: "bg-yellow-500",
+    info: "bg-blue-500"
+  };
+
+  return (
+    <div
+      className={`fixed top-5 right-5 px-4 py-3 rounded-lg text-white shadow-lg ${bgColors[type]}`}
+      role="alert"
+    >
+      <div className="flex items-center justify-between">
+        <span>{"Thank you for subscribing!"}</span>
+        <button
+          onClick={onClose}
+          className="ml-4 text-white font-bold"
+        >
+          ✕
+        </button>
+      </div>
+    </div>
+  );
+}
