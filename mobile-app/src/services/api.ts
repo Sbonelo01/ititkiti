@@ -1,5 +1,5 @@
 // Update this with your actual API URL
-const API_BASE_URL = 'https://your-domain.com/api'; // Replace with your actual domain
+const API_BASE_URL = 'https://tikiti.fun/api'; // Replace with your actual domain
 // Optional: Add your mobile API key here for authentication
 const MOBILE_API_KEY = ''; // Set this if you've configured API key authentication
 
