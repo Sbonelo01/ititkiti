@@ -1,8 +1,8 @@
 // Update this with your actual API URL
 // Use the /api prefix so requests target the backend's API routes.
 const API_BASE_URL = 'https://tikiti.fun/api'; // Replace with your actual domain
-// Optional: Add your mobile API key here for authentication
-const MOBILE_API_KEY = ''; // Set this if you've configured API key authentication
+// If you use a mobile API key for backend endpoints, add it here and include in headers.
+// const MOBILE_API_KEY = process.env.NEXT_PUBLIC_MOBILE_API_KEY || '';
 
 export interface ValidationResponse {
   success: boolean;
@@ -48,8 +48,10 @@ export const validateTicket = async (qrCodeData: string): Promise<ValidationResp
       ticket: data.ticket,
       error: data.error,
     };
-  } catch (error: any) {
-    if (error.name === 'AbortError') {
+  } catch (error: unknown) {
+    // Normalize unknown error
+    const err = error as { name?: string; message?: string };
+    if (err?.name === 'AbortError') {
       console.error('API Error: request timed out');
       return {
         success: false,
@@ -57,7 +59,7 @@ export const validateTicket = async (qrCodeData: string): Promise<ValidationResp
         error: 'Request timed out. Please try again.',
       };
     }
-    console.error('API Error:', error);
+    console.error('API Error:', err?.message ?? err);
     return {
       success: false,
       status: 'error',

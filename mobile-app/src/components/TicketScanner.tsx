@@ -8,8 +8,16 @@ import {
   Dimensions,
 } from 'react-native';
 import * as CameraModule from 'expo-camera';
-const CameraComp: any = (CameraModule as any).Camera ?? (CameraModule as any).default ?? CameraModule;
-const useCameraPermissionsHook: any = (CameraModule as any).useCameraPermissions ?? (CameraModule as any).requestCameraPermissionsAsync ?? null;
+import { PermissionResponse } from 'expo-camera';
+// Resolve a runtime Camera component and the permissions hook, but avoid `any` by using
+// explicit unions and proper types.
+const CameraComp = ((CameraModule as unknown) as {
+  Camera?: React.ComponentType<Record<string, unknown>>;
+  default?: React.ComponentType<Record<string, unknown>>;
+}).Camera ?? ((CameraModule as unknown) as { default?: React.ComponentType<Record<string, unknown>> }).default ?? (CameraModule as unknown) as React.ComponentType<Record<string, unknown>>;
+const useCameraPermissionsHook: (() => [PermissionResponse | null, () => Promise<PermissionResponse>]) | null = ((CameraModule as unknown) as {
+  useCameraPermissions?: () => [PermissionResponse | null, () => Promise<PermissionResponse>];
+}).useCameraPermissions ?? null;
 import { validateTicket } from '../services/api';
 
 const { width } = Dimensions.get('window');
@@ -26,16 +34,23 @@ interface TicketData {
 }
 
 export default function TicketScanner(): React.ReactElement {
-  const [permission, requestPermission] = (useCameraPermissionsHook && typeof useCameraPermissionsHook === 'function') ? useCameraPermissionsHook() : [null, async () => {}];
+  // Always call the hook if available; otherwise provide a stable fallback to keep hook order stable.
+  const fallbackRequest = async () => ({
+    canAskAgain: false,
+    granted: false,
+    expires: 'never',
+  } as PermissionResponse);
+  const hook = useCameraPermissionsHook ?? (() => [null, fallbackRequest]);
+  const [permission, requestPermission] = hook();
   const [scanned, setScanned] = useState(false);
   const [validationStatus, setValidationStatus] = useState<ValidationStatus>('idle');
   const [ticketData, setTicketData] = useState<TicketData | null>(null);
   const [loading, setLoading] = useState(false);
   const [lastScannedCode, setLastScannedCode] = useState<string | null>(null);
-  const [cameraType] = useState<any>(
-    // prefer the runtime constant if present, fallback to string
-    (CameraModule as any)?.Constants?.Type?.back ?? 'back'
-  );
+  // Camera constants are runtime strings; use string to avoid `any` typing.
+  type CameraConstType = string;
+  const cameraConstants = ((CameraModule as unknown) as { Constants?: { Type?: { back?: string } } }).Constants;
+  const [cameraType] = useState<CameraConstType>(cameraConstants?.Type?.back ?? 'back');
 
   useEffect(() => {
     if (!permission) {

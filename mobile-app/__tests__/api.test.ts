@@ -19,7 +19,7 @@ describe('validateTicket fallback', () => {
     global.fetch = jest.fn().mockResolvedValueOnce({
       ok: false,
       json: async () => ({ status: 'not_found', success: false }),
-    } as any);
+    } as unknown as Response);
 
     const result = await validateTicket('NON_EXISTENT_QR');
 
@@ -38,7 +38,7 @@ describe('validateTicket fallback', () => {
     global.fetch = jest.fn().mockResolvedValueOnce({
       ok: true,
       json: async () => ({ success: true, status: 'valid', ticket }),
-    } as any);
+    } as unknown as Response);
 
     const result = await validateTicket('VALID_QR');
 
