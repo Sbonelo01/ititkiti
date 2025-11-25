@@ -117,6 +117,26 @@ The app expects the `/api/validate-ticket-mobile` endpoint to return:
 ```json
 {
   "success": boolean,
+
+## Supabase integration (optional)
+
+This project can optionally call a Supabase RPC function to atomically validate and mark tickets as used.
+
+- Create the RPC in your Supabase project by copying `supabase/validate_and_mark.sql` into the Supabase SQL editor and running it.
+- The RPC returns a JSON object with `status` set to `valid`, `already_used`, or `not_found`, and a `ticket` object when applicable.
+
+Important security notes:
+- Only expose the `NEXT_PUBLIC_SUPABASE_ANON_KEY` to the mobile client. Do NOT expose the `SUPABASE_SERVICE_ROLE_KEY` in the app or in `app.json`.
+- Use RLS policies and Postgres functions to ensure only allowed operations are performed by anonymous clients.
+
+Client usage example (already integrated in `src/services/api.ts`):
+```ts
+// Calls the RPC named 'validate_and_mark' with param { qr }
+const { data, error } = await supabase.rpc('validate_and_mark', { qr: qrCodeData });
+```
+
+If RPC is not available or fails, the app falls back to the existing REST endpoint at `/api/validate-ticket-mobile`.
+
   "status": "valid" | "already_used" | "not_found" | "error",
   "ticket": {
     "attendee_name": string,

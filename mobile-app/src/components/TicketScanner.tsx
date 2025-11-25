@@ -4,14 +4,17 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  Alert,
   ActivityIndicator,
   Dimensions,
 } from 'react-native';
-import { CameraView, useCameraPermissions } from 'expo-camera';
+import * as CameraModule from 'expo-camera';
+const CameraComp: any = (CameraModule as any).Camera ?? (CameraModule as any).default ?? CameraModule;
+const useCameraPermissionsHook: any = (CameraModule as any).useCameraPermissions ?? (CameraModule as any).requestCameraPermissionsAsync ?? null;
 import { validateTicket } from '../services/api';
 
-const { width, height } = Dimensions.get('window');
+const { width } = Dimensions.get('window');
+
+// Use named imports from expo-camera for runtime component and permissions hook.
 
 type ValidationStatus = 'idle' | 'valid' | 'already_used' | 'not_found' | 'error' | 'scanning';
 
@@ -22,24 +25,26 @@ interface TicketData {
   created_at: string;
 }
 
-export default function TicketScanner() {
-  const [permission, requestPermission] = useCameraPermissions();
+export default function TicketScanner(): React.ReactElement {
+  const [permission, requestPermission] = (useCameraPermissionsHook && typeof useCameraPermissionsHook === 'function') ? useCameraPermissionsHook() : [null, async () => {}];
   const [scanned, setScanned] = useState(false);
   const [validationStatus, setValidationStatus] = useState<ValidationStatus>('idle');
   const [ticketData, setTicketData] = useState<TicketData | null>(null);
   const [loading, setLoading] = useState(false);
   const [lastScannedCode, setLastScannedCode] = useState<string | null>(null);
+  const [cameraType] = useState<any>(
+    // prefer the runtime constant if present, fallback to string
+    (CameraModule as any)?.Constants?.Type?.back ?? 'back'
+  );
 
   useEffect(() => {
     if (!permission) {
       requestPermission();
     }
-  }, [permission]);
+  }, [permission, requestPermission]);
 
   const handleBarCodeScanned = async ({ data }: { data: string }) => {
-    if (scanned || loading || data === lastScannedCode) {
-      return; // Prevent duplicate scans
-    }
+    if (scanned || loading || data === lastScannedCode) return;
 
     setScanned(true);
     setLoading(true);
@@ -48,14 +53,15 @@ export default function TicketScanner() {
 
     try {
       const result = await validateTicket(data);
-      
-      if (result.success && result.status === 'valid') {
+      console.log('validateTicket result:', result);
+
+      if (result && result.status === 'valid') {
         setValidationStatus('valid');
-        setTicketData(result.ticket);
-      } else if (result.status === 'already_used') {
+        setTicketData(result.ticket ?? null);
+      } else if (result && result.status === 'already_used') {
         setValidationStatus('already_used');
-        setTicketData(result.ticket);
-      } else if (result.status === 'not_found') {
+        setTicketData(result.ticket ?? null);
+      } else if (result && result.status === 'not_found') {
         setValidationStatus('not_found');
         setTicketData(null);
       } else {
@@ -78,17 +84,7 @@ export default function TicketScanner() {
     setLastScannedCode(null);
   };
 
-  if (!permission) {
-    return (
-      <View style={styles.container}>
-        <View style={styles.messageContainer}>
-          <Text style={styles.messageText}>Requesting camera permission...</Text>
-        </View>
-      </View>
-    );
-  }
-
-  if (!permission.granted) {
+  if (!permission || !permission.granted) {
     return (
       <View style={styles.container}>
         <View style={styles.messageContainer}>
@@ -103,26 +99,26 @@ export default function TicketScanner() {
 
   return (
     <View style={styles.container}>
-      <CameraView
-        style={styles.camera}
-        facing="back"
-        onBarcodeScanned={scanned ? undefined : handleBarCodeScanned}
-        barcodeScannerSettings={{
-          barcodeTypes: ['qr'],
-        }}
-      >
-        <View style={styles.overlay}>
-          {/* Scanner frame */}
-          <View style={styles.scannerFrame}>
+      <View style={styles.cameraContainer}>
+        <CameraComp
+          style={StyleSheet.absoluteFill}
+          type={cameraType}
+          onBarCodeScanned={scanned ? undefined : handleBarCodeScanned}
+          barCodeScannerSettings={{
+            barCodeTypes: ['qr'],
+          }}
+        />
+
+        <View style={styles.overlay} pointerEvents="box-none">
+          <View style={styles.scannerFrame} pointerEvents="none">
             <View style={[styles.corner, styles.topLeft]} />
             <View style={[styles.corner, styles.topRight]} />
             <View style={[styles.corner, styles.bottomLeft]} />
             <View style={[styles.corner, styles.bottomRight]} />
           </View>
 
-          {/* Status overlay */}
           {validationStatus !== 'idle' && (
-            <View style={styles.statusOverlay}>
+            <View style={styles.statusOverlay} pointerEvents="auto">
               {loading ? (
                 <View style={styles.statusCard}>
                   <ActivityIndicator size="large" color="#10b981" />
@@ -134,12 +130,8 @@ export default function TicketScanner() {
                   <Text style={[styles.statusText, styles.successText]}>Ticket Valid!</Text>
                   {ticketData && (
                     <View style={styles.ticketInfo}>
-                      <Text style={styles.ticketInfoText}>
-                        Attendee: {ticketData.attendee_name}
-                      </Text>
-                      <Text style={styles.ticketInfoText}>
-                        Email: {ticketData.email}
-                      </Text>
+                      <Text style={styles.ticketInfoText}>Attendee: {ticketData.attendee_name}</Text>
+                      <Text style={styles.ticketInfoText}>Email: {ticketData.email}</Text>
                     </View>
                   )}
                   <TouchableOpacity style={styles.button} onPress={resetScanner}>
@@ -149,14 +141,7 @@ export default function TicketScanner() {
               ) : validationStatus === 'already_used' ? (
                 <View style={[styles.statusCard, styles.warningCard]}>
                   <Text style={styles.statusIcon}>⚠</Text>
-                  <Text style={[styles.statusText, styles.warningText]}>
-                    Ticket Already Used
-                  </Text>
-                  {ticketData && (
-                    <Text style={styles.ticketInfoText}>
-                      This ticket was already scanned
-                    </Text>
-                  )}
+                  <Text style={[styles.statusText, styles.warningText]}>Ticket Already Used</Text>
                   <TouchableOpacity style={styles.button} onPress={resetScanner}>
                     <Text style={styles.buttonText}>Scan Another</Text>
                   </TouchableOpacity>
@@ -164,12 +149,7 @@ export default function TicketScanner() {
               ) : validationStatus === 'not_found' ? (
                 <View style={[styles.statusCard, styles.errorCard]}>
                   <Text style={styles.statusIcon}>✗</Text>
-                  <Text style={[styles.statusText, styles.errorText]}>
-                    Ticket Not Found
-                  </Text>
-                  <Text style={styles.ticketInfoText}>
-                    This ticket does not exist or is invalid
-                  </Text>
+                  <Text style={[styles.statusText, styles.errorText]}>Ticket Not Found</Text>
                   <TouchableOpacity style={styles.button} onPress={resetScanner}>
                     <Text style={styles.buttonText}>Try Again</Text>
                   </TouchableOpacity>
@@ -177,12 +157,7 @@ export default function TicketScanner() {
               ) : (
                 <View style={[styles.statusCard, styles.errorCard]}>
                   <Text style={styles.statusIcon}>✗</Text>
-                  <Text style={[styles.statusText, styles.errorText]}>
-                    Validation Error
-                  </Text>
-                  <Text style={styles.ticketInfoText}>
-                    An error occurred while validating the ticket
-                  </Text>
+                  <Text style={[styles.statusText, styles.errorText]}>Validation Error</Text>
                   <TouchableOpacity style={styles.button} onPress={resetScanner}>
                     <Text style={styles.buttonText}>Try Again</Text>
                   </TouchableOpacity>
@@ -191,16 +166,13 @@ export default function TicketScanner() {
             </View>
           )}
 
-          {/* Instructions */}
           {validationStatus === 'idle' && (
-            <View style={styles.instructions}>
-              <Text style={styles.instructionText}>
-                Position the QR code within the frame
-              </Text>
+            <View style={styles.instructions} pointerEvents="none">
+              <Text style={styles.instructionText}>Position the QR code within the frame</Text>
             </View>
           )}
         </View>
-      </CameraView>
+      </View>
     </View>
   );
 }
@@ -209,6 +181,10 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#000',
+  },
+  cameraContainer: {
+    flex: 1,
+    position: 'relative',
   },
   camera: {
     flex: 1,
@@ -362,5 +338,3 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
 });
-
-

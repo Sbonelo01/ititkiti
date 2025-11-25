@@ -4,10 +4,9 @@
     "slug": "tikiti-scanner",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    
     "userInterfaceStyle": "light",
     "splash": {
-      "image": "./assets/splash.png",
       "resizeMode": "contain",
       "backgroundColor": "#10b981"
     },
@@ -23,7 +22,6 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#10b981"
       },
       "package": "com.tikiti.scanner",
@@ -31,9 +29,7 @@
         "CAMERA"
       ]
     },
-    "web": {
-      "favicon": "./assets/favicon.png"
-    },
+    "web": {},
     "plugins": [
       [
         "expo-camera",
@@ -42,6 +38,11 @@
         }
       ]
     ]
+  },
+
+  "extra": {
+    "NEXT_PUBLIC_SUPABASE_URL": "https://uizqmpvixxjrgexmdfhz.supabase.co",
+    "NEXT_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVpenFtcHZpeHhqcmdleG1kZmh6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTAxMDY3ODUsImV4cCI6MjA2NTY4Mjc4NX0.by-TZhE5NXJt6rpdNPBDl7B5XbivTZyBrK7lXgmK4NM"
   }
 }
 
