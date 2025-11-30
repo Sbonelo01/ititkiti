@@ -57,7 +57,7 @@ export default function CreateEvent() {
     ticket_types: [
       {
         id: `ticket-${Date.now()}`,
-        name: "General Admission",
+        name: "General",
         price: 0,
         quantity: 0,
         description: "",

@@ -91,7 +91,7 @@ export default function EventDetail() {
         setTicketTypes([{
           id: 'default',
           event_id: eventId,
-          name: 'General Admission',
+          name: 'General',
           price: eventData.price,
           quantity: eventData.total_tickets,
           available_quantity: eventData.total_tickets,
