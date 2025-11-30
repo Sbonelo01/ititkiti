@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "@/utils/supabaseClient";
 import Image from "next/image";
 import { 
@@ -32,6 +32,8 @@ export default function Login() {
   const [showLogoPrompt, setShowLogoPrompt] = useState(false);
   const [logoUploadLoading, setLogoUploadLoading] = useState(false);
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirectTo = searchParams.get("redirect") || "/dashboard";
 
   // Check if user is already logged in
   useEffect(() => {
@@ -40,11 +42,11 @@ export default function Login() {
         data: { session },
       } = await supabase.auth.getSession();
       if (session) {
-        router.push("/dashboard");
+        router.push(redirectTo);
       }
     };
     checkUser();
-  }, [router]);
+  }, [router, redirectTo]);
 
   const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0] || null;
@@ -85,7 +87,7 @@ export default function Login() {
         setError(error.message);
       } else {
         setMessage("Logged in successfully! Redirecting...");
-        setTimeout(() => router.push("/dashboard"), 1000);
+        setTimeout(() => router.push(redirectTo), 1000);
       }
     } else {
       // Validate required fields
@@ -122,9 +124,11 @@ export default function Login() {
         setError(error.message);
       } else {
         setMessage("Signup successful! Check your email to confirm your account.");
-        if (role === "organizer") {
-          setTimeout(() => router.push("/dashboard"), 1500);
-        }
+        // Redirect based on the redirect parameter or role
+        // If redirect is to create-event and user is organizer, go there
+        // Otherwise use the redirect parameter or default dashboard
+        const finalRedirect = redirectTo || (role === "organizer" ? "/dashboard/create-event" : "/dashboard");
+        setTimeout(() => router.push(finalRedirect), 1500);
       }
     }
     setLoading(false);

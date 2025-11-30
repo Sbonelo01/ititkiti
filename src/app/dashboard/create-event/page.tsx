@@ -75,7 +75,7 @@ export default function CreateEvent() {
       } = await supabase.auth.getSession();
 
       if (!session) {
-        router.push("/login");
+        router.push("/login?redirect=/dashboard/create-event");
         return;
       }
 

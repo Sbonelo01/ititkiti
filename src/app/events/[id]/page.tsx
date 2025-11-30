@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
-import { useRouter, useParams } from "next/navigation";
+import { useRouter, useParams, usePathname } from "next/navigation";
 import { supabase } from "@/utils/supabaseClient";
 import Link from "next/link";
 import { User } from "@supabase/supabase-js";
@@ -48,6 +48,7 @@ export default function EventDetail() {
   const [verifyingPayment, setVerifyingPayment] = useState(false);
   const router = useRouter();
   const params = useParams();
+  const pathname = usePathname();
   const eventId = params.id as string;
 
   const loadEventData = useCallback(async () => {
@@ -140,7 +141,7 @@ export default function EventDetail() {
 
   const handlePurchase = async () => {
     if (!user) {
-      router.push('/login');
+      router.push(`/login?redirect=${encodeURIComponent(pathname)}`);
       return;
     }
 
@@ -317,7 +318,7 @@ export default function EventDetail() {
             </Link>
             {!user && (
               <Link
-                href="/login"
+                href={`/login?redirect=${encodeURIComponent(`/events/${eventId}`)}`}
                 className="bg-green-500 text-white px-6 py-3 rounded-[10px] font-semibold hover:bg-green-600 transition-all duration-200 shadow-lg hover:shadow-xl"
               >
                 Sign In to Purchase
@@ -526,7 +527,7 @@ export default function EventDetail() {
                   <div className="bg-gray-50 rounded-xl p-6">
                     <p className="text-gray-600 mb-4">Sign in to purchase tickets for this event.</p>
                     <Link
-                      href="/login"
+                      href={`/login?redirect=${encodeURIComponent(`/events/${eventId}`)}`}
                       className="w-full bg-green-500 text-white py-4 rounded-xl hover:bg-green-600 font-bold text-lg inline-block transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105"
                     >
                       Sign In to Purchase

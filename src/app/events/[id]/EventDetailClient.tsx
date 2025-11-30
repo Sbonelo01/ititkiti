@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { supabase } from "@/utils/supabaseClient";
 import Link from "next/link";
 import { User } from "@supabase/supabase-js";
@@ -31,6 +31,7 @@ export default function EventDetailClient({ eventId }: { eventId: string }) {
   const [paystackReference, setPaystackReference] = useState<string>("");
   const [verifyingPayment, setVerifyingPayment] = useState(false);
   const router = useRouter();
+  const pathname = usePathname();
   const shareUrl = typeof window !== 'undefined' ? window.location.href : '';
 
   const loadEventData = useCallback(async () => {
@@ -63,7 +64,7 @@ export default function EventDetailClient({ eventId }: { eventId: string }) {
 
   const handlePurchase = async () => {
     if (!user) {
-      router.push('/login');
+      router.push(`/login?redirect=${encodeURIComponent(pathname)}`);
       return;
     }
     if (ticketQuantity < 1) {
