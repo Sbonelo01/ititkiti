@@ -13,6 +13,10 @@ const roboto = Roboto({
 export const metadata: Metadata = {
   title: "Tikiti - Your Event Companion",
   description: "Discover, create, and manage events with ease.",
+  icons: {
+    icon: "/tikiti-logo.png",
+    apple: "/tikiti-logo.png",
+  },
 };
 
 export default function RootLayout({

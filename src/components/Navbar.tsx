@@ -1,5 +1,6 @@
 "use client";
 import Link from "next/link";
+import Image from "next/image";
 import { useEffect, useState } from "react";
 import { supabase } from "@/utils/supabaseClient";
 import { User } from "@supabase/supabase-js";
@@ -89,12 +90,15 @@ export default function Navbar() {
       {/* Mobile Header with Logo */}
       <header className="md:hidden fixed top-0 left-0 w-full h-16 bg-white/95 backdrop-blur-sm shadow-lg z-50 flex items-center justify-between px-4 border-b border-gray-100">
         <Link href="/" className="flex items-center gap-3 group">
-          <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all duration-200 transform group-hover:scale-105">
-            <TicketIcon className="h-6 w-6 text-white" />
+          <div className="h-10 w-10 flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all duration-200 transform group-hover:scale-105">
+            <Image 
+              src="/tikiti-logo.png" 
+              alt="Tikiti Logo" 
+              width={60} 
+              height={60} 
+              className="object-contain"
+            />
           </div>
-          <span className="text-2xl font-bold tracking-tight bg-gradient-to-r from-green-600 to-green-700 bg-clip-text text-transparent">
-            Tikiti
-          </span>
         </Link>
         
         {!loading && user && (
@@ -119,12 +123,15 @@ export default function Navbar() {
       {/* Desktop Navbar */}
       <nav className="hidden md:flex fixed top-0 left-0 w-full h-20 bg-white/95 backdrop-blur-sm shadow-xl z-50 items-center justify-between px-8 border-b border-gray-100">
         <Link href="/" className="flex items-center gap-3 group">
-          <div className="h-12 w-12 rounded-2xl bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all duration-200 transform group-hover:scale-105">
-            <TicketIcon className="h-7 w-7 text-white" />
+          <div className="h-12 w-12 flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all duration-200 transform group-hover:scale-105">
+            <Image 
+              src="/tikiti-logo.png" 
+              alt="Tikiti Logo" 
+              width={48} 
+              height={48} 
+              className="object-contain"
+            />
           </div>
-          <span className="text-3xl font-bold tracking-tight bg-gradient-to-r from-green-600 to-green-700 bg-clip-text text-transparent">
-            Tikiti
-          </span>
         </Link>
         
         <div className="flex items-center gap-8">

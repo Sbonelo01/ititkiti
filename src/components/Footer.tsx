@@ -1,5 +1,6 @@
 "use client";
 import Link from "next/link";
+import Image from "next/image";
 // import Toast from "./";
 import { 
   TicketIcon,
@@ -42,12 +43,15 @@ export default function Footer() {
             {/* Brand Section */}
             <div className="lg:col-span-1">
               <Link href="/" className="flex items-center gap-3 group mb-6">
-                <div className="h-12 w-12 rounded-2xl bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all duration-200 transform group-hover:scale-105">
-                  <TicketIcon className="h-7 w-7 text-white" />
+                <div className="h-12 w-12 flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all duration-200 transform group-hover:scale-105">
+                  <Image 
+                    src="/tikiti-logo.png" 
+                    alt="Tikiti Logo" 
+                    width={62} 
+                    height={62} 
+                    className="object-contain"
+                  />
                 </div>
-                <span className="text-3xl font-bold tracking-tight bg-gradient-to-r from-green-400 to-green-300 bg-clip-text text-transparent">
-                  Tikiti
-                </span>
               </Link>
               <p className="text-gray-300 mb-6 leading-relaxed">
                 The #1 ticket platform in South Africa. Discover amazing events, create unforgettable experiences, and connect with people who share your passions.
