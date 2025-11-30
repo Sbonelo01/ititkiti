@@ -74,7 +74,15 @@ export async function GET(req: NextRequest) {
     }
 
     const ticket = tickets[0];
-    const event = ticket.events;
+    // Supabase returns events as an object when using select with join (single relation)
+    // Type assertion needed because TypeScript infers it as array
+    const event = ticket.events as unknown as {
+      id: string;
+      title: string;
+      date: string;
+      location: string;
+      organizer_id: string;
+    } | null;
 
     return NextResponse.json({
       success: true,
