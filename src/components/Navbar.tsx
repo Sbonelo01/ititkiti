@@ -92,7 +92,7 @@ export default function Navbar() {
         <Link href="/" className="flex items-center gap-3 group">
           <div className="h-10 w-10 flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all duration-200 transform group-hover:scale-105">
             <Image 
-              src="/tikiti-logo.png" 
+              src="/tikiti-logo" 
               alt="Tikiti Logo" 
               width={60} 
               height={60} 
