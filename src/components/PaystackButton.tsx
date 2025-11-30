@@ -7,7 +7,7 @@ type PaystackProps = {
   reference: string;
   onSuccess: (reference: string) => void;
   onClose: () => void;
-  metadata?: Record<string, any>; // Additional metadata for Paystack
+  metadata?: Record<string, string | number | boolean | Array<Record<string, string | number>>>; // Additional metadata for Paystack
 };
 
 const PaystackPaymentButton: React.FC<PaystackProps> = ({
