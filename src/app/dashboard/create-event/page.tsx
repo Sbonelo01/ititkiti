@@ -488,7 +488,7 @@ export default function CreateEvent() {
                   <div className="flex items-center justify-between">
                     <label className="flex items-center gap-2 text-lg font-semibold text-gray-800">
                       <TicketIcon className="h-5 w-5 text-green-500" />
-                      Ticket Types *
+                      Ticket Types (e.g. General, Early Bird, VIP)*
                     </label>
                     <button
                       type="button"
