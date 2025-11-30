@@ -558,6 +558,22 @@ export default function EventDetail() {
               reference={paystackReference}
               onSuccess={handlePaystackSuccess}
               onClose={handlePaystackClose}
+              metadata={{
+                event_id: eventId,
+                event_title: event?.title || "Event",
+                custom_fields: [
+                  {
+                    display_name: "Event ID",
+                    variable_name: "event_id",
+                    value: eventId,
+                  },
+                  {
+                    display_name: "Event Title",
+                    variable_name: "event_title",
+                    value: event?.title || "Event",
+                  },
+                ],
+              }}
             />
           </div>
         </div>
