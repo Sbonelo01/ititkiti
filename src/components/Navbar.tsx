@@ -127,8 +127,8 @@ export default function Navbar() {
             <Image 
               src="/tikiti-logo.png" 
               alt="Tikiti Logo" 
-              width={48} 
-              height={48} 
+              width={80} 
+              height={80} 
               className="object-contain"
             />
           </div>
