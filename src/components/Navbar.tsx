@@ -123,7 +123,7 @@ export default function Navbar() {
       {/* Desktop Navbar */}
       <nav className="hidden md:flex fixed top-0 left-0 w-full h-20 bg-white/95 backdrop-blur-sm shadow-xl z-50 items-center justify-between px-8 border-b border-gray-100">
         <Link href="/" className="flex items-center gap-3 group">
-          <div className="h-12 w-12 flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all duration-200 transform group-hover:scale-105">
+          <div className="h-12 w-12 flex items-center justify-center transition-all duration-200 transform group-hover:scale-105">
             <Image 
               src="/tikiti-logo.png" 
               alt="Tikiti Logo" 
