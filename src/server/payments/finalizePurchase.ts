@@ -25,6 +25,8 @@ type FinalizeResult = {
   createdTickets?: number;
   error?: string;
   status?: number;
+  /** Raw Postgres/PostgREST message when success is false (for debugging). */
+  pgMessage?: string;
 };
 
 const supabase = createClient(
@@ -53,20 +55,22 @@ export async function finalizePurchaseAtomic(input: FinalizePurchaseInput): Prom
 
   if (error) {
     const details = String(error.message || "").toLowerCase();
+    const raw = error.message;
     if (details.includes("not enough tickets")) {
-      return { success: false, error: "Not enough tickets available", status: 400 };
+      return { success: false, error: "Not enough tickets available", status: 400, pgMessage: raw };
     }
     if (details.includes("ticket type") && details.includes("not found")) {
-      return { success: false, error: "Ticket type not found", status: 404 };
+      return { success: false, error: "Ticket type not found", status: 404, pgMessage: raw };
     }
     if (details.includes("event not found")) {
-      return { success: false, error: "Event not found", status: 404 };
+      return { success: false, error: "Event not found", status: 404, pgMessage: raw };
     }
     if (details.includes("function finalize_ticket_purchase")) {
       return {
         success: false,
         error: "Atomic purchase function is not deployed. Run the latest SQL migration first.",
         status: 500,
+        pgMessage: raw,
       };
     }
     if (details.includes("invalid input syntax for type uuid")) {
@@ -74,15 +78,40 @@ export async function finalizePurchaseAtomic(input: FinalizePurchaseInput): Prom
         success: false,
         error: "Invalid ticket type reference. Refresh the page and try again, or contact support.",
         status: 400,
+        pgMessage: raw,
       };
     }
-    return { success: false, error: "Failed to finalize purchase", status: 500 };
+    return { success: false, error: "Failed to finalize purchase", status: 500, pgMessage: raw };
   }
 
-  const result = (data || {}) as { success?: boolean; alreadyProcessed?: boolean; createdTickets?: number };
+  // PostgREST may return jsonb as a parsed object or (in some cases) a JSON string.
+  let result: { success?: boolean; alreadyProcessed?: boolean; createdTickets?: number } = {};
+  if (data != null) {
+    if (typeof data === "string") {
+      try {
+        result = JSON.parse(data) as typeof result;
+      } catch {
+        result = {};
+      }
+    } else if (typeof data === "object") {
+      result = data as typeof result;
+    }
+  }
+
+  const ok = result.success === true || result.alreadyProcessed === true;
+
+  if (!ok) {
+    return {
+      success: false,
+      error: "Failed to finalize purchase",
+      status: 500,
+      pgMessage: typeof data === "string" ? data : JSON.stringify(data ?? null),
+    };
+  }
+
   return {
-    success: Boolean(result.success),
+    success: true,
     alreadyProcessed: Boolean(result.alreadyProcessed),
-    createdTickets: result.createdTickets || 0,
+    createdTickets: result.createdTickets ?? 0,
   };
 }

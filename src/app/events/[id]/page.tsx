@@ -220,7 +220,8 @@ export default function EventDetail() {
           router.push('/dashboard');
         }, 3000);
       } else {
-        setPurchaseError(data.error || 'Payment verification or ticket creation failed.');
+        const extra = data.details && typeof data.details === "string" ? ` — ${data.details}` : "";
+        setPurchaseError((data.error || "Payment verification or ticket creation failed.") + extra);
       }
     } catch {
       setPurchaseError('Failed to verify payment or create tickets. Please try again.');
