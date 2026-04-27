@@ -36,13 +36,66 @@ interface TicketSelection {
   quantity: number;
 }
 
+/** Shown on the post-checkout success screen (after Paystack and API confirm). */
+const PURCHASE_SUCCESS_MESSAGE =
+  "Thank you for your purchase. Please view your dashboard for your ticket(s)—you'll find your QR codes and details there. We're taking you to your dashboard now.";
+
+type PurchaseErrorState = {
+  headline: string;
+  text?: string;
+  detail?: string;
+};
+
+function buildPurchaseFailureState(data: {
+  error?: string;
+  details?: string;
+}): PurchaseErrorState {
+  const base = (data.error || "").trim() || "Something went wrong while completing your order.";
+  const detail = typeof data.details === "string" && data.details.trim() ? data.details.trim() : undefined;
+
+  if (base.toLowerCase().includes("payment verification failed")) {
+    return {
+      headline: "Payment could not be confirmed",
+      text: "We couldn't verify this payment with the provider. You may not have been charged. Please try again, or use a different payment method.",
+    };
+  }
+  if (base.toLowerCase().includes("not enough tickets")) {
+    return {
+      headline: "Not enough tickets left",
+      text: "These tickets are no longer available in the quantity you selected. If you were charged, please contact support and quote your payment reference so we can help.",
+    };
+  }
+  if (base.toLowerCase().includes("not deployed") || (detail && detail.toLowerCase().includes("finalize_ticket_purchase"))) {
+    return {
+      headline: "We're finishing setup",
+      text: "Your payment may have gone through, but the server could not issue tickets. Please contact support with your Paystack reference—we'll sort it out right away.",
+      detail,
+    };
+  }
+  if (base.toLowerCase().includes("atomic purchase")) {
+    return {
+      headline: "We couldn't add your tickets yet",
+      text: "The payment may have been taken. Check your email or bank statement, then open your dashboard. If you don't see tickets, contact support with the payment reference from Paystack.",
+      detail,
+    };
+  }
+
+  return {
+    headline: "We couldn't complete your purchase",
+    text: base === "Failed to finalize purchase" || !base
+      ? "We couldn't issue your tickets after payment. Check your dashboard in a few minutes, or contact support with your payment reference if tickets don't appear."
+      : base,
+    detail,
+  };
+}
+
 export default function EventDetail() {
   const [event, setEvent] = useState<Event | null>(null);
   const [ticketTypes, setTicketTypes] = useState<TicketType[]>([]);
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<User | null>(null);
   const [ticketSelections, setTicketSelections] = useState<Record<string, number>>({});
-  const [purchaseError, setPurchaseError] = useState<string | null>(null);
+  const [purchaseError, setPurchaseError] = useState<PurchaseErrorState | null>(null);
   const [purchaseSuccess, setPurchaseSuccess] = useState(false);
   const [showPaystack, setShowPaystack] = useState(false);
   const [paystackReference, setPaystackReference] = useState<string>("");
@@ -148,7 +201,10 @@ export default function EventDetail() {
 
     const totalQty = getTotalQuantity();
     if (totalQty < 1) {
-      setPurchaseError('Please select at least 1 ticket');
+      setPurchaseError({
+        headline: "No tickets selected",
+        text: "Please choose at least one ticket to continue.",
+      });
       return;
     }
 
@@ -156,7 +212,10 @@ export default function EventDetail() {
     for (const ticketType of ticketTypes) {
       const selectedQty = ticketSelections[ticketType.id] || 0;
       if (selectedQty > ticketType.available_quantity) {
-        setPurchaseError(`${ticketType.name}: Only ${ticketType.available_quantity} tickets available`);
+        setPurchaseError({
+          headline: "Not enough tickets in stock",
+          text: `For “${ticketType.name}” you can only select up to ${ticketType.available_quantity} ticket(s) right now.`,
+        });
         return;
       }
     }
@@ -220,11 +279,13 @@ export default function EventDetail() {
           router.push('/dashboard');
         }, 3000);
       } else {
-        const extra = data.details && typeof data.details === "string" ? ` — ${data.details}` : "";
-        setPurchaseError((data.error || "Payment verification or ticket creation failed.") + extra);
+        setPurchaseError(buildPurchaseFailureState(data));
       }
     } catch {
-      setPurchaseError('Failed to verify payment or create tickets. Please try again.');
+      setPurchaseError({
+        headline: "We couldn't connect to the server",
+        text: "Your payment may still have gone through. Check your dashboard, or try again. If a charge appears but you have no tickets, contact support with your reference.",
+      });
     } finally {
       setVerifyingPayment(false);
     }
@@ -232,7 +293,10 @@ export default function EventDetail() {
 
   const handlePaystackClose = () => {
     setShowPaystack(false);
-    setPurchaseError('Payment popup closed.');
+    setPurchaseError({
+      headline: "Payment window closed",
+      text: "If you already completed payment, your tickets will show on your dashboard shortly. If not, tap Purchase tickets to try again.",
+    });
   };
 
   const formatDate = (dateString: string) => {
@@ -292,12 +356,13 @@ export default function EventDetail() {
   if (purchaseSuccess) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-green-50 to-white flex items-center justify-center">
-        <div className="text-center max-w-md mx-auto px-6">
+        <div className="text-center max-w-lg mx-auto px-6">
           <div className="bg-white rounded-2xl shadow-2xl p-8">
-            <div className="text-green-500 text-6xl mb-4">🎉</div>
-            <h2 className="text-2xl font-bold text-gray-800 mb-4">Tickets Purchased Successfully!</h2>
-            <p className="text-gray-600 mb-4">You have purchased {totalQuantity} ticket(s) for {event.title}</p>
-            <p className="text-gray-500 text-sm">Redirecting to your dashboard...</p>
+            <div className="text-green-500 text-5xl mb-4" aria-hidden>✓</div>
+            <h2 className="text-2xl font-bold text-gray-800 mb-4">Purchase complete</h2>
+            <p className="text-gray-700 leading-relaxed mb-2">{PURCHASE_SUCCESS_MESSAGE}</p>
+            <p className="text-gray-500 text-sm mt-4">Event: {event.title}</p>
+            <p className="text-gray-400 text-xs mt-2">Redirecting to your dashboard…</p>
           </div>
         </div>
       </div>
@@ -524,8 +589,16 @@ export default function EventDetail() {
                   )}
 
                   {purchaseError && (
-                    <div className="bg-red-50 border border-red-200 rounded-xl p-4">
-                      <p className="text-red-600 text-sm">{purchaseError}</p>
+                    <div className="bg-red-50 border border-red-200 rounded-xl p-4" role="alert">
+                      <p className="text-red-800 font-semibold text-sm">{purchaseError.headline}</p>
+                      {purchaseError.text && (
+                        <p className="text-red-700 text-sm mt-1 leading-relaxed">{purchaseError.text}</p>
+                      )}
+                      {purchaseError.detail && (
+                        <p className="text-red-600/90 text-xs mt-2 font-mono break-words">
+                          {purchaseError.detail}
+                        </p>
+                      )}
                     </div>
                   )}
 
@@ -600,7 +673,12 @@ export default function EventDetail() {
           </div>
         </div>
       )}
-      {verifyingPayment && <p>Verifying payment...</p>}
+      {verifyingPayment && (
+        <div className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 border-t border-green-200 shadow-lg py-4 px-4 text-center">
+          <p className="text-green-800 font-medium">Confirming your payment and issuing your tickets…</p>
+          <p className="text-gray-600 text-sm mt-1">This usually takes a few seconds.</p>
+        </div>
+      )}
     </div>
   );
 }
