@@ -174,7 +174,10 @@ export default function EventDetail() {
     setPurchaseError(null);
     setPurchaseSuccess(false);
     try {
-      // Convert selections to array format
+      // New format uses real ticket_type UUIDs. The UI fallback "default" is not a DB row — use legacy quantity path.
+      const totalForPurchase = getTotalQuantity();
+      const usesSyntheticDefault =
+        ticketTypes.length === 1 && ticketTypes[0].id === "default";
       const ticketSelectionsArray: TicketSelection[] = Object.entries(ticketSelections)
         .filter(([, qty]) => qty > 0)
         .map(([ticketTypeId, quantity]) => ({
@@ -185,16 +188,29 @@ export default function EventDetail() {
       const res = await fetch("/api/purchase-tickets", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          reference,
-          eventId,
-          ticketSelections: ticketSelectionsArray,
-          user: {
-            email: user?.email,
-            name: user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Attendee',
-            userId: user?.id,
-          },
-        }),
+        body: JSON.stringify(
+          usesSyntheticDefault
+            ? {
+                reference,
+                eventId,
+                quantity: totalForPurchase,
+                user: {
+                  email: user?.email,
+                  name: user?.user_metadata?.full_name || user?.email?.split("@")[0] || "Attendee",
+                  userId: user?.id,
+                },
+              }
+            : {
+                reference,
+                eventId,
+                ticketSelections: ticketSelectionsArray,
+                user: {
+                  email: user?.email,
+                  name: user?.user_metadata?.full_name || user?.email?.split("@")[0] || "Attendee",
+                  userId: user?.id,
+                },
+              }
+        ),
       });
       const data = await res.json();
       if (data.success) {

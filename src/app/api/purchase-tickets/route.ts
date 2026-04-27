@@ -14,13 +14,30 @@ export async function POST(req: NextRequest) {
     const { reference, eventId, ticketSelections, quantity, user: ticketUser } = await req.json();
     
     // Support both new format (ticketSelections) and old format (quantity) for backward compatibility
-    const isNewFormat = ticketSelections && Array.isArray(ticketSelections);
+    // Synthetic "default" from the client is not a real ticket_types id (invalid UUID) — use legacy path.
+    let normalizedSelections = ticketSelections;
+    let normalizedQuantity = quantity;
+    if (Array.isArray(ticketSelections) && ticketSelections.length > 0) {
+      const onlyDefault = ticketSelections.every(
+        (s: { ticketTypeId?: string }) => s?.ticketTypeId === "default"
+      );
+      if (onlyDefault) {
+        const sum = ticketSelections.reduce(
+          (acc: number, s: { quantity?: number }) => acc + (Number(s?.quantity) || 0),
+          0
+        );
+        normalizedSelections = undefined;
+        normalizedQuantity = sum;
+      }
+    }
+
+    const isNewFormat = normalizedSelections && Array.isArray(normalizedSelections) && normalizedSelections.length > 0;
     
     if (!reference || !eventId || !ticketUser) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
 
-    if (!isNewFormat && !quantity) {
+    if (!isNewFormat && !normalizedQuantity) {
       return NextResponse.json({ error: "Missing ticket selections or quantity" }, { status: 400 });
     }
 
@@ -43,8 +60,8 @@ export async function POST(req: NextRequest) {
     const finalized = await finalizePurchaseAtomic({
       reference,
       eventId,
-      ticketSelections: isNewFormat ? ticketSelections : undefined,
-      quantity: !isNewFormat ? quantity : undefined,
+      ticketSelections: isNewFormat ? normalizedSelections : undefined,
+      quantity: !isNewFormat ? normalizedQuantity : undefined,
       ticketUser: {
         email: ticketUser.email,
         name: ticketUser.name,

@@ -69,6 +69,13 @@ export async function finalizePurchaseAtomic(input: FinalizePurchaseInput): Prom
         status: 500,
       };
     }
+    if (details.includes("invalid input syntax for type uuid")) {
+      return {
+        success: false,
+        error: "Invalid ticket type reference. Refresh the page and try again, or contact support.",
+        status: 400,
+      };
+    }
     return { success: false, error: "Failed to finalize purchase", status: 500 };
   }
 
