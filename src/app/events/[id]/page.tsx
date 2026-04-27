@@ -563,9 +563,9 @@ export default function EventDetail() {
                   .filter(([, qty]) => qty > 0)
                   .map(([ticketTypeId, qty]) => ({ ticketTypeId, quantity: qty })),
                 quantity: totalQuantity,
-                buyer_id: user?.id || null,
+                buyer_id: user?.id || undefined,
                 buyer_name: user?.user_metadata?.full_name || user?.email?.split("@")[0] || "Attendee",
-                email: user?.email || null,
+                email: user?.email || undefined,
                 custom_fields: [
                   {
                     display_name: "Event ID",
