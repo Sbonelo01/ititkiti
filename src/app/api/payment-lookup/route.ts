@@ -6,10 +6,15 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
+type PaymentReceiptPayload = {
+  quantity?: number;
+  ticket_selections?: { quantity?: number }[];
+};
+
 /**
  * API endpoint to look up payment information by Paystack reference
- * This helps identify which event a payment is for
- * 
+ * Looks up public.payment_receipts first (authoritative for reference); tickets may omit paystack_reference.
+ *
  * Usage: GET /api/payment-lookup?reference=EVT-xxx-xxx-xxx
  */
 export async function GET(req: NextRequest) {
@@ -24,25 +29,21 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    // Extract eventId from reference format: EVT-{eventId}-{userId}-{timestamp}-{random}
     const referenceParts = reference.split("-");
     let eventIdFromReference: string | null = null;
-    
     if (referenceParts.length >= 2 && referenceParts[0] === "EVT") {
       eventIdFromReference = referenceParts[1];
     }
 
-    // Find tickets with this reference
-    const { data: tickets, error: ticketsError } = await supabase
-      .from("tickets")
+    const { data: receipt, error: receiptError } = await supabase
+      .from("payment_receipts")
       .select(`
         id,
+        reference,
         event_id,
-        attendee_name,
         email,
-        paystack_reference,
+        payload,
         created_at,
-        payment_status,
         events (
           id,
           title,
@@ -51,8 +52,51 @@ export async function GET(req: NextRequest) {
           organizer_id
         )
       `)
-      .eq("paystack_reference", reference)
-      .limit(1);
+      .eq("reference", reference)
+      .maybeSingle();
+
+    if (receiptError) {
+      return NextResponse.json(
+        { error: "Database error", details: receiptError.message },
+        { status: 500 }
+      );
+    }
+
+    if (!receipt) {
+      return NextResponse.json(
+        {
+          error: "Payment not found",
+          reference,
+          eventIdFromReference,
+          note: "Lookups use payment_receipts. If eventId is present in the reference, it's the part after 'EVT-'.",
+        },
+        { status: 404 }
+      );
+    }
+
+    const payload = (receipt.payload || {}) as PaymentReceiptPayload;
+    let totalFromPayload: number | undefined = payload.quantity;
+    if (totalFromPayload == null && Array.isArray(payload.ticket_selections)) {
+      totalFromPayload = payload.ticket_selections.reduce(
+        (s, row) => s + (Number(row?.quantity) || 0),
+        0
+      );
+    }
+
+    const { data: relatedTickets, error: ticketsError } = await supabase
+      .from("tickets")
+      .select(`
+        id,
+        event_id,
+        attendee_name,
+        email,
+        created_at,
+        payment_status
+      `)
+      .eq("event_id", receipt.event_id)
+      .eq("email", receipt.email)
+      .gte("created_at", receipt.created_at)
+      .order("created_at", { ascending: true });
 
     if (ticketsError) {
       return NextResponse.json(
@@ -61,22 +105,12 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    if (!tickets || tickets.length === 0) {
-      return NextResponse.json(
-        {
-          error: "Payment not found",
-          reference,
-          eventIdFromReference,
-          note: "If eventId is present in reference, it's the second part after 'EVT-'",
-        },
-        { status: 404 }
-      );
-    }
+    const list = relatedTickets || [];
+    const first = list[0];
+    const totalTickets =
+      totalFromPayload && totalFromPayload > 0 ? totalFromPayload : list.length;
 
-    const ticket = tickets[0];
-    // Supabase returns events as an object when using select with join (single relation)
-    // Type assertion needed because TypeScript infers it as array
-    const event = ticket.events as unknown as {
+    const event = receipt.events as unknown as {
       id: string;
       title: string;
       date: string;
@@ -87,7 +121,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({
       success: true,
       reference,
-      eventId: ticket.event_id,
+      eventId: receipt.event_id,
       eventIdFromReference,
       event: event
         ? {
@@ -98,15 +132,17 @@ export async function GET(req: NextRequest) {
             organizer_id: event.organizer_id,
           }
         : null,
-      ticket: {
-        id: ticket.id,
-        attendee_name: ticket.attendee_name,
-        email: ticket.email,
-        created_at: ticket.created_at,
-        payment_status: ticket.payment_status,
-      },
-      // Count total tickets for this payment
-      totalTickets: tickets.length,
+      ticket: first
+        ? {
+            id: first.id,
+            attendee_name: first.attendee_name,
+            email: first.email,
+            created_at: first.created_at,
+            payment_status: first.payment_status,
+          }
+        : null,
+      totalTickets,
+      source: "payment_receipts",
     });
   } catch (error) {
     return NextResponse.json(
@@ -118,4 +154,3 @@ export async function GET(req: NextRequest) {
     );
   }
 }
-
