@@ -28,7 +28,6 @@ const PaystackPaymentButton: React.FC<PaystackProps> = ({
   metadata,
 }) => {
   const publicKey = process.env.NEXT_PUBLIC_PAYSTACK_KEY!;
-  console.log(publicKey)
 
   // Ensure metadata has the required structure for Paystack
   const paystackMetadata = metadata ? {
