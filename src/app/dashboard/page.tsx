@@ -7,6 +7,7 @@ import Link from "next/link";
 import { QRCodeCanvas } from "qrcode.react";
 import { AppRouterInstance } from "next/dist/shared/lib/app-router-context.shared-runtime";
 import Image from "next/image";
+import { SERVICE_FEE_PER_TICKET } from "@/constants/pricing";
 import { 
   CalendarIcon, 
   MapPinIcon, 
@@ -174,8 +175,6 @@ function OrganizerDashboard({
   useEffect(() => {
     fetchOrganizerEvents();
   }, [fetchOrganizerEvents]);
-
-  const SERVICE_FEE_PER_TICKET = 10;
 
   useEffect(() => {
     async function fetchTicketCounts() {

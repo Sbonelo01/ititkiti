@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { cookies } from "next/headers";
+import { applyRateLimit } from "@/utils/rateLimit";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -8,9 +9,23 @@ const supabase = createClient(
 );
 
 export async function POST(req: NextRequest) {
-  // Server-side admin check
+  const rateLimited = applyRateLimit(req, {
+    keyPrefix: "validate-ticket",
+    windowMs: 60_000,
+    maxRequests: 90,
+  });
+  if (rateLimited) return rateLimited;
+
+  // Server-side admin/staff check (supports bearer token + legacy cookie)
+  const authHeader = req.headers.get("authorization");
+  const bearerToken = authHeader?.startsWith("Bearer ")
+    ? authHeader.slice("Bearer ".length).trim()
+    : null;
   const cookieStore = await cookies();
-  const access_token = cookieStore.get("sb-access-token")?.value;
+  const cookieToken =
+    cookieStore.get("sb-access-token")?.value ||
+    cookieStore.get("sb-access-token.0")?.value;
+  const access_token = bearerToken || cookieToken;
   if (!access_token) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }

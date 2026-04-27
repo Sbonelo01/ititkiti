@@ -4,6 +4,7 @@ import { supabase } from "@/utils/supabaseClient";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import QRScanner from "@/components/QRScanner";
+import { SERVICE_FEE_PER_TICKET } from "@/constants/pricing";
 
 interface AdminEvent {
   id: string;
@@ -172,7 +173,7 @@ export default function AdminDashboard() {
               <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                 {events.map((event) => {
                   const sold = ticketCounts[event.id] || 0;
-                  const revenue = event.price * sold + 3 * sold;
+                  const revenue = event.price * sold + SERVICE_FEE_PER_TICKET * sold;
                   return (
                     <div
                       key={event.id}

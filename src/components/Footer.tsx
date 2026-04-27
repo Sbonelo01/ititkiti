@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import Image from "next/image";
-// import Toast from "./";
+import { FormEvent, useState } from "react";
 import { 
   TicketIcon,
   SparklesIcon,
@@ -21,8 +21,48 @@ import {
 } from 'react-icons/fa';
 
 export default function Footer() {
+  const [email, setEmail] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [subscribeMessage, setSubscribeMessage] = useState<string | null>(null);
+  const [subscribeError, setSubscribeError] = useState<string | null>(null);
+
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleSubscribe = async (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setSubscribeMessage(null);
+    setSubscribeError(null);
+
+    if (!email.trim()) {
+      setSubscribeError("Please enter your email address.");
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const response = await fetch("https://formspree.io/f/mrgvvqel", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify({ email: email.trim() }),
+      });
+
+      if (!response.ok) {
+        setSubscribeError("Subscription failed. Please try again.");
+        return;
+      }
+
+      setSubscribeMessage("Thank you for subscribing!");
+      setEmail("");
+    } catch {
+      setSubscribeError("Unable to subscribe right now. Please try again later.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -194,20 +234,33 @@ export default function Footer() {
               <p className="text-gray-300 mb-6">
                 Get the latest updates on events, exclusive offers, and platform features delivered to your inbox.
               </p>
-              <div className="flex flex-col sm:flex-row gap-3 max-w-md mx-auto">
-                {/* <form onSubmit={(e) => {e.preventDefault()}} action="https://formspree.io/f/mrgvvqel"
-                method="POST"> */}
+              <form onSubmit={handleSubscribe} className="max-w-md mx-auto">
+                <div className="flex flex-col sm:flex-row gap-3">
                   <input
                     id="email"
+                    name="email"
                     type="email"
                     placeholder="Enter your email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
                     className="flex-1 px-4 py-3 bg-gray-800 text-white rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 border border-gray-700 placeholder-gray-400"
                   />
-                  <button type="submit" className="bg-gradient-to-r from-green-500 to-green-600 text-white px-6 py-3 rounded-xl font-semibold hover:from-green-600 hover:to-green-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105">
-                    Subscribe
+                  <button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="bg-gradient-to-r from-green-500 to-green-600 text-white px-6 py-3 rounded-xl font-semibold hover:from-green-600 hover:to-green-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 disabled:opacity-60 disabled:cursor-not-allowed disabled:transform-none"
+                  >
+                    {isSubmitting ? "Subscribing..." : "Subscribe"}
                   </button>
-                {/* </form> */}
-              </div>
+                </div>
+                {subscribeMessage && (
+                  <p className="mt-3 text-sm text-green-400">{subscribeMessage}</p>
+                )}
+                {subscribeError && (
+                  <p className="mt-3 text-sm text-red-400">{subscribeError}</p>
+                )}
+              </form>
             </div>
           </div>
         </div>

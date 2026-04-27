@@ -1,12 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+import { applyRateLimit } from "@/utils/rateLimit";
+import { finalizePurchaseAtomic } from "@/server/payments/finalizePurchase";
 
 export async function POST(req: NextRequest) {
+  const rateLimited = applyRateLimit(req, {
+    keyPrefix: "purchase-tickets",
+    windowMs: 60_000,
+    maxRequests: 15,
+  });
+  if (rateLimited) return rateLimited;
+
   try {
     const { reference, eventId, ticketSelections, quantity, user: ticketUser } = await req.json();
     
@@ -37,137 +40,27 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Payment verification failed", details: verifyData }, { status: 400 });
     }
 
-    // 2. Handle ticket types if using new format
-    if (isNewFormat) {
-      // Validate and decrement ticket types
-      for (const selection of ticketSelections) {
-        const { ticketTypeId, quantity: qty } = selection;
-        
-        // Get ticket type info
-        const { data: ticketType, error: ticketTypeError } = await supabase
-          .from('ticket_types')
-          .select('available_quantity, quantity')
-          .eq('id', ticketTypeId)
-          .single();
-        
-        if (ticketTypeError || !ticketType) {
-          return NextResponse.json({ error: `Ticket type ${ticketTypeId} not found` }, { status: 404 });
-        }
-        
-        if (ticketType.available_quantity < qty) {
-          return NextResponse.json({ 
-            error: `Not enough tickets available for ticket type ${ticketTypeId}` 
-          }, { status: 400 });
-        }
-        
-        // Decrement available quantity
-        const { error: updateError } = await supabase
-          .from('ticket_types')
-          .update({ available_quantity: ticketType.available_quantity - qty })
-          .eq('id', ticketTypeId);
-        
-        if (updateError) {
-          return NextResponse.json({ error: "Failed to update ticket availability" }, { status: 500 });
-        }
-      }
-      
-      // Update event total_tickets for backward compatibility
-      const totalQuantity = ticketSelections.reduce(
-        (sum: number, sel: { quantity: number }) => sum + sel.quantity,
-        0
-      );
-      const { data: event } = await supabase
-        .from('events')
-        .select('total_tickets')
-        .eq('id', eventId)
-        .single();
-      
-      if (event) {
-        await supabase
-          .from('events')
-          .update({ total_tickets: event.total_tickets - totalQuantity })
-          .eq('id', eventId);
-      }
-      
-      // 3. Create ticket records with ticket type information
-      const tickets = [];
-      let ticketIndex = 0;
-      for (const selection of ticketSelections) {
-        const { ticketTypeId, quantity: qty } = selection;
-        for (let i = 0; i < qty; i++) {
-          tickets.push({
-            event_id: eventId,
-            ticket_type_id: ticketTypeId,
-            attendee_name: ticketUser.name || ticketUser.email?.split('@')[0] || 'Attendee',
-            email: ticketUser.email,
-            qr_code_data: `TICKET-${eventId}-${ticketUser.userId}-${Date.now()}-${ticketIndex}`,
-            used: false,
-            payment_status: 'paid',
-            created_at: new Date().toISOString(),
-            paystack_reference: reference,
-          });
-          ticketIndex++;
-        }
-      }
-      
-      const { error: ticketError } = await supabase
-        .from('tickets')
-        .insert(tickets);
-      
-      if (ticketError) {
-        return NextResponse.json({ error: "Failed to create tickets" }, { status: 500 });
-      }
-    } else {
-      // Old format - backward compatibility
-      const { data: event, error: eventError } = await supabase
-        .from('events')
-        .select('total_tickets, price')
-        .eq('id', eventId)
-        .single();
-      
-      if (eventError || !event) {
-        return NextResponse.json({ error: "Event not found" }, { status: 404 });
-      }
-      
-      if (event.total_tickets < quantity) {
-        return NextResponse.json({ error: "Not enough tickets available" }, { status: 400 });
-      }
-      
-      // Decrement tickets
-      const { error: updateError } = await supabase
-        .from('events')
-        .update({ total_tickets: event.total_tickets - quantity })
-        .eq('id', eventId);
-      
-      if (updateError) {
-        return NextResponse.json({ error: "Failed to decrement tickets" }, { status: 500 });
-      }
-      
-      // Create ticket records (old format - no ticket_type_id)
-      const tickets = [];
-      for (let i = 0; i < quantity; i++) {
-        tickets.push({
-          event_id: eventId,
-          attendee_name: ticketUser.name || ticketUser.email?.split('@')[0] || 'Attendee',
-          email: ticketUser.email,
-          qr_code_data: `TICKET-${eventId}-${ticketUser.userId}-${Date.now()}-${i}`,
-          used: false,
-          payment_status: 'paid',
-          created_at: new Date().toISOString(),
-          paystack_reference: reference,
-        });
-      }
-      
-      const { error: ticketError } = await supabase
-        .from('tickets')
-        .insert(tickets);
-      
-      if (ticketError) {
-        return NextResponse.json({ error: "Failed to create tickets" }, { status: 500 });
-      }
+    const finalized = await finalizePurchaseAtomic({
+      reference,
+      eventId,
+      ticketSelections: isNewFormat ? ticketSelections : undefined,
+      quantity: !isNewFormat ? quantity : undefined,
+      ticketUser: {
+        email: ticketUser.email,
+        name: ticketUser.name,
+        userId: ticketUser.userId,
+      },
+    });
+
+    if (!finalized.success) {
+      return NextResponse.json({ error: finalized.error || "Failed to finalize purchase" }, { status: finalized.status || 500 });
     }
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json({
+      success: true,
+      alreadyProcessed: finalized.alreadyProcessed || false,
+      createdTickets: finalized.createdTickets || 0,
+    });
   } catch (error) {
     return NextResponse.json({ error: "Internal server error", details: error }, { status: 500 });
   }

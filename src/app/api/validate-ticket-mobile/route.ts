@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { applyRateLimit } from "@/utils/rateLimit";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -7,6 +8,13 @@ const supabase = createClient(
 );
 
 export async function POST(req: NextRequest) {
+  const rateLimited = applyRateLimit(req, {
+    keyPrefix: "validate-ticket-mobile",
+    windowMs: 60_000,
+    maxRequests: 120,
+  });
+  if (rateLimited) return rateLimited;
+
   try {
     const { qr_code_data, api_key } = await req.json();
     

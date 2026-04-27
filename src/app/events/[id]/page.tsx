@@ -7,6 +7,7 @@ import { User } from "@supabase/supabase-js";
 import Image from "next/image";
 import { CalendarIcon, MapPinIcon, TicketIcon, ClockIcon } from '@heroicons/react/24/outline';
 import PaystackPaymentButton from "@/components/PaystackButton";
+import { SERVICE_FEE_PER_TICKET } from "@/constants/pricing";
 
 interface Event {
   id: string;
@@ -234,13 +235,10 @@ export default function EventDetail() {
     return `R${price.toFixed(2)}`;
   };
 
-  // Service fee constants
-  const SERVICE_FEE_FIXED = 10;
-
   // Calculate service fee and total
   const totalQuantity = getTotalQuantity();
   const subtotal = getTotalPrice();
-  const serviceFee = SERVICE_FEE_FIXED * totalQuantity;
+  const serviceFee = SERVICE_FEE_PER_TICKET * totalQuantity;
   const totalWithFee = subtotal + serviceFee;
 
   if (loading) {
@@ -561,6 +559,13 @@ export default function EventDetail() {
               metadata={{
                 event_id: eventId,
                 event_title: event?.title || "Event",
+                ticket_selections: Object.entries(ticketSelections)
+                  .filter(([, qty]) => qty > 0)
+                  .map(([ticketTypeId, qty]) => ({ ticketTypeId, quantity: qty })),
+                quantity: totalQuantity,
+                buyer_id: user?.id || null,
+                buyer_name: user?.user_metadata?.full_name || user?.email?.split("@")[0] || "Attendee",
+                email: user?.email || null,
                 custom_fields: [
                   {
                     display_name: "Event ID",
