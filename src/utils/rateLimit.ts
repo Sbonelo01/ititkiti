@@ -13,6 +13,11 @@ type Bucket = {
 
 const buckets = new Map<string, Bucket>();
 
+/** Clears in-memory buckets (for tests and dev resets only). */
+export function resetRateLimitBucketsForTests(): void {
+  buckets.clear();
+}
+
 function getClientIp(req: NextRequest): string {
   const forwardedFor = req.headers.get("x-forwarded-for");
   if (forwardedFor) {
