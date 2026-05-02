@@ -7,7 +7,7 @@ export default function ContactPage() {
           We are here to help with platform support, event setup, and ticketing questions.
         </p>
         <div className="bg-white rounded-2xl shadow-md p-6 space-y-3 text-gray-700">
-          <p><span className="font-semibold">Email:</span> sbonelo.mkhize@funzile.com</p>
+          <p><span className="font-semibold">Email:</span> info@tikiti.fun</p>
           <p><span className="font-semibold">Phone:</span> +27 61 069 2364</p>
           <p><span className="font-semibold">Location:</span> Durban, South Africa</p>
         </div>

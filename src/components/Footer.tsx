@@ -199,7 +199,7 @@ export default function Footer() {
                 </div>
                 <div className="flex items-center gap-3 text-gray-300">
                   <EnvelopeIcon className="h-5 w-5 text-green-400 flex-shrink-0" />
-                  <span className="text-sm">sbonelo.mkhize@funzile.com</span>
+                  <span className="text-sm">info@tikiti.fun</span>
                 </div>
               </div>
 
