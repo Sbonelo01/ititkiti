@@ -12,6 +12,7 @@ import {
   CreditCardIcon,
   UserGroupIcon
 } from '@heroicons/react/24/outline';
+import { AuthPageSkeleton } from "@/components/AppLoadingSkeleton";
 
 function LoginForm() {
   const [isLogin, setIsLogin] = useState(true);
@@ -621,14 +622,7 @@ function LoginForm() {
 
 export default function Login() {
   return (
-    <Suspense fallback={
-      <div className="min-h-screen bg-gradient-to-br from-green-50 to-white flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-4 border-green-200 border-t-green-500 mx-auto mb-4"></div>
-          <p className="text-lg text-gray-600 font-medium">Loading...</p>
-        </div>
-      </div>
-    }>
+    <Suspense fallback={<AuthPageSkeleton />}>
       <LoginForm />
     </Suspense>
   );

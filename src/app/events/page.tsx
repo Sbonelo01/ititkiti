@@ -12,6 +12,7 @@ import {
   UserIcon,
   PlayIcon
 } from '@heroicons/react/24/outline';
+import { EventsPageSkeleton } from "@/components/AppLoadingSkeleton";
 
 interface Event {
   id: string;
@@ -111,14 +112,7 @@ export default function EventsPage() {
   };
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-green-50 to-white flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-4 border-green-200 border-t-green-500 mx-auto mb-4"></div>
-          <p className="text-lg text-gray-600 font-medium">Loading events...</p>
-        </div>
-      </div>
-    );
+    return <EventsPageSkeleton />;
   }
 
   return (
