@@ -8,15 +8,14 @@ When you receive a payment in Paystack, there are several ways to identify which
 
 The Paystack reference follows this format:
 ```
-EVT-{eventId}-{userId}-{timestamp}-{random}
+EVT_{eventId}_{userId}_{timestamp}_{random}
 ```
 
-**Example:** `EVT-abc123-def456-1704067200000-1234`
+**Example:** `EVT_550e8400-e29b-41d4-a716-446655440000_6ba7b810-9dad-11d1-80b4-00c04fd430c8_1704067200000_1234`
 
-To extract the event ID:
-1. Split the reference by `-`
-2. The event ID is the **second part** (index 1)
-3. In the example above: `abc123` is the event ID
+Legacy references used hyphens (`EVT-{eventId}-...`); UUID event IDs are parsed correctly in both formats.
+
+To extract the event ID programmatically, use `extractEventIdFromReference()` in `src/utils/paystackChargeMetadata.ts` or read `metadata.event_id` from Paystack (preferred).
 
 ### Method 2: Check Paystack Metadata
 
@@ -29,10 +28,11 @@ You can see this in your Paystack dashboard under the transaction details.
 
 ### Method 3: Use the Payment Lookup API
 
-Query the database using the reference:
+Requires a Bearer token. Allowed callers: purchaser (email match), event organizer, or staff/admin.
 
 ```bash
-GET /api/payment-lookup?reference=EVT-xxx-xxx-xxx
+GET /api/payment-lookup?reference=EVT_xxx
+Authorization: Bearer <access_token>
 ```
 
 **Response:**
@@ -62,17 +62,13 @@ GET /api/payment-lookup?reference=EVT-xxx-xxx-xxx
 
 ### Method 4: Query Database Directly
 
-You can also query the `tickets` table directly:
+Idempotency and lookup use `payment_receipts.reference` (not `tickets.paystack_reference`):
 
 ```sql
-SELECT 
-  t.*,
-  e.title as event_title,
-  e.date as event_date,
-  e.location as event_location
-FROM tickets t
-JOIN events e ON t.event_id = e.id
-WHERE t.paystack_reference = 'EVT-xxx-xxx-xxx';
+SELECT pr.*, e.title AS event_title
+FROM payment_receipts pr
+JOIN events e ON e.id = pr.event_id
+WHERE pr.reference = 'EVT_550e8400-e29b-41d4-a716-446655440000_...';
 ```
 
 ### Method 5: Check Paystack Webhook Data
