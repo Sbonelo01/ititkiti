@@ -11,8 +11,9 @@ const roboto = Roboto({
 });
 
 export const metadata: Metadata = {
-  title: "Tikiti - Your Event Companion",
-  description: "Discover, create, and manage events with ease.",
+  title: "Tikiti — Paperless Event Ticketing",
+  description:
+    "Green, innovative, paperless ticketing for South Africa. Digital QR tickets, secure payments, and a free scanner app for event organizers on iOS and Android.",
   icons: {
     icon: "/tikiti-logo.png",
     apple: "/tikiti-logo.png",

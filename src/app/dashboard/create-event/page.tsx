@@ -4,8 +4,9 @@ import { useRouter } from "next/navigation";
 import { supabase } from "@/utils/supabaseClient";
 import { User } from "@supabase/supabase-js";
 import Image from "next/image";
+import OrganizerAppPromo from "@/components/OrganizerAppPromo";
 import { 
-  CalendarIcon, 
+  CalendarIcon,
   ArrowLeftIcon,
   PlusIcon,
   CheckCircleIcon,
@@ -369,9 +370,15 @@ export default function CreateEvent() {
               </span>
             </h1>
             <p className="text-xl text-white/90 max-w-2xl mx-auto">
-              Bring your vision to life and start selling tickets to your next big event.
+              Paperless from day one — sell digital tickets and check in guests with the Tikiti Scanner app.
             </p>
           </div>
+        </div>
+      </section>
+
+      <section className="pb-8">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+          <OrganizerAppPromo variant="banner" />
         </div>
       </section>
 

@@ -12,11 +12,15 @@ import {
   PlayIcon,
   StarIcon,
   UserGroupIcon,
-  SparklesIcon,
   ShieldCheckIcon,
-  CreditCardIcon
+  CreditCardIcon,
+  GlobeAmericasIcon,
+  QrCodeIcon,
+  DevicePhoneMobileIcon
 } from '@heroicons/react/24/outline';
 import { HomePageSkeleton } from "@/components/AppLoadingSkeleton";
+import OrganizerAppPromo from "@/components/OrganizerAppPromo";
+import { BRAND } from "@/constants/branding";
 
 interface Event {
   id: string;
@@ -135,23 +139,22 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <div className="text-center">
             <div className="flex items-center justify-center mb-6">
-              <SparklesIcon className="h-8 w-8 text-yellow-300 mr-3" />
+              <GlobeAmericasIcon className="h-8 w-8 text-emerald-300 mr-3" aria-hidden />
               <span className="bg-white/20 backdrop-blur-sm text-white px-4 py-2 rounded-full text-sm font-semibold">
-                #1 Ticket Platform in South Africa
+                Paperless · Eco-friendly · Innovative
               </span>
-              <SparklesIcon className="h-8 w-8 text-yellow-300 ml-3" />
+              <GlobeAmericasIcon className="h-8 w-8 text-emerald-300 ml-3" aria-hidden />
             </div>
             
             <h1 className="text-6xl md:text-7xl font-bold text-white mb-6 leading-tight">
-              Discover Amazing
-              <span className="block text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 to-orange-300">
-                Events Near You
+              Events without
+              <span className="block text-transparent bg-clip-text bg-gradient-to-r from-emerald-200 to-lime-200">
+                the paper waste
               </span>
             </h1>
             
             <p className="text-xl md:text-2xl text-white/90 mb-8 max-w-3xl mx-auto">
-              Buy and sell tickets for the best events, concerts, sports, and entertainment. 
-              Secure, instant, and hassle-free ticketing experience.
+              {BRAND.ecoDescription} Buy, sell, and scan tickets digitally — secure, instant, and better for the planet.
             </p>
             
             <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
@@ -174,16 +177,16 @@ export default function Home() {
             {/* Stats */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto">
               <div className="text-center">
-                <div className="text-4xl font-bold text-white mb-2">50+</div>
-                <div className="text-white/80">Events Created</div>
+                <div className="text-4xl font-bold text-white mb-2">100%</div>
+                <div className="text-white/80">Paperless tickets</div>
               </div>
               <div className="text-center">
-                <div className="text-4xl font-bold text-white mb-2">70+</div>
-                <div className="text-white/80">Tickets Sold</div>
+                <div className="text-4xl font-bold text-white mb-2">0</div>
+                <div className="text-white/80">Printed stubs at the door</div>
               </div>
               <div className="text-center">
-                <div className="text-4xl font-bold text-white mb-2">99.9%</div>
-                <div className="text-white/80">Secure Transactions</div>
+                <div className="text-4xl font-bold text-white mb-2">1 scan</div>
+                <div className="text-white/80">Instant QR check-in</div>
               </div>
             </div>
           </div>
@@ -195,21 +198,51 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold text-gray-800 mb-4">
-              Why Choose Tikiti?
+              {BRAND.ecoHeadline}
             </h2>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              The most trusted platform for buying and selling event tickets with unmatched security and convenience.
+              Tikiti is built for modern, sustainable events — digital tickets, mobile check-in, and zero paper at the gate.
             </p>
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             <div className="bg-gradient-to-br from-green-50 to-white p-8 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105">
+              <div className="bg-green-600 w-16 h-16 rounded-2xl flex items-center justify-center mb-6">
+                <GlobeAmericasIcon className="h-8 w-8 text-white" />
+              </div>
+              <h3 className="text-xl font-bold text-gray-800 mb-4">Zero paper tickets</h3>
+              <p className="text-gray-600">
+                Every ticket lives on your phone as a QR code. No printing, no envelopes, no landfill — just scan and go.
+              </p>
+            </div>
+            
+            <div className="bg-gradient-to-br from-green-50 to-white p-8 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105">
+              <div className="bg-green-600 w-16 h-16 rounded-2xl flex items-center justify-center mb-6">
+                <QrCodeIcon className="h-8 w-8 text-white" />
+              </div>
+              <h3 className="text-xl font-bold text-gray-800 mb-4">Instant digital delivery</h3>
+              <p className="text-gray-600">
+                Attendees receive tickets immediately after payment. Secure QR codes stored in their dashboard — no waiting, no post.
+              </p>
+            </div>
+            
+            <div className="bg-gradient-to-br from-green-50 to-white p-8 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105">
+              <div className="bg-green-600 w-16 h-16 rounded-2xl flex items-center justify-center mb-6">
+                <DevicePhoneMobileIcon className="h-8 w-8 text-white" />
+              </div>
+              <h3 className="text-xl font-bold text-gray-800 mb-4">Organizer scanner app</h3>
+              <p className="text-gray-600">
+                Event organizers get the Tikiti Scanner app free — validate tickets at the door from iPhone or Android. Available on the App Store and Google Play.
+              </p>
+            </div>
+
+            <div className="bg-gradient-to-br from-green-50 to-white p-8 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105">
               <div className="bg-green-500 w-16 h-16 rounded-2xl flex items-center justify-center mb-6">
                 <ShieldCheckIcon className="h-8 w-8 text-white" />
               </div>
-              <h3 className="text-xl font-bold text-gray-800 mb-4">Secure Transactions</h3>
+              <h3 className="text-xl font-bold text-gray-800 mb-4">Secure transactions</h3>
               <p className="text-gray-600">
-                Bank-level security ensures your payments and personal information are always protected.
+                Bank-level payment security keeps every purchase protected — greener doesn&apos;t mean less safe.
               </p>
             </div>
             
@@ -217,9 +250,9 @@ export default function Home() {
               <div className="bg-green-500 w-16 h-16 rounded-2xl flex items-center justify-center mb-6">
                 <CreditCardIcon className="h-8 w-8 text-white" />
               </div>
-              <h3 className="text-xl font-bold text-gray-800 mb-4">Instant Delivery</h3>
+              <h3 className="text-xl font-bold text-gray-800 mb-4">Smart event management</h3>
               <p className="text-gray-600">
-                Get your tickets instantly via QR code, stored safely within the app. No waiting, no delays.
+                Create events, track sales, and manage ticket types from one dashboard — all without printing a single ticket.
               </p>
             </div>
             
@@ -227,9 +260,9 @@ export default function Home() {
               <div className="bg-green-500 w-16 h-16 rounded-2xl flex items-center justify-center mb-6">
                 <UserGroupIcon className="h-8 w-8 text-white" />
               </div>
-              <h3 className="text-xl font-bold text-gray-800 mb-4">Easy Management</h3>
+              <h3 className="text-xl font-bold text-gray-800 mb-4">Faster, cleaner entry</h3>
               <p className="text-gray-600">
-                Create and manage your events with our intuitive dashboard. Full control at your fingertips.
+                Shorter queues, less clutter at the gate, and a smoother experience for guests and staff alike.
               </p>
             </div>
           </div>
@@ -361,6 +394,8 @@ export default function Home() {
         </section>
       )}
 
+      <OrganizerAppPromo />
+
       {/* Testimonials Section */}
       <section className="py-20 bg-gradient-to-br from-gray-50 to-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -381,7 +416,7 @@ export default function Home() {
                 ))}
               </div>
               <p className="text-gray-600 mb-6">
-                &ldquo;Amazing platform! I sold out my concert in just 2 hours. The interface is so easy to use and the customer support is outstanding.&rdquo;
+                &ldquo;Going paperless with Tikiti was a no-brainer. We sold out fast, scanned tickets at the door with the app, and didn&apos;t print a single stub.&rdquo;
               </p>
               <div className="flex items-center">
                 <div className="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center text-white font-bold text-lg mr-4">
@@ -441,10 +476,10 @@ export default function Home() {
       <section className="py-20 bg-gradient-to-br from-green-600 to-green-700">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h2 className="text-4xl font-bold text-white mb-6">
-            Ready to Get Started?
+            Ready to run a greener event?
           </h2>
           <p className="text-xl text-white/90 mb-8 max-w-2xl mx-auto">
-            Join thousands of event organizers and attendees who trust Tikiti for their ticketing needs.
+            Create your event on Tikiti, download the scanner app, and go fully paperless from ticket sale to front door.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link

@@ -12,6 +12,8 @@ import {
   HeartIcon,
   ArrowUpIcon
 } from '@heroicons/react/24/outline';
+import AppStoreBadges from "@/components/AppStoreBadges";
+import { BRAND } from "@/constants/branding";
 import { 
   FaFacebook, 
   // FaTwitter, 
@@ -94,8 +96,12 @@ export default function Footer() {
                 </div>
               </Link>
               <p className="text-gray-300 mb-6 leading-relaxed">
-                The #1 ticket platform in South Africa. Discover amazing events, create unforgettable experiences, and connect with people who share your passions.
+                {BRAND.tagline}. Discover events, sell digital tickets, and check in guests paperlessly — good for your crowd, great for the environment.
               </p>
+              <div className="mb-6">
+                <p className="text-sm font-semibold text-green-400 mb-3">Tikiti Scanner — for organizers</p>
+                <AppStoreBadges layout="column" className="items-start" />
+              </div>
               <div className="flex items-center gap-2 text-gray-400">
                 <SparklesIcon className="h-5 w-5 text-yellow-400" />
                 <span className="text-sm">Powered by <a href="https://funzile.com" target="_blank" className="text-green-400 hover:text-green-300 transition-all duration-200">Funzile</a></span>
