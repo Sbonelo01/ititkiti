@@ -3,27 +3,14 @@ import { NextRequest, NextResponse } from "next/server";
 import { applyRateLimit } from "@/utils/rateLimit";
 import { finalizePurchaseAtomic } from "@/server/payments/finalizePurchase";
 import {
-  extractEventIdFromReference,
-  normalizePaystackTicketSelections,
-} from "@/utils/paystackChargeMetadata";
+  resolvePurchaseFromWebhookCharge,
+  type PaystackChargeData,
+} from "@/server/payments/verifyPaystackCharge";
+import { computeExpectedAmountKobo } from "@/utils/paystackChargeMetadata";
 
 type PaystackChargeSuccessPayload = {
   event?: string;
-  data?: {
-    reference?: string;
-    metadata?: {
-      event_id?: string;
-      ticket_selections?: unknown;
-      quantity?: number;
-      buyer_id?: string;
-      buyer_name?: string;
-      email?: string;
-    };
-    customer?: {
-      email?: string;
-      name?: string;
-    };
-  };
+  data?: PaystackChargeData;
 };
 
 export async function POST(req: NextRequest) {
@@ -58,34 +45,43 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ success: true, ignored: true });
   }
 
-  const chargeData = payload?.data || {};
-  const reference = chargeData?.reference;
-  const metadata = chargeData?.metadata || {};
-  const eventId = metadata?.event_id || extractEventIdFromReference(reference || "");
-  const ticketSelections = normalizePaystackTicketSelections(metadata?.ticket_selections);
-  const quantity = Number(metadata?.quantity || 0);
-  const customerEmail = chargeData?.customer?.email || metadata?.email;
+  const chargeData = payload?.data;
+  const resolved = chargeData ? resolvePurchaseFromWebhookCharge(chargeData) : null;
 
-  if (!reference || !eventId || !customerEmail) {
+  if (!resolved?.reference || !resolved.eventId || !resolved.ticketUser?.email) {
     return NextResponse.json({ error: "Missing required payment metadata" }, { status: 400 });
   }
 
-  const ticketUser = {
-    email: customerEmail,
-    name: metadata?.buyer_name || chargeData?.customer?.name || customerEmail.split("@")[0],
-    userId: metadata?.buyer_id || undefined,
-  };
+  const expected = await computeExpectedAmountKobo(
+    resolved.eventId,
+    resolved.ticketSelections,
+    resolved.quantity
+  );
+
+  if ("error" in expected) {
+    return NextResponse.json({ error: expected.error }, { status: expected.status });
+  }
+
+  const paidAmount = Number(chargeData?.amount);
+  const paidCurrency = (chargeData?.currency || "ZAR").toUpperCase();
+
+  if (paidCurrency !== expected.currency || !Number.isFinite(paidAmount) || paidAmount < expected.amountKobo) {
+    return NextResponse.json({ error: "Payment amount does not match ticket total" }, { status: 400 });
+  }
 
   const finalized = await finalizePurchaseAtomic({
-    reference,
-    eventId,
-    ticketSelections: ticketSelections.length > 0 ? ticketSelections : undefined,
-    quantity: ticketSelections.length > 0 ? undefined : quantity || undefined,
-    ticketUser,
+    reference: resolved.reference,
+    eventId: resolved.eventId,
+    ticketSelections: resolved.ticketSelections,
+    quantity: resolved.quantity,
+    ticketUser: resolved.ticketUser,
   });
 
   if (!finalized.success) {
-    return NextResponse.json({ error: finalized.error || "Failed to finalize purchase" }, { status: finalized.status || 500 });
+    return NextResponse.json(
+      { error: finalized.error || "Failed to finalize purchase" },
+      { status: finalized.status || 500 }
+    );
   }
 
   return NextResponse.json({

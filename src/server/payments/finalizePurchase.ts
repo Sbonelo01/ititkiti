@@ -1,4 +1,4 @@
-import { createClient } from "@supabase/supabase-js";
+import { getSupabaseAdmin } from "@/server/supabaseAdmin";
 
 export interface TicketSelection {
   ticketTypeId: string;
@@ -25,14 +25,8 @@ type FinalizeResult = {
   createdTickets?: number;
   error?: string;
   status?: number;
-  /** Raw Postgres/PostgREST message when success is false (for debugging). */
   pgMessage?: string;
 };
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
 
 export async function finalizePurchaseAtomic(input: FinalizePurchaseInput): Promise<FinalizeResult> {
   const isNewFormat = Array.isArray(input.ticketSelections) && input.ticketSelections.length > 0;
@@ -45,6 +39,7 @@ export async function finalizePurchaseAtomic(input: FinalizePurchaseInput): Prom
     return { success: false, error: "Missing ticket selections or quantity", status: 400 };
   }
 
+  const supabase = getSupabaseAdmin();
   const { data, error } = await supabase.rpc("finalize_ticket_purchase", {
     p_reference: input.reference,
     p_event_id: input.eventId,
@@ -84,7 +79,6 @@ export async function finalizePurchaseAtomic(input: FinalizePurchaseInput): Prom
     return { success: false, error: "Failed to finalize purchase", status: 500, pgMessage: raw };
   }
 
-  // PostgREST may return jsonb as a parsed object or (in some cases) a JSON string.
   let result: { success?: boolean; alreadyProcessed?: boolean; createdTickets?: number } = {};
   if (data != null) {
     if (typeof data === "string") {

@@ -8,6 +8,7 @@ import Image from "next/image";
 import { CalendarIcon, MapPinIcon, TicketIcon, ClockIcon } from '@heroicons/react/24/outline';
 import PaystackPaymentButton from "@/components/PaystackButton";
 import { SERVICE_FEE_PER_TICKET } from "@/constants/pricing";
+import { buildPaystackReference } from "@/utils/paystackChargeMetadata";
 
 interface Event {
   id: string;
@@ -221,7 +222,7 @@ export default function EventDetail() {
     }
 
     // Instead of proceeding, trigger Paystack payment
-    setPaystackReference(`EVT-${eventId}-${user.id}-${Date.now()}-${Math.floor(Math.random() * 10000)}`);
+    setPaystackReference(buildPaystackReference(eventId, user.id));
     setShowPaystack(true);
     setPurchaseError(null);
   };
@@ -628,7 +629,7 @@ export default function EventDetail() {
         </div>
       </div>
       {showPaystack && paystackReference && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-grey bg-opacity-30">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/30">
           <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full mx-4 relative flex flex-col items-center">
             <button
               className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors"
@@ -674,7 +675,7 @@ export default function EventDetail() {
         </div>
       )}
       {verifyingPayment && (
-        <div className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 border-t border-green-200 shadow-lg py-4 px-4 text-center">
+        <div className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 border-t border-green-200 shadow-lg py-4 px-4 text-center" role="status" aria-live="polite">
           <p className="text-green-800 font-medium">Confirming your payment and issuing your tickets…</p>
           <p className="text-gray-600 text-sm mt-1">This usually takes a few seconds.</p>
         </div>

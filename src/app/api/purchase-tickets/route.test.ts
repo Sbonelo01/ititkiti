@@ -1,27 +1,25 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import { NextRequest } from "next/server";
 import { POST } from "./route";
 import { finalizePurchaseAtomic } from "@/server/payments/finalizePurchase";
+import { resolveAndVerifyPurchase } from "@/server/payments/verifyPaystackCharge";
 import { resetRateLimitBucketsForTests } from "@/utils/rateLimit";
 
 vi.mock("@/server/payments/finalizePurchase", () => ({
   finalizePurchaseAtomic: vi.fn(),
 }));
 
-describe("POST /api/purchase-tickets", () => {
-  const originalFetch = global.fetch;
+vi.mock("@/server/payments/verifyPaystackCharge", () => ({
+  resolveAndVerifyPurchase: vi.fn(),
+}));
 
+const EVENT_ID = "550e8400-e29b-41d4-a716-446655440000";
+
+describe("POST /api/purchase-tickets", () => {
   beforeEach(() => {
     resetRateLimitBucketsForTests();
-    process.env.PAYSTACK_SECRET_KEY = "sk_test_xxx";
     vi.mocked(finalizePurchaseAtomic).mockReset();
-    global.fetch = vi.fn().mockResolvedValue({
-      json: async () => ({ status: true, data: { status: "success" } }),
-    });
-  });
-
-  afterEach(() => {
-    global.fetch = originalFetch;
+    vi.mocked(resolveAndVerifyPurchase).mockReset();
   });
 
   function jsonPost(body: unknown, ip = "198.51.100.1") {
@@ -38,47 +36,48 @@ describe("POST /api/purchase-tickets", () => {
   it("returns 400 when reference is missing", async () => {
     const res = await POST(
       jsonPost({
-        eventId: "ev",
+        eventId: EVENT_ID,
         quantity: 1,
         user: { email: "a@b.com" },
       })
     );
     expect(res.status).toBe(400);
-    expect(global.fetch).not.toHaveBeenCalled();
+    expect(resolveAndVerifyPurchase).not.toHaveBeenCalled();
+  });
+
+  it("returns 400 when event id is not a uuid", async () => {
+    const res = await POST(
+      jsonPost({
+        reference: "R1",
+        eventId: "not-a-uuid",
+        quantity: 1,
+        user: { email: "a@b.com" },
+      })
+    );
+    expect(res.status).toBe(400);
   });
 
   it("returns 400 when quantity and ticketSelections are missing", async () => {
     const res = await POST(
       jsonPost({
         reference: "R1",
-        eventId: "ev",
+        eventId: EVENT_ID,
         user: { email: "a@b.com" },
       })
     );
     expect(res.status).toBe(400);
   });
 
-  it("returns 500 when Paystack secret is not configured", async () => {
-    delete process.env.PAYSTACK_SECRET_KEY;
-    const res = await POST(
-      jsonPost({
-        reference: "R1",
-        eventId: "ev",
-        quantity: 1,
-        user: { email: "a@b.com" },
-      })
-    );
-    expect(res.status).toBe(500);
-  });
-
-  it("returns 400 when Paystack verify reports failure", async () => {
-    global.fetch = vi.fn().mockResolvedValue({
-      json: async () => ({ status: false, data: { status: "failed" } }),
+  it("returns error when payment verification fails", async () => {
+    vi.mocked(resolveAndVerifyPurchase).mockResolvedValue({
+      ok: false,
+      error: "Payment verification failed",
+      status: 400,
     });
     const res = await POST(
       jsonPost({
         reference: "R1",
-        eventId: "ev",
+        eventId: EVENT_ID,
         quantity: 1,
         user: { email: "a@b.com" },
       })
@@ -87,7 +86,17 @@ describe("POST /api/purchase-tickets", () => {
     expect(finalizePurchaseAtomic).not.toHaveBeenCalled();
   });
 
-  it("calls finalizePurchaseAtomic after successful verify", async () => {
+  it("calls finalizePurchaseAtomic after successful verification", async () => {
+    vi.mocked(resolveAndVerifyPurchase).mockResolvedValue({
+      ok: true,
+      charge: {},
+      purchase: {
+        reference: "R1",
+        eventId: EVENT_ID,
+        quantity: 2,
+        ticketUser: { email: "a@b.com", name: "Ann" },
+      },
+    });
     vi.mocked(finalizePurchaseAtomic).mockResolvedValue({
       success: true,
       createdTickets: 1,
@@ -95,7 +104,7 @@ describe("POST /api/purchase-tickets", () => {
     const res = await POST(
       jsonPost({
         reference: "R1",
-        eventId: "ev-1",
+        eventId: EVENT_ID,
         quantity: 2,
         user: { email: "a@b.com", name: "Ann" },
       })
@@ -104,32 +113,28 @@ describe("POST /api/purchase-tickets", () => {
     expect(finalizePurchaseAtomic).toHaveBeenCalledWith(
       expect.objectContaining({
         reference: "R1",
-        eventId: "ev-1",
+        eventId: EVENT_ID,
         quantity: 2,
-        ticketUser: { email: "a@b.com", name: "Ann", userId: undefined },
+        ticketUser: { email: "a@b.com", name: "Ann" },
       })
     );
   });
 
-  it("maps only-default ticketSelections to summed quantity", async () => {
-    vi.mocked(finalizePurchaseAtomic).mockResolvedValue({ success: true });
+  it("rejects underpaid charges from verifier", async () => {
+    vi.mocked(resolveAndVerifyPurchase).mockResolvedValue({
+      ok: false,
+      error: "Payment amount does not match ticket total",
+      status: 400,
+    });
     const res = await POST(
       jsonPost({
         reference: "R2",
-        eventId: "ev-2",
-        ticketSelections: [
-          { ticketTypeId: "default", quantity: 2 },
-          { ticketTypeId: "default", quantity: 1 },
-        ],
+        eventId: EVENT_ID,
+        quantity: 3,
         user: { email: "a@b.com" },
       })
     );
-    expect(res.status).toBe(200);
-    expect(finalizePurchaseAtomic).toHaveBeenCalledWith(
-      expect.objectContaining({
-        quantity: 3,
-        ticketSelections: undefined,
-      })
-    );
+    expect(res.status).toBe(400);
+    expect(finalizePurchaseAtomic).not.toHaveBeenCalled();
   });
 });

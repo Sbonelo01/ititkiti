@@ -1,10 +1,5 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+import { getSupabaseAdmin } from "@/server/supabaseAdmin";
 
 function isMissingFunctionError(message: string): boolean {
   const normalized = message.toLowerCase();
@@ -12,12 +7,12 @@ function isMissingFunctionError(message: string): boolean {
 }
 
 export async function GET() {
+  // Paystack signs webhooks with the secret key; either env var is acceptable.
   const webhookSecretConfigured = Boolean(
     process.env.PAYSTACK_WEBHOOK_SECRET || process.env.PAYSTACK_SECRET_KEY
   );
 
-  // Non-destructive RPC probe: deliberately invalid args should fail with
-  // a business validation error when function exists, or missing function error otherwise.
+  const supabase = getSupabaseAdmin();
   const { error } = await supabase.rpc("finalize_ticket_purchase", {
     p_reference: null,
     p_event_id: null,
@@ -35,9 +30,6 @@ export async function GET() {
       checks: {
         webhookSecretConfigured,
         rpcFunctionAvailable,
-      },
-      details: {
-        rpcProbeError: error?.message || null,
       },
     },
     { status: healthy ? 200 : 503 }

@@ -1,6 +1,27 @@
 import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
 import { applyRateLimit } from "@/utils/rateLimit";
 import { finalizePurchaseAtomic } from "@/server/payments/finalizePurchase";
+import { resolveAndVerifyPurchase } from "@/server/payments/verifyPaystackCharge";
+
+const purchaseSchema = z.object({
+  reference: z.string().min(1),
+  eventId: z.string().uuid(),
+  ticketSelections: z
+    .array(
+      z.object({
+        ticketTypeId: z.string().min(1),
+        quantity: z.number().int().positive(),
+      })
+    )
+    .optional(),
+  quantity: z.number().int().positive().optional(),
+  user: z.object({
+    email: z.string().email(),
+    name: z.string().optional(),
+    userId: z.string().optional(),
+  }),
+});
 
 export async function POST(req: NextRequest) {
   const rateLimited = applyRateLimit(req, {
@@ -11,63 +32,31 @@ export async function POST(req: NextRequest) {
   if (rateLimited) return rateLimited;
 
   try {
-    const { reference, eventId, ticketSelections, quantity, user: ticketUser } = await req.json();
-    
-    // Support both new format (ticketSelections) and old format (quantity) for backward compatibility
-    // Synthetic "default" from the client is not a real ticket_types id (invalid UUID) — use legacy path.
-    let normalizedSelections = ticketSelections;
-    let normalizedQuantity = quantity;
-    if (Array.isArray(ticketSelections) && ticketSelections.length > 0) {
-      const onlyDefault = ticketSelections.every(
-        (s: { ticketTypeId?: string }) => s?.ticketTypeId === "default"
-      );
-      if (onlyDefault) {
-        const sum = ticketSelections.reduce(
-          (acc: number, s: { quantity?: number }) => acc + (Number(s?.quantity) || 0),
-          0
-        );
-        normalizedSelections = undefined;
-        normalizedQuantity = sum;
-      }
+    const body = await req.json();
+    const parsed = purchaseSchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
     }
 
-    const isNewFormat = normalizedSelections && Array.isArray(normalizedSelections) && normalizedSelections.length > 0;
-    
-    if (!reference || !eventId || !ticketUser) {
-      return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
-    }
+    const { reference, eventId, ticketSelections, quantity, user } = parsed.data;
 
-    if (!isNewFormat && !normalizedQuantity) {
+    if ((!ticketSelections || ticketSelections.length === 0) && !quantity) {
       return NextResponse.json({ error: "Missing ticket selections or quantity" }, { status: 400 });
     }
 
-    // 1. Verify payment with Paystack
-    const PAYSTACK_SECRET_KEY = process.env.PAYSTACK_SECRET_KEY;
-    if (!PAYSTACK_SECRET_KEY) {
-      return NextResponse.json({ error: "Server misconfiguration" }, { status: 500 });
-    }
-    const verifyRes = await fetch(`https://api.paystack.co/transaction/verify/${reference}`, {
-      headers: {
-        Authorization: `Bearer ${PAYSTACK_SECRET_KEY}`,
-        "Content-Type": "application/json",
-      },
-    });
-    const verifyData = await verifyRes.json();
-    if (!verifyData.status || verifyData.data.status !== "success") {
-      return NextResponse.json({ error: "Payment verification failed", details: verifyData }, { status: 400 });
-    }
-
-    const finalized = await finalizePurchaseAtomic({
+    const verified = await resolveAndVerifyPurchase(
       reference,
       eventId,
-      ticketSelections: isNewFormat ? normalizedSelections : undefined,
-      quantity: !isNewFormat ? normalizedQuantity : undefined,
-      ticketUser: {
-        email: ticketUser.email,
-        name: ticketUser.name,
-        userId: ticketUser.userId,
-      },
-    });
+      ticketSelections,
+      quantity,
+      user
+    );
+
+    if (!verified.ok) {
+      return NextResponse.json({ error: verified.error }, { status: verified.status });
+    }
+
+    const finalized = await finalizePurchaseAtomic(verified.purchase);
 
     if (!finalized.success) {
       return NextResponse.json(
@@ -84,7 +73,7 @@ export async function POST(req: NextRequest) {
       alreadyProcessed: finalized.alreadyProcessed || false,
       createdTickets: finalized.createdTickets || 0,
     });
-  } catch (error) {
-    return NextResponse.json({ error: "Internal server error", details: error }, { status: 500 });
+  } catch {
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
-} 
+}

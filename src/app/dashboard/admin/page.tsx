@@ -20,7 +20,7 @@ export default function AdminDashboard() {
   const [authorized, setAuthorized] = useState<boolean | null>(null);
   const router = useRouter();
   const [showScanner, setShowScanner] = useState(false);
-  const [scanResult, setScanResult] = useState<string | null>(null);
+  const [scanResult, setScanResult] = useState<{ message: string; tone: "success" | "warning" | "error" | "info" } | null>(null);
   const [validating, setValidating] = useState(false);
 
   useEffect(() => {
@@ -98,9 +98,23 @@ export default function AdminDashboard() {
       });
       const data = await res.json();
       if (data.success) {
-        setScanResult(`Ticket valid for: ${data.ticket.attendee_name} (${data.ticket.email})`);
+        setScanResult({
+          message: `Ticket valid for: ${data.ticket.attendee_name} (${data.ticket.email})`,
+          tone: "success",
+        });
+      } else if (data.status === "already_used") {
+        const name = data.ticket?.attendee_name ?? "Unknown";
+        const email = data.ticket?.email ?? "";
+        setScanResult({
+          message: `Already used — ${name}${email ? ` (${email})` : ""}`,
+          tone: "warning",
+        });
+      } else if (data.status === "not_found") {
+        setScanResult({ message: data.error || "Ticket not found", tone: "error" });
+      } else if (data.status === "unauthorized") {
+        setScanResult({ message: "You are not authorized to scan tickets", tone: "error" });
       } else {
-        setScanResult(data.error || "Invalid ticket");
+        setScanResult({ message: data.error || "Invalid ticket", tone: "error" });
       }
     } catch {
       setScanResult("Validation error. Try again.");
@@ -143,8 +157,26 @@ export default function AdminDashboard() {
                 onClose={() => setShowScanner(false)}
               />
             )}
-            {validating && <div className="mb-4 text-blue-600 font-semibold">Validating ticket...</div>}
-            {scanResult && <div className="mb-4 text-lg font-bold text-center">{scanResult}</div>}
+            {validating && (
+              <div className="mb-4 text-blue-600 font-semibold" role="status" aria-live="polite">
+                Validating ticket...
+              </div>
+            )}
+            {scanResult && (
+              <div
+                className={`mb-4 text-lg font-bold text-center ${
+                  scanResult.tone === "success"
+                    ? "text-green-700"
+                    : scanResult.tone === "warning"
+                      ? "text-amber-600"
+                      : "text-red-600"
+                }`}
+                role="status"
+                aria-live="polite"
+              >
+                {scanResult.message}
+              </div>
+            )}
           </div>
         ) : (
           // Admin view - full dashboard
@@ -162,8 +194,26 @@ export default function AdminDashboard() {
                 onClose={() => setShowScanner(false)}
               />
             )}
-            {validating && <div className="mb-4 text-blue-600 font-semibold">Validating ticket...</div>}
-            {scanResult && <div className="mb-4 text-lg font-bold text-center">{scanResult}</div>}
+            {validating && (
+              <div className="mb-4 text-blue-600 font-semibold" role="status" aria-live="polite">
+                Validating ticket...
+              </div>
+            )}
+            {scanResult && (
+              <div
+                className={`mb-4 text-lg font-bold text-center ${
+                  scanResult.tone === "success"
+                    ? "text-green-700"
+                    : scanResult.tone === "warning"
+                      ? "text-amber-600"
+                      : "text-red-600"
+                }`}
+                role="status"
+                aria-live="polite"
+              >
+                {scanResult.message}
+              </div>
+            )}
             {loading ? (
               <div className="text-center py-12">
                 <div className="animate-spin rounded-full h-12 w-12 border-4 border-green-200 border-t-green-500 mx-auto mb-4"></div>

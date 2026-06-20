@@ -1,10 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+import { applyRateLimit } from "@/utils/rateLimit";
+import { extractBearerToken, requireStaffAuth } from "@/server/auth/staffAuth";
+import { getSupabaseAdmin } from "@/server/supabaseAdmin";
+import { extractEventIdFromReference } from "@/utils/paystackChargeMetadata";
 
 type PaymentReceiptPayload = {
   quantity?: number;
@@ -12,28 +10,35 @@ type PaymentReceiptPayload = {
 };
 
 /**
- * API endpoint to look up payment information by Paystack reference
- * Looks up public.payment_receipts first (authoritative for reference); tickets may omit paystack_reference.
- *
- * Usage: GET /api/payment-lookup?reference=EVT-xxx-xxx-xxx
+ * Authenticated payment lookup by Paystack reference.
+ * Allowed: staff/admin, event organizer, or purchaser (email matches receipt).
  */
 export async function GET(req: NextRequest) {
+  const rateLimited = applyRateLimit(req, {
+    keyPrefix: "payment-lookup",
+    windowMs: 60_000,
+    maxRequests: 30,
+  });
+  if (rateLimited) return rateLimited;
+
+  const accessToken = extractBearerToken(req.headers.get("authorization"));
+  if (!accessToken) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const supabase = getSupabaseAdmin();
+  const { data: { user }, error: userError } = await supabase.auth.getUser(accessToken);
+  if (userError || !user?.email) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   try {
-    const searchParams = req.nextUrl.searchParams;
-    const reference = searchParams.get("reference");
-
+    const reference = req.nextUrl.searchParams.get("reference");
     if (!reference) {
-      return NextResponse.json(
-        { error: "Missing reference parameter" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Missing reference parameter" }, { status: 400 });
     }
 
-    const referenceParts = reference.split("-");
-    let eventIdFromReference: string | null = null;
-    if (referenceParts.length >= 2 && referenceParts[0] === "EVT") {
-      eventIdFromReference = referenceParts[1];
-    }
+    const eventIdFromReference = extractEventIdFromReference(reference);
 
     const { data: receipt, error: receiptError } = await supabase
       .from("payment_receipts")
@@ -56,22 +61,28 @@ export async function GET(req: NextRequest) {
       .maybeSingle();
 
     if (receiptError) {
-      return NextResponse.json(
-        { error: "Database error", details: receiptError.message },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: "Database error" }, { status: 500 });
     }
 
     if (!receipt) {
-      return NextResponse.json(
-        {
-          error: "Payment not found",
-          reference,
-          eventIdFromReference,
-          note: "Lookups use payment_receipts. If eventId is present in the reference, it's the part after 'EVT-'.",
-        },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "Payment not found", reference }, { status: 404 });
+    }
+
+    const event = receipt.events as unknown as {
+      id: string;
+      title: string;
+      date: string;
+      location: string;
+      organizer_id: string;
+    } | null;
+
+    const staffAuth = await requireStaffAuth(accessToken);
+    const isStaff = staffAuth.ok;
+    const isOrganizer = event?.organizer_id === user.id;
+    const isPurchaser = receipt.email?.toLowerCase() === user.email.toLowerCase();
+
+    if (!isStaff && !isOrganizer && !isPurchaser) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     const payload = (receipt.payload || {}) as PaymentReceiptPayload;
@@ -99,24 +110,13 @@ export async function GET(req: NextRequest) {
       .order("created_at", { ascending: true });
 
     if (ticketsError) {
-      return NextResponse.json(
-        { error: "Database error", details: ticketsError.message },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: "Database error" }, { status: 500 });
     }
 
     const list = relatedTickets || [];
     const first = list[0];
     const totalTickets =
       totalFromPayload && totalFromPayload > 0 ? totalFromPayload : list.length;
-
-    const event = receipt.events as unknown as {
-      id: string;
-      title: string;
-      date: string;
-      location: string;
-      organizer_id: string;
-    } | null;
 
     return NextResponse.json({
       success: true,
@@ -144,13 +144,7 @@ export async function GET(req: NextRequest) {
       totalTickets,
       source: "payment_receipts",
     });
-  } catch (error) {
-    return NextResponse.json(
-      {
-        error: "Internal server error",
-        details: error instanceof Error ? error.message : String(error),
-      },
-      { status: 500 }
-    );
+  } catch {
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
