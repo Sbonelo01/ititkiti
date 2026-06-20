@@ -117,7 +117,7 @@ export default function AdminDashboard() {
         setScanResult({ message: data.error || "Invalid ticket", tone: "error" });
       }
     } catch {
-      setScanResult("Validation error. Try again.");
+      setScanResult({ message: "Validation error. Try again.", tone: "error" });
     }
     setValidating(false);
   }
