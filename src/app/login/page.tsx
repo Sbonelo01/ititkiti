@@ -13,6 +13,7 @@ import {
   UserGroupIcon
 } from '@heroicons/react/24/outline';
 import { AuthPageSkeleton } from "@/components/AppLoadingSkeleton";
+import { CtaButton } from "@/components/ui/CtaButton";
 
 function LoginForm() {
   const [isLogin, setIsLogin] = useState(true);
@@ -35,6 +36,7 @@ function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirectTo = searchParams.get("redirect") || "/dashboard";
+  const isCheckoutRedirect = redirectTo.startsWith("/events/");
 
   // Check if user is already logged in
   useEffect(() => {
@@ -222,14 +224,21 @@ function LoginForm() {
             </div>
             
             <h1 className="text-5xl md:text-6xl font-bold text-white mb-6 leading-tight">
-              {isLogin ? "Welcome Back!" : "Join Tikiti Today"}
+              {isCheckoutRedirect
+                ? isLogin
+                  ? "Almost there!"
+                  : "Quick signup to checkout"
+                : isLogin
+                  ? "Welcome back!"
+                  : "Join Tikiti today"}
             </h1>
             
             <p className="text-xl text-white/90 mb-8 max-w-2xl mx-auto">
-              {isLogin 
-                ? "Sign in to access your events and manage your tickets"
-                : "Create your account and start discovering amazing events or organizing your own"
-              }
+              {isCheckoutRedirect
+                ? "Sign in once — your QR tickets land in your dashboard right after payment."
+                : isLogin
+                  ? "Sign in to access your events and manage your tickets"
+                  : "Create your account and start discovering amazing events or organizing your own"}
             </p>
           </div>
         </div>
@@ -248,10 +257,20 @@ function LoginForm() {
                   </div>
                 </div>
                 <h2 className="text-3xl font-bold text-gray-800 mb-2">
-                  {isLogin ? "Sign In" : "Create Account"}
+                  {isCheckoutRedirect
+                    ? isLogin
+                      ? "Sign in to buy tickets"
+                      : "Create account & buy"
+                    : isLogin
+                      ? "Sign in"
+                      : "Create account"}
                 </h2>
                 <p className="text-gray-600">
-                  {isLogin ? "Welcome back to Tikiti" : "Join thousands of event organizers and attendees"}
+                  {isCheckoutRedirect
+                    ? "Takes under a minute — then you're back to checkout."
+                    : isLogin
+                      ? "Welcome back to Tikiti"
+                      : "Join thousands of event organizers and attendees"}
                 </p>
               </div>
 
@@ -456,20 +475,23 @@ function LoginForm() {
                 )}
 
                 {/* Submit Button */}
-                <button
+                <CtaButton
                   type="submit"
                   disabled={loading}
-                  className="w-full bg-gradient-to-r from-green-500 to-green-600 text-white py-4 px-6 rounded-xl font-semibold hover:from-green-600 hover:to-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 transform hover:scale-105 shadow-lg hover:shadow-xl"
+                  variant="primary"
+                  className="w-full py-4 text-lg font-bold"
                 >
                   {loading ? (
-                    <div className="flex items-center justify-center">
-                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
-                      {isLogin ? "Signing In..." : "Creating Account..."}
-                    </div>
+                    <span className="flex items-center justify-center">
+                      <span className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2" aria-hidden />
+                      {isLogin ? "Signing in…" : "Creating account…"}
+                    </span>
+                  ) : isCheckoutRedirect ? (
+                    isLogin ? "Sign in & continue to checkout" : "Create account & continue"
                   ) : (
-                    isLogin ? "Sign In" : "Create Account"
+                    isLogin ? "Sign in" : "Create account"
                   )}
-                </button>
+                </CtaButton>
 
                 {/* Toggle between login/signup */}
                 <div className="text-center">

@@ -1,5 +1,6 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import { supabase } from "@/utils/supabaseClient";
 import Link from "next/link";
 import Image from "next/image";
@@ -13,6 +14,8 @@ import {
   PlayIcon
 } from '@heroicons/react/24/outline';
 import { EventsPageSkeleton } from "@/components/AppLoadingSkeleton";
+import AudienceSplit from "@/components/AudienceSplit";
+import { CtaLink } from "@/components/ui/CtaButton";
 
 interface Event {
   id: string;
@@ -28,6 +31,15 @@ interface Event {
 }
 
 export default function EventsPage() {
+  return (
+    <Suspense fallback={<EventsPageSkeleton />}>
+      <EventsPageContent />
+    </Suspense>
+  );
+}
+
+function EventsPageContent() {
+  const searchParams = useSearchParams();
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -37,6 +49,11 @@ export default function EventsPage() {
   useEffect(() => {
     fetchEvents();
   }, []);
+
+  useEffect(() => {
+    const q = searchParams.get("q");
+    if (q) setSearchTerm(q);
+  }, [searchParams]);
 
   // Auto-advance carousel
   useEffect(() => {
@@ -117,6 +134,28 @@ export default function EventsPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 to-white">
+      <section className="bg-gradient-to-br from-green-700 to-green-800 py-12 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto text-center">
+          <h1 className="text-3xl md:text-4xl font-bold text-white mb-2">Find your next event</h1>
+          <p className="text-green-100 mb-6 max-w-xl mx-auto">
+            Instant QR tickets after checkout — no queues, no paper.
+          </p>
+          <div className="max-w-2xl mx-auto flex flex-col sm:flex-row gap-2 rounded-2xl bg-white p-2 shadow-lg">
+            <label htmlFor="events-search" className="sr-only">Search events</label>
+            <input
+              id="events-search"
+              type="search"
+              placeholder="Search by name, city, or venue…"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="flex-1 rounded-xl border-0 px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-500"
+            />
+          </div>
+          <div className="mt-6 flex justify-center">
+            <AudienceSplit compact />
+          </div>
+        </div>
+      </section>
   
       {/* Latest Events Carousel Section */}
       {latestEvents.length > 0 && (
@@ -277,21 +316,25 @@ export default function EventsPage() {
         {allEvents.length === 0 ? (
           <div className="text-center py-16">
             <div className="bg-white rounded-2xl shadow-xl p-8 max-w-md mx-auto">
-              <div className="text-gray-400 text-6xl mb-4">🔍</div>
-              <h3 className="text-2xl font-bold text-gray-800 mb-4">No Events Found</h3>
+              <MagnifyingGlassIcon className="h-16 w-16 text-gray-300 mx-auto mb-4" aria-hidden />
+              <h3 className="text-2xl font-bold text-gray-800 mb-4">No events found</h3>
               <p className="text-gray-600 mb-6">
-                {searchTerm 
-                  ? "No events found matching your search criteria. Try adjusting your search terms."
-                  : "No events are currently available. Check back later for new events!"
-                }
+                {searchTerm
+                  ? "Try a different search term or browse all events."
+                  : "No events are live yet — be the first to sell tickets on Tikiti."}
               </p>
+              {!searchTerm && (
+                <CtaLink href="/dashboard/create-event" variant="primary" className="w-full">
+                  Create the first event
+                </CtaLink>
+              )}
             </div>
           </div>
         ) : (
           <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
             {allEvents.map((event) => (
               <Link key={event.id} href={`/events/${event.id}`} className="block group">
-                <div className="bg-white rounded-2xl shadow-xl overflow-hidden hover:shadow-2xl transition-all duration-300 transform hover:scale-105">
+                <div className="bg-white rounded-2xl shadow-xl overflow-hidden hover:shadow-2xl transition-shadow duration-300 border border-gray-100">
                   {event.poster_url && (
                     <div className="relative w-full h-48 overflow-hidden">
                       <Image
@@ -335,10 +378,10 @@ export default function EventsPage() {
                       <span className="text-2xl font-bold text-green-600">
                         {formatPrice(event.price)}
                       </span>
-                      <div className="bg-green-500 text-white px-4 py-2 rounded-xl font-semibold shadow-md group-hover:shadow-lg transition-all duration-200 flex items-center gap-2">
-                        View Details
-                        <ArrowRightIcon className="h-4 w-4" />
-                      </div>
+                      <span className="inline-flex items-center gap-2 rounded-xl bg-green-600 text-white px-4 py-2.5 font-semibold shadow-md group-hover:bg-green-700 transition-colors duration-200">
+                        Get tickets
+                        <ArrowRightIcon className="h-4 w-4" aria-hidden />
+                      </span>
                     </div>
                   </div>
                 </div>

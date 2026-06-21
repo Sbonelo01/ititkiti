@@ -18,7 +18,7 @@ import {
   FaFacebook, 
   // FaTwitter, 
   FaInstagram, 
-  FaLinkedin, 
+  FaTiktok, 
   FaYoutube 
 } from 'react-icons/fa';
 
@@ -222,8 +222,8 @@ export default function Footer() {
                   <a href="https://www.instagram.com/tikiti_fun" className="bg-gray-800 hover:bg-green-600 p-2 rounded-lg transition-all duration-200 transform hover:scale-110">
                     <FaInstagram className="h-5 w-5" />
                   </a>
-                  <a href="www.linkedin.com/in/sbonelo-mkhize-d" className="bg-gray-800 hover:bg-green-600 p-2 rounded-lg transition-all duration-200 transform hover:scale-110">
-                    <FaLinkedin className="h-5 w-5" />
+                  <a href="https://www.tiktok.com/@tikiti.fun" target="_blank" rel="noopener noreferrer" className="bg-gray-800 hover:bg-green-600 p-2 rounded-lg transition-all duration-200 transform hover:scale-110" aria-label="TikTok">
+                    <FaTiktok className="h-5 w-5" />
                   </a>
                   <a href="https://www.youtube.com/@tikiti_fun" className="bg-gray-800 hover:bg-green-600 p-2 rounded-lg transition-all duration-200 transform hover:scale-110">
                     <FaYoutube className="h-5 w-5" />
@@ -276,7 +276,7 @@ export default function Footer() {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
             <div className="flex flex-col md:flex-row items-center justify-between gap-4">
               <div className="flex items-center gap-4 text-sm text-gray-400">
-                <span>&copy; {new Date().getFullYear()} Tikiti. All rights reserved.</span>
+                <span>&copy; {new Date().getFullYear()} IZIBONELO TECH PTY LTD. All rights reserved.</span>
                 <span className="hidden md:inline">•</span>
                 <span className="hidden md:inline">Made with ❤️ by <a href="https://funzile.com" target="_blank" className="text-green-400 hover:text-green-300 transition-all duration-200">Funzile</a></span>
               </div>

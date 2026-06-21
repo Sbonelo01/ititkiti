@@ -5,8 +5,9 @@ import { supabase } from "@/utils/supabaseClient";
 import Link from "next/link";
 import { User } from "@supabase/supabase-js";
 import Image from "next/image";
-import { CalendarIcon, MapPinIcon, TicketIcon, ClockIcon } from '@heroicons/react/24/outline';
+import { CalendarIcon, MapPinIcon, TicketIcon, ClockIcon, ShieldCheckIcon, QrCodeIcon } from '@heroicons/react/24/outline';
 import PaystackPaymentButton from "@/components/PaystackButton";
+import { CtaLink, CtaButton } from "@/components/ui/CtaButton";
 import { SERVICE_FEE_PER_TICKET } from "@/constants/pricing";
 import { buildPaystackReference } from "@/utils/paystackChargeMetadata";
 
@@ -371,7 +372,7 @@ export default function EventDetail() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 to-white">
+    <div className="min-h-screen bg-gradient-to-br from-green-50 to-white pb-28 lg:pb-0">
       {/* Hero Section with Event Poster */}
       <div className="relative min-h-[20vh]">
         {event.poster_url ? (
@@ -500,14 +501,24 @@ export default function EventDetail() {
 
           {/* Purchase Section */}
           <div className="lg:col-span-1">
-            <div className="bg-white rounded-2xl shadow-2xl p-8 sticky top-8">
+            <div className="bg-white rounded-2xl shadow-2xl p-8 sticky top-24 border border-green-100">
               <div className="text-center mb-6">
-                <h2 className="text-2xl font-bold text-gray-800 mb-2">Get Your Tickets</h2>
-                <p className="text-gray-600">Secure your spot at this amazing event</p>
+                <h2 className="text-2xl font-bold text-gray-900 mb-2">Get your tickets</h2>
+                <p className="text-gray-600 text-sm">Select tickets below — checkout takes under a minute</p>
               </div>
               
               {user ? (
                 <div className="space-y-6">
+                  <ul className="flex flex-wrap gap-2 justify-center text-xs text-gray-600">
+                    <li className="inline-flex items-center gap-1 rounded-full bg-green-50 px-3 py-1">
+                      <QrCodeIcon className="h-3.5 w-3.5 text-green-600" aria-hidden />
+                      Instant QR delivery
+                    </li>
+                    <li className="inline-flex items-center gap-1 rounded-full bg-green-50 px-3 py-1">
+                      <ShieldCheckIcon className="h-3.5 w-3.5 text-green-600" aria-hidden />
+                      Secure Paystack payment
+                    </li>
+                  </ul>
                   <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-3">
                       Select Tickets
@@ -603,31 +614,78 @@ export default function EventDetail() {
                     </div>
                   )}
 
-                  <button
+                  <CtaButton
                     onClick={handlePurchase}
                     disabled={totalQuantity === 0 || ticketTypes.every(tt => tt.available_quantity === 0)}
-                    className="w-full bg-green-500 text-white py-4 rounded-xl hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed font-bold text-lg transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105"
+                    variant="primary"
+                    className="w-full py-4 text-lg font-bold"
                   >
-                    {ticketTypes.every(tt => tt.available_quantity === 0) ? 'Sold Out' : 'Purchase Tickets'}
-                  </button>
+                    {ticketTypes.every(tt => tt.available_quantity === 0)
+                      ? "Sold out"
+                      : totalQuantity === 0
+                        ? "Select tickets to continue"
+                        : `Pay ${formatPrice(totalWithFee)} — get QR tickets`}
+                  </CtaButton>
                 </div>
               ) : (
-                <div className="text-center space-y-6">
-                  <div className="bg-gray-50 rounded-xl p-6">
-                    <p className="text-gray-600 mb-4">Sign in to purchase tickets for this event.</p>
-                    <Link
-                      href={`/login?redirect=${encodeURIComponent(`/events/${eventId}`)}`}
-                      className="w-full bg-green-500 text-white py-4 rounded-xl hover:bg-green-600 font-bold text-lg inline-block transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105"
-                    >
-                      Sign In to Purchase
-                    </Link>
+                <div className="text-center space-y-5">
+                  <div className="rounded-xl bg-green-50 p-5 text-left space-y-3">
+                    <p className="font-semibold text-gray-900">Why sign in?</p>
+                    <ul className="text-sm text-gray-600 space-y-2">
+                      <li className="flex items-start gap-2">
+                        <ShieldCheckIcon className="h-4 w-4 text-green-600 shrink-0 mt-0.5" aria-hidden />
+                        Secure checkout with Paystack
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <QrCodeIcon className="h-4 w-4 text-green-600 shrink-0 mt-0.5" aria-hidden />
+                        QR tickets in your dashboard instantly
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <TicketIcon className="h-4 w-4 text-green-600 shrink-0 mt-0.5" aria-hidden />
+                        No printing — paperless entry
+                      </li>
+                    </ul>
                   </div>
+                  <CtaLink
+                    href={`/login?redirect=${encodeURIComponent(`/events/${eventId}`)}`}
+                    variant="primary"
+                    className="w-full py-4 text-lg font-bold"
+                  >
+                    Sign in & buy tickets
+                  </CtaLink>
+                  <p className="text-xs text-gray-500">
+                    New here?{" "}
+                    <Link href={`/login?redirect=${encodeURIComponent(`/events/${eventId}`)}`} className="text-green-700 font-medium hover:underline">
+                      Create a free account
+                    </Link>
+                  </p>
                 </div>
               )}
             </div>
           </div>
         </div>
       </div>
+      {user && totalQuantity > 0 && !showPaystack && (
+        <div
+          className="lg:hidden fixed bottom-20 left-0 right-0 z-40 border-t border-green-200 bg-white/95 backdrop-blur-md px-4 py-3 shadow-[0_-4px_20px_rgba(0,0,0,0.08)]"
+          role="region"
+          aria-label="Purchase summary"
+        >
+          <div className="flex items-center gap-3 max-w-lg mx-auto">
+            <div className="flex-1 min-w-0">
+              <p className="text-xs text-gray-500">{totalQuantity} ticket{totalQuantity !== 1 ? "s" : ""}</p>
+              <p className="text-lg font-bold text-green-700 truncate">{formatPrice(totalWithFee)}</p>
+            </div>
+            <CtaButton
+              onClick={handlePurchase}
+              variant="primary"
+              className="shrink-0 px-5 py-3 font-bold"
+            >
+              Pay now
+            </CtaButton>
+          </div>
+        </div>
+      )}
       {showPaystack && paystackReference && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/30">
           <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full mx-4 relative flex flex-col items-center">

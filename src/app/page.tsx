@@ -20,7 +20,10 @@ import {
 } from '@heroicons/react/24/outline';
 import { HomePageSkeleton } from "@/components/AppLoadingSkeleton";
 import OrganizerAppPromo from "@/components/OrganizerAppPromo";
+import AudienceSplit from "@/components/AudienceSplit";
+import { CtaLink } from "@/components/ui/CtaButton";
 import { BRAND } from "@/constants/branding";
+import { useRouter } from "next/navigation";
 
 interface Event {
   id: string;
@@ -38,8 +41,15 @@ export default function Home() {
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
+  const [heroSearch, setHeroSearch] = useState("");
   const [filterPrice, setFilterPrice] = useState<string>("all");
   const [currentCarouselIndex, setCurrentCarouselIndex] = useState(0);
+  const router = useRouter();
+
+  const goToEventSearch = (term: string) => {
+    const q = term.trim();
+    router.push(q ? `/events?q=${encodeURIComponent(q)}` : "/events");
+  };
 
   useEffect(() => {
     fetchEvents();
@@ -153,29 +163,46 @@ export default function Home() {
               </span>
             </h1>
             
-            <p className="text-xl md:text-2xl text-white/90 mb-8 max-w-3xl mx-auto">
-              {BRAND.ecoDescription} Buy, sell, and scan tickets digitally — secure, instant, and better for the planet.
+            <p className="text-xl md:text-2xl text-white/90 mb-10 max-w-3xl mx-auto">
+              {BRAND.ecoDescription} Buy or sell tickets in minutes — secure, instant, and paperless.
             </p>
-            
-            <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
-              <Link
-                href="/events"
-                className="bg-white text-green-600 px-8 py-4 rounded-xl font-semibold hover:bg-green-50 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 flex items-center justify-center gap-2"
+
+            <div className="mb-10 mx-auto max-w-2xl w-full">
+              <form
+                className="flex flex-col sm:flex-row gap-2 rounded-2xl bg-white p-2 shadow-xl"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  goToEventSearch(heroSearch);
+                }}
               >
-                Browse Events
-                <ArrowRightIcon className="h-5 w-5" />
-              </Link>
-              <Link
-                href="/dashboard/create-event"
-                className="bg-transparent text-white border-2 border-white px-8 py-4 rounded-xl font-semibold hover:bg-white hover:text-green-600 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 flex items-center justify-center gap-2"
-              >
-                Create Event
-                <CalendarIcon className="h-5 w-5" />
-              </Link>
+                <label htmlFor="hero-search" className="sr-only">
+                  Search events
+                </label>
+                <input
+                  id="hero-search"
+                  type="search"
+                  placeholder="Search concerts, sports, festivals…"
+                  value={heroSearch}
+                  onChange={(e) => setHeroSearch(e.target.value)}
+                  className="flex-1 rounded-xl border-0 px-4 py-3.5 text-gray-900 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-green-500"
+                />
+                <button
+                  type="submit"
+                  className="inline-flex items-center justify-center gap-2 rounded-xl bg-green-600 px-6 py-3.5 font-semibold text-white hover:bg-green-700 transition-colors cursor-pointer"
+                >
+                  <MagnifyingGlassIcon className="h-5 w-5" aria-hidden />
+                  Find tickets
+                </button>
+              </form>
+              <p className="mt-3 text-sm text-white/75">
+                Popular: live music · sports · community · free events
+              </p>
             </div>
-            
-            {/* Stats */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto">
+
+            <div className="mb-12">
+              <AudienceSplit />
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto pt-4 border-t border-white/20">
               <div className="text-center">
                 <div className="text-4xl font-bold text-white mb-2">100%</div>
                 <div className="text-white/80">Paperless tickets</div>
@@ -206,7 +233,7 @@ export default function Home() {
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            <div className="bg-gradient-to-br from-green-50 to-white p-8 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105">
+            <div className="bg-gradient-to-br from-green-50 to-white p-8 rounded-2xl shadow-lg hover:shadow-xl transition-shadow duration-200 border border-green-100/80">
               <div className="bg-green-600 w-16 h-16 rounded-2xl flex items-center justify-center mb-6">
                 <GlobeAmericasIcon className="h-8 w-8 text-white" />
               </div>
@@ -216,7 +243,7 @@ export default function Home() {
               </p>
             </div>
             
-            <div className="bg-gradient-to-br from-green-50 to-white p-8 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105">
+            <div className="bg-gradient-to-br from-green-50 to-white p-8 rounded-2xl shadow-lg hover:shadow-xl transition-shadow duration-200 border border-green-100/80">
               <div className="bg-green-600 w-16 h-16 rounded-2xl flex items-center justify-center mb-6">
                 <QrCodeIcon className="h-8 w-8 text-white" />
               </div>
@@ -226,7 +253,7 @@ export default function Home() {
               </p>
             </div>
             
-            <div className="bg-gradient-to-br from-green-50 to-white p-8 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105">
+            <div className="bg-gradient-to-br from-green-50 to-white p-8 rounded-2xl shadow-lg hover:shadow-xl transition-shadow duration-200 border border-green-100/80">
               <div className="bg-green-600 w-16 h-16 rounded-2xl flex items-center justify-center mb-6">
                 <DevicePhoneMobileIcon className="h-8 w-8 text-white" />
               </div>
@@ -236,7 +263,7 @@ export default function Home() {
               </p>
             </div>
 
-            <div className="bg-gradient-to-br from-green-50 to-white p-8 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105">
+            <div className="bg-gradient-to-br from-green-50 to-white p-8 rounded-2xl shadow-lg hover:shadow-xl transition-shadow duration-200 border border-green-100/80">
               <div className="bg-green-500 w-16 h-16 rounded-2xl flex items-center justify-center mb-6">
                 <ShieldCheckIcon className="h-8 w-8 text-white" />
               </div>
@@ -246,7 +273,7 @@ export default function Home() {
               </p>
             </div>
             
-            <div className="bg-gradient-to-br from-green-50 to-white p-8 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105">
+            <div className="bg-gradient-to-br from-green-50 to-white p-8 rounded-2xl shadow-lg hover:shadow-xl transition-shadow duration-200 border border-green-100/80">
               <div className="bg-green-500 w-16 h-16 rounded-2xl flex items-center justify-center mb-6">
                 <CreditCardIcon className="h-8 w-8 text-white" />
               </div>
@@ -256,7 +283,7 @@ export default function Home() {
               </p>
             </div>
             
-            <div className="bg-gradient-to-br from-green-50 to-white p-8 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105">
+            <div className="bg-gradient-to-br from-green-50 to-white p-8 rounded-2xl shadow-lg hover:shadow-xl transition-shadow duration-200 border border-green-100/80">
               <div className="bg-green-500 w-16 h-16 rounded-2xl flex items-center justify-center mb-6">
                 <UserGroupIcon className="h-8 w-8 text-white" />
               </div>
@@ -482,20 +509,14 @@ export default function Home() {
             Create your event on Tikiti, download the scanner app, and go fully paperless from ticket sale to front door.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link
-              href="/dashboard/create-event"
-              className="bg-white text-green-600 px-8 py-4 rounded-xl font-semibold hover:bg-green-50 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 flex items-center justify-center gap-2"
-            >
-              Create Your First Event
-              <CalendarIcon className="h-5 w-5" />
-            </Link>
-            <Link
-              href="/events"
-              className="bg-transparent text-white border-2 border-white px-8 py-4 rounded-xl font-semibold hover:bg-white hover:text-green-600 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 flex items-center justify-center gap-2"
-            >
-              Browse Events
+            <CtaLink href="/events" variant="secondary" className="px-8 py-4">
+              Browse & buy tickets
               <ArrowRightIcon className="h-5 w-5" />
-            </Link>
+            </CtaLink>
+            <CtaLink href="/dashboard/create-event" variant="primary" className="px-8 py-4">
+              Sell tickets free
+              <CalendarIcon className="h-5 w-5" />
+            </CtaLink>
           </div>
         </div>
       </section>

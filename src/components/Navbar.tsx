@@ -9,8 +9,10 @@ import {
   CalendarIcon, 
   UserIcon, 
   ArrowRightOnRectangleIcon,
-  TicketIcon
+  TicketIcon,
+  PlusCircleIcon
 } from '@heroicons/react/24/outline';
+import { CtaLink } from "@/components/ui/CtaButton";
 
 export default function Navbar() {
   const [user, setUser] = useState<User | null>(null);
@@ -144,11 +146,16 @@ export default function Navbar() {
           </Link>
           <Link 
             href="/events" 
-            className="text-gray-700 hover:text-green-600 font-medium transition-all duration-200 flex items-center gap-2 px-4 py-2 rounded-xl hover:bg-green-50"
+            className="text-gray-700 hover:text-green-600 font-medium transition-colors duration-200 flex items-center gap-2 px-4 py-2 rounded-xl hover:bg-green-50 cursor-pointer"
           >
             <CalendarIcon className="h-5 w-5" />
-            Events
+            Buy tickets
           </Link>
+
+          <CtaLink href="/dashboard/create-event" variant="primary" className="py-2.5 px-5 text-sm">
+            <PlusCircleIcon className="h-5 w-5" aria-hidden />
+            Sell tickets
+          </CtaLink>
           
           {!loading && (
             user ? (
@@ -170,20 +177,17 @@ export default function Navbar() {
                 
                 <button
                   onClick={handleSignOut}
-                  className="bg-gradient-to-r from-green-500 to-green-600 text-white px-6 py-3 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105 flex items-center gap-2"
+                  className="text-gray-600 hover:text-green-700 font-medium px-4 py-2 rounded-xl hover:bg-green-50 transition-colors duration-200 cursor-pointer flex items-center gap-2"
                 >
                   <ArrowRightOnRectangleIcon className="h-5 w-5" />
                   Sign Out
                 </button>
               </div>
             ) : (
-              <Link 
-                href="/login" 
-                className="bg-gradient-to-r from-green-500 to-green-600 text-white px-6 py-3 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105 flex items-center gap-2"
-              >
+              <CtaLink href="/login" variant="primary" className="py-2.5 px-5 text-sm">
                 <UserIcon className="h-5 w-5" />
-                Sign In
-              </Link>
+                Sign in
+              </CtaLink>
             )
           )}
         </div>
