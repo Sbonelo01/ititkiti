@@ -372,7 +372,7 @@ export default function EventDetail() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 to-white pb-28 lg:pb-0">
+    <div className="min-h-screen bg-gradient-to-br from-green-50 to-white pb-32 lg:pb-0">
       {/* Hero Section with Event Poster */}
       <div className="relative min-h-[20vh]">
         {event.poster_url ? (
@@ -390,26 +390,27 @@ export default function EventDetail() {
           <div className="absolute inset-0 bg-gradient-to-br from-green-500 to-green-600"></div>
         )}
         
-        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-10 h-full flex flex-col justify-center">
-          <div className="flex items-center justify-between mb-4">
+        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 pb-8 sm:pb-10 h-full flex flex-col justify-center">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-4">
             <Link
               href="/events"
-              className="inline-flex items-center text-white hover:text-green-300 transition-colors duration-200 font-medium"
+              className="inline-flex items-center text-white hover:text-green-200 transition-colors duration-200 font-medium text-sm sm:text-base touch-target"
             >
-              ← Back to Events
+              ← Back to events
             </Link>
             {!user && (
-              <Link
+              <CtaLink
                 href={`/login?redirect=${encodeURIComponent(`/events/${eventId}`)}`}
-                className="bg-green-500 text-white px-6 py-3 rounded-[10px] font-semibold hover:bg-green-600 transition-all duration-200 shadow-lg hover:shadow-xl"
+                variant="secondary"
+                className="w-full sm:w-auto py-3 text-sm font-bold sm:px-5"
               >
-                Sign In to Purchase
-              </Link>
+                Sign in & buy
+              </CtaLink>
             )}
           </div>
           
           <div className="max-w-4xl">
-            <h1 className="text-4xl md:text-5xl font-bold text-white mb-3 leading-tight">
+            <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white mb-3 leading-tight">
               {event.title}
             </h1>
             <div className="flex flex-wrap items-center gap-6 text-white/90">
@@ -432,12 +433,12 @@ export default function EventDetail() {
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-8 relative z-20">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Event Details */}
-          <div className="lg:col-span-2 space-y-6">
-            {/* Poster Display */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
+          {/* Event Details — below tickets on mobile */}
+          <div className="lg:col-span-2 space-y-6 order-2 lg:order-1">
+            {/* Poster (desktop only — hero already shows it on mobile) */}
             {event.poster_url && (
-              <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
+              <div className="hidden lg:block bg-white rounded-2xl shadow-xl overflow-hidden">
                 <Image
                   src={event.poster_url}
                   alt={event.title + ' poster'}
@@ -450,13 +451,13 @@ export default function EventDetail() {
             )}
 
             {/* Description Card */}
-            <div className="bg-white rounded-2xl shadow-xl p-8">
-              <h2 className="text-2xl font-bold text-gray-800 mb-6">About This Event</h2>
-              <p className="text-gray-600 leading-relaxed text-lg">{event.description}</p>
+            <div className="bg-white rounded-2xl shadow-xl p-5 sm:p-8">
+              <h2 className="text-xl sm:text-2xl font-bold text-gray-800 mb-4 sm:mb-6">About this event</h2>
+              <p className="text-gray-600 leading-relaxed text-base sm:text-lg">{event.description}</p>
             </div>
 
-            {/* Event Info Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Event Info Cards — compact on mobile */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
               <div className="bg-white rounded-2xl shadow-xl p-6">
                 <div className="flex items-center gap-3 mb-4">
                   <div className="bg-green-100 p-3 rounded-xl">
@@ -499,9 +500,9 @@ export default function EventDetail() {
             </div>
           </div>
 
-          {/* Purchase Section */}
-          <div className="lg:col-span-1">
-            <div className="bg-white rounded-2xl shadow-2xl p-8 sticky top-24 border border-green-100">
+          {/* Purchase — first on mobile for faster checkout */}
+          <div className="lg:col-span-1 order-1 lg:order-2">
+            <div className="bg-white rounded-2xl shadow-2xl p-5 sm:p-8 lg:sticky lg:top-24 border border-green-100">
               <div className="text-center mb-6">
                 <h2 className="text-2xl font-bold text-gray-900 mb-2">Get your tickets</h2>
                 <p className="text-gray-600 text-sm">Select tickets below — checkout takes under a minute</p>
@@ -553,11 +554,11 @@ export default function EventDetail() {
                                 )
                               }
                               disabled={(ticketSelections[ticketType.id] || 0) === 0}
-                              className="w-8 h-8 rounded-lg bg-white border-2 border-gray-300 flex items-center justify-center hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                              className="w-11 h-11 rounded-lg bg-white border-2 border-gray-300 flex items-center justify-center hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-lg font-medium touch-target"
                             >
                               −
                             </button>
-                            <span className="w-12 text-center font-semibold text-gray-800">
+                            <span className="w-12 text-center font-semibold text-gray-800 text-lg">
                               {ticketSelections[ticketType.id] || 0}
                             </span>
                             <button
@@ -571,7 +572,7 @@ export default function EventDetail() {
                               disabled={
                                 (ticketSelections[ticketType.id] || 0) >= ticketType.available_quantity
                               }
-                              className="w-8 h-8 rounded-lg bg-green-500 text-white flex items-center justify-center hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                              className="w-11 h-11 rounded-lg bg-green-600 text-white flex items-center justify-center hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-lg font-medium touch-target"
                             >
                               +
                             </button>
@@ -667,7 +668,7 @@ export default function EventDetail() {
       </div>
       {user && totalQuantity > 0 && !showPaystack && (
         <div
-          className="lg:hidden fixed bottom-20 left-0 right-0 z-40 border-t border-green-200 bg-white/95 backdrop-blur-md px-4 py-3 shadow-[0_-4px_20px_rgba(0,0,0,0.08)]"
+          className="lg:hidden fixed left-0 right-0 z-40 border-t border-green-200 bg-white/95 backdrop-blur-md px-4 py-3 shadow-[0_-4px_20px_rgba(0,0,0,0.08)] mobile-sticky-cta"
           role="region"
           aria-label="Purchase summary"
         >
@@ -684,6 +685,21 @@ export default function EventDetail() {
               Pay now
             </CtaButton>
           </div>
+        </div>
+      )}
+      {!user && !showPaystack && (
+        <div
+          className="lg:hidden fixed left-0 right-0 z-40 border-t border-green-200 bg-white/95 backdrop-blur-md px-4 py-3 shadow-[0_-4px_20px_rgba(0,0,0,0.08)] mobile-sticky-cta"
+          role="region"
+          aria-label="Sign in to purchase"
+        >
+          <CtaLink
+            href={`/login?redirect=${encodeURIComponent(`/events/${eventId}`)}`}
+            variant="primary"
+            className="w-full py-3.5 text-base font-bold max-w-lg mx-auto"
+          >
+            Sign in & buy tickets
+          </CtaLink>
         </div>
       )}
       {showPaystack && paystackReference && (
@@ -733,7 +749,7 @@ export default function EventDetail() {
         </div>
       )}
       {verifyingPayment && (
-        <div className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 border-t border-green-200 shadow-lg py-4 px-4 text-center" role="status" aria-live="polite">
+        <div className="fixed left-0 right-0 z-40 bg-white/95 border-t border-green-200 shadow-lg py-4 px-4 text-center mobile-sticky-cta lg:bottom-0" role="status" aria-live="polite">
           <p className="text-green-800 font-medium">Confirming your payment and issuing your tickets…</p>
           <p className="text-gray-600 text-sm mt-1">This usually takes a few seconds.</p>
         </div>

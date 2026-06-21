@@ -136,7 +136,7 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 to-white">
       {/* Hero Section */}
-      <section className="relative bg-gradient-to-br from-green-600 via-green-700 to-green-800 py-20 overflow-hidden">
+      <section className="relative bg-gradient-to-br from-green-600 via-green-700 to-green-800 py-14 sm:py-20 overflow-hidden">
         {/* Animated background elements */}
         <div className="absolute inset-0 opacity-10">
           <div className="absolute top-10 left-10 w-32 h-32 bg-white rounded-full animate-bounce"></div>
@@ -148,22 +148,22 @@ export default function Home() {
         
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <div className="text-center">
-            <div className="flex items-center justify-center mb-6">
-              <GlobeAmericasIcon className="h-8 w-8 text-emerald-300 mr-3" aria-hidden />
-              <span className="bg-white/20 backdrop-blur-sm text-white px-4 py-2 rounded-full text-sm font-semibold">
+            <div className="flex items-center justify-center mb-6 px-2">
+              <GlobeAmericasIcon className="hidden sm:block h-8 w-8 text-emerald-300 mr-3 shrink-0" aria-hidden />
+              <span className="bg-white/20 backdrop-blur-sm text-white px-4 py-2 rounded-full text-sm font-semibold text-center">
                 Paperless · Eco-friendly · Innovative
               </span>
-              <GlobeAmericasIcon className="h-8 w-8 text-emerald-300 ml-3" aria-hidden />
+              <GlobeAmericasIcon className="hidden sm:block h-8 w-8 text-emerald-300 ml-3 shrink-0" aria-hidden />
             </div>
             
-            <h1 className="text-6xl md:text-7xl font-bold text-white mb-6 leading-tight">
+            <h1 className="text-4xl sm:text-5xl md:text-7xl font-bold text-white mb-6 leading-tight px-1">
               Events without
               <span className="block text-transparent bg-clip-text bg-gradient-to-r from-emerald-200 to-lime-200">
                 the paper waste
               </span>
             </h1>
             
-            <p className="text-xl md:text-2xl text-white/90 mb-10 max-w-3xl mx-auto">
+            <p className="text-lg sm:text-xl md:text-2xl text-white/90 mb-8 sm:mb-10 max-w-3xl mx-auto px-1">
               {BRAND.ecoDescription} Buy or sell tickets in minutes — secure, instant, and paperless.
             </p>
 
@@ -184,7 +184,7 @@ export default function Home() {
                   placeholder="Search concerts, sports, festivals…"
                   value={heroSearch}
                   onChange={(e) => setHeroSearch(e.target.value)}
-                  className="flex-1 rounded-xl border-0 px-4 py-3.5 text-gray-900 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-green-500"
+                  className="flex-1 rounded-xl border-0 px-4 py-3.5 text-base text-gray-900 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-green-500"
                 />
                 <button
                   type="submit"
@@ -317,10 +317,10 @@ export default function Home() {
               </p>
               <Link
                 href="/events"
-                className="inline-flex items-center px-8 py-4 bg-white text-green-600 rounded-xl font-semibold hover:bg-green-50 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105"
+                className="inline-flex items-center px-6 sm:px-8 py-3.5 sm:py-4 bg-white text-green-600 rounded-xl font-semibold hover:bg-green-50 transition-colors duration-200 shadow-lg"
               >
-                View All Events
-                <ArrowRightIcon className="ml-2 h-5 w-5" />
+                Browse all events
+                <ArrowRightIcon className="ml-2 h-5 w-5" aria-hidden />
               </Link>
             </div>
 
@@ -367,10 +367,10 @@ export default function Home() {
                               </span>
                               <Link
                                 href={`/events/${event.id}`}
-                                className="bg-white text-green-600 px-6 py-3 rounded-xl hover:bg-green-50 transition-all duration-200 font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 flex items-center gap-2"
+                                className="w-full sm:w-auto inline-flex items-center justify-center bg-white text-green-600 px-6 py-3.5 rounded-xl hover:bg-green-50 transition-colors duration-200 font-semibold shadow-lg gap-2 touch-target"
                               >
-                                Get Tickets
-                                <PlayIcon className="h-4 w-4" />
+                                Get tickets
+                                <PlayIcon className="h-4 w-4" aria-hidden />
                               </Link>
                             </div>
                           </div>
@@ -562,20 +562,25 @@ export default function Home() {
         {allEvents.length === 0 ? (
           <div className="text-center py-16">
             <div className="bg-white rounded-2xl shadow-xl p-8 max-w-md mx-auto">
-              <div className="text-gray-400 text-6xl mb-4">🔍</div>
-              <h3 className="text-2xl font-bold text-gray-800 mb-4">No Events Found</h3>
+              <MagnifyingGlassIcon className="h-16 w-16 text-gray-300 mx-auto mb-4" aria-hidden />
+              <h3 className="text-2xl font-bold text-gray-800 mb-4">No events found</h3>
               <p className="text-gray-600 mb-6">
-                No events found matching your criteria. Try adjusting your search or filters.
+                {searchTerm || filterPrice !== "all"
+                  ? "Try a different search or filter."
+                  : "No events are live yet — be the first to sell tickets on Tikiti."}
               </p>
+              {!searchTerm && filterPrice === "all" && (
+                <CtaLink href="/dashboard/create-event" variant="primary" className="w-full">
+                  List your event free
+                </CtaLink>
+              )}
             </div>
           </div>
         ) : (
-          <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-6 sm:gap-8 md:grid-cols-2 lg:grid-cols-3">
             {allEvents.map((event) => (
-              <div
-                key={event.id}
-                className="bg-white rounded-2xl shadow-xl overflow-hidden hover:shadow-2xl transition-all duration-300 transform hover:scale-105"
-              >
+              <Link key={event.id} href={`/events/${event.id}`} className="block group">
+                <div className="bg-white rounded-2xl shadow-xl overflow-hidden hover:shadow-2xl transition-shadow duration-300 border border-gray-100 h-full">
                 {event.poster_url && (
                   <div className="w-full h-48 relative">
                     <Image
@@ -609,20 +614,18 @@ export default function Home() {
                     </div>
                   </div>
 
-                  <div className="flex justify-between items-center pt-4 border-t border-gray-100">
-                    <span className="text-2xl font-bold text-green-600">
+                  <div className="flex justify-between items-center pt-4 border-t border-gray-100 gap-3">
+                    <span className="text-xl sm:text-2xl font-bold text-green-600 shrink-0">
                       {formatPrice(event.price)}
                     </span>
-                    <Link
-                      href={`/events/${event.id}`}
-                      className="bg-green-500 text-white px-6 py-3 rounded-xl hover:bg-green-600 transition-all duration-200 font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 flex items-center gap-2"
-                    >
-                      View Details
-                      <ArrowRightIcon className="h-4 w-4" />
-                    </Link>
+                    <span className="inline-flex items-center gap-2 rounded-xl bg-green-600 text-white px-4 py-2.5 font-semibold group-hover:bg-green-700 transition-colors duration-200 text-sm sm:text-base">
+                      Get tickets
+                      <ArrowRightIcon className="h-4 w-4" aria-hidden />
+                    </span>
                   </div>
                 </div>
-              </div>
+                </div>
+              </Link>
             ))}
           </div>
         )}

@@ -38,7 +38,7 @@ export default function RootLayout({
       >
         <Navbar />
         {/* Main content with padding for navbars */}
-        <main className="pt-16 md:pt-20 pb-24 md:pb-8 min-h-screen bg-background">
+        <main className="pt-16 md:pt-20 pb-[var(--mobile-nav-offset)] md:pb-8 min-h-screen bg-background">
           {children}
         </main>
         {/* Modern Footer */}

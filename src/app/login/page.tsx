@@ -204,7 +204,7 @@ function LoginForm() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 to-white">
       {/* Hero Section */}
-      <section className="relative bg-gradient-to-br from-green-600 via-green-700 to-green-800 py-16 overflow-hidden">
+      <section className="relative bg-gradient-to-br from-green-600 via-green-700 to-green-800 py-10 sm:py-16 overflow-hidden">
         {/* Animated background elements */}
         <div className="absolute inset-0 opacity-10">
           <div className="absolute top-10 left-10 w-32 h-32 bg-white rounded-full animate-bounce"></div>
@@ -223,7 +223,7 @@ function LoginForm() {
               <SparklesIcon className="h-8 w-8 text-yellow-300 ml-3" />
             </div>
             
-            <h1 className="text-5xl md:text-6xl font-bold text-white mb-6 leading-tight">
+            <h1 className="text-3xl sm:text-5xl md:text-6xl font-bold text-white mb-6 leading-tight">
               {isCheckoutRedirect
                 ? isLogin
                   ? "Almost there!"

@@ -134,9 +134,9 @@ function EventsPageContent() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 to-white">
-      <section className="bg-gradient-to-br from-green-700 to-green-800 py-12 px-4 sm:px-6 lg:px-8">
+      <section className="bg-gradient-to-br from-green-700 to-green-800 py-8 sm:py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto text-center">
-          <h1 className="text-3xl md:text-4xl font-bold text-white mb-2">Find your next event</h1>
+          <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white mb-2">Find your next event</h1>
           <p className="text-green-100 mb-6 max-w-xl mx-auto">
             Instant QR tickets after checkout — no queues, no paper.
           </p>
@@ -148,7 +148,7 @@ function EventsPageContent() {
               placeholder="Search by name, city, or venue…"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="flex-1 rounded-xl border-0 px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-500"
+              className="flex-1 rounded-xl border-0 px-4 py-3.5 text-base text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-500"
             />
           </div>
           <div className="mt-6 flex justify-center">
@@ -170,8 +170,8 @@ function EventsPageContent() {
           
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-12 relative z-10">
-              <h2 className="text-5xl font-bold text-white mb-4">
-                Latest Events
+              <h2 className="text-3xl sm:text-5xl font-bold text-white mb-4">
+                Latest events
               </h2>
               <p className="text-xl text-white/90 mb-8">
                 Discover the newest events happening around you
@@ -186,51 +186,45 @@ function EventsPageContent() {
                 >
                   {latestEvents.map((event) => (
                     <div key={event.id} className="w-full flex-shrink-0">
-                      <div className="bg-white/10 backdrop-blur-sm rounded-2xl shadow-2xl p-8 mx-4 border border-white/20">
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
-                          <div className="relative">
-                            {/* Tickets Available Tag */}
+                      <div className="bg-white/10 backdrop-blur-sm rounded-2xl shadow-2xl p-4 sm:p-8 mx-2 sm:mx-4 border border-white/20">
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8 items-center">
+                          <div className="relative pt-8 sm:pt-0">
                             <div className="absolute top-0 right-0 z-10">
-                              <span className="bg-white text-green-600 px-4 py-2 rounded-full text-sm font-semibold shadow-lg">
+                              <span className="bg-white text-green-600 px-3 py-1.5 rounded-full text-xs sm:text-sm font-semibold shadow-lg">
                                 {event.total_tickets} tickets
                               </span>
                             </div>
-                            <h3 className="text-4xl font-bold text-white mb-4 leading-tight">
+                            <h3 className="text-2xl sm:text-4xl font-bold text-white mb-3 sm:mb-4 leading-tight pr-16 sm:pr-0">
                               {event.title}
                             </h3>
-                            <p className="text-white/90 mb-6 line-clamp-3 text-lg">
+                            <p className="text-white/90 mb-4 sm:mb-6 line-clamp-2 sm:line-clamp-3 text-base sm:text-lg">
                               {event.description}
                             </p>
-                            <div className="space-y-4 mb-6">
+                            <div className="space-y-2 sm:space-y-4 mb-4 sm:mb-6 text-sm sm:text-base">
                               <div className="flex items-center text-white/90">
-                                <CalendarIcon className="h-5 w-5 mr-3 text-white" />
-                                {formatDate(event.date)}
+                                <CalendarIcon className="h-5 w-5 mr-2 sm:mr-3 shrink-0 text-white" />
+                                <span className="truncate">{formatDate(event.date)}</span>
                               </div>
                               <div className="flex items-center text-white/90">
-                                <MapPinIcon className="h-5 w-5 mr-3 text-white" />
-                                {event.location}
-                              </div>
-                              <div className="flex items-center text-white/90">
-                                <TicketIcon className="h-5 w-5 mr-3 text-white" />
-                                {event.total_tickets} tickets available
+                                <MapPinIcon className="h-5 w-5 mr-2 sm:mr-3 shrink-0 text-white" />
+                                <span className="truncate">{event.location}</span>
                               </div>
                             </div>
-                            <div className="flex items-center justify-between">
-                              <span className="text-3xl font-bold text-white">
+                            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                              <span className="text-2xl sm:text-3xl font-bold text-white">
                                 {formatPrice(event.price)}
                               </span>
                               <Link
                                 href={`/events/${event.id}`}
-                                className="bg-white text-green-600 px-6 py-3 rounded-xl hover:bg-green-50 transition-all duration-200 font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 flex items-center gap-2"
+                                className="w-full sm:w-auto inline-flex items-center justify-center bg-white text-green-600 px-6 py-3.5 rounded-xl hover:bg-green-50 transition-colors duration-200 font-semibold shadow-lg gap-2 touch-target"
                               >
-                                Get Tickets
-                                <PlayIcon className="h-4 w-4" />
+                                Get tickets
+                                <PlayIcon className="h-4 w-4" aria-hidden />
                               </Link>
                             </div>
                           </div>
                           
-                          {/* Tickets Available Section */}
-                          <div className="relative rounded-2xl p-8 text-center flex flex-col justify-center items-center h-full shadow-2xl overflow-hidden">
+                          <div className="hidden lg:flex relative rounded-2xl p-8 text-center flex-col justify-center items-center h-full shadow-2xl overflow-hidden min-h-[14rem]">
                             {event.poster_url && (
                               <div className="absolute inset-0">
                                 <Image
@@ -262,7 +256,7 @@ function EventsPageContent() {
                   <button
                     key={index}
                     onClick={() => setCurrentCarouselIndex(index)}
-                    className={`w-4 h-4 rounded-full transition-all duration-200 ${
+                    className={`h-2.5 w-2.5 sm:w-4 sm:h-4 rounded-full transition-colors duration-200 touch-target ${
                       index === currentCarouselIndex
                         ? "bg-white shadow-lg"
                         : "bg-white/50 hover:bg-white/70"
@@ -298,13 +292,13 @@ function EventsPageContent() {
                 placeholder="Search events..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-4 pr-12 py-4 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:shadow-lg bg-white text-gray-800 placeholder-gray-500 shadow-lg border-0"
+                className="w-full pl-4 pr-12 py-3.5 text-base rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:shadow-lg bg-white text-gray-800 placeholder-gray-500 shadow-lg border-0"
               />
             </div>
             <select
               value={filterPrice}
               onChange={(e) => setFilterPrice(e.target.value)}
-              className="px-6 py-4 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:shadow-lg bg-white text-gray-800 shadow-lg border-0"
+              className="px-6 py-3.5 text-base rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:shadow-lg bg-white text-gray-800 shadow-lg border-0"
             >
               <option value="all">All Prices</option>
               <option value="free">Free</option>

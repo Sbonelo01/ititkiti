@@ -5,13 +5,13 @@ import { supabase } from "@/utils/supabaseClient";
 import { User } from "@supabase/supabase-js";
 import Image from "next/image";
 import OrganizerAppPromo from "@/components/OrganizerAppPromo";
+import { CtaButton } from "@/components/ui/CtaButton";
 import { 
   CalendarIcon,
   ArrowLeftIcon,
   PlusIcon,
   CheckCircleIcon,
   ExclamationTriangleIcon,
-  SparklesIcon,
   ClockIcon,
   // CurrencyDollarIcon,
   // UserGroupIcon,
@@ -332,9 +332,9 @@ export default function CreateEvent() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 to-white">
+    <div className="min-h-screen bg-gradient-to-br from-green-50 to-white pb-32 md:pb-0">
       {/* Header Section */}
-      <section className="relative bg-gradient-to-br from-green-600 via-green-700 to-green-800 py-12 overflow-hidden">
+      <section className="relative bg-gradient-to-br from-green-600 via-green-700 to-green-800 py-8 sm:py-12 overflow-hidden">
         {/* Animated background elements */}
         <div className="absolute inset-0 opacity-10">
           <div className="absolute top-10 left-10 w-32 h-32 bg-white rounded-full animate-bounce"></div>
@@ -344,33 +344,29 @@ export default function CreateEvent() {
         </div>
         
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <button
-                onClick={() => router.push("/dashboard")}
-                className="bg-white/20 backdrop-blur-sm text-white px-4 py-2 rounded-xl hover:bg-white/30 transition-all duration-200 font-semibold flex items-center gap-2 shadow-lg hover:shadow-xl transform hover:scale-105"
-              >
-                <ArrowLeftIcon className="h-5 w-5" />
-                Back to Dashboard
-              </button>
-            </div>
-            <div className="flex items-center gap-3">
-              <SparklesIcon className="h-8 w-8 text-yellow-300" />
-              <span className="bg-white/20 backdrop-blur-sm text-white px-4 py-2 rounded-full text-sm font-semibold">
-                Create Event
-              </span>
-            </div>
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <button
+              type="button"
+              onClick={() => router.push("/dashboard")}
+              className="self-start bg-white/20 backdrop-blur-sm text-white px-4 py-2.5 rounded-xl hover:bg-white/30 transition-colors duration-200 font-semibold flex items-center gap-2 touch-target"
+            >
+              <ArrowLeftIcon className="h-5 w-5" aria-hidden />
+              Back
+            </button>
+            <span className="self-start sm:self-auto bg-white/20 backdrop-blur-sm text-white px-4 py-2 rounded-full text-sm font-semibold">
+              List your event
+            </span>
           </div>
           
-          <div className="text-center mt-8">
-            <h1 className="text-5xl md:text-6xl font-bold text-white mb-4 leading-tight">
-              Create Your
+          <div className="text-center mt-6 sm:mt-8">
+            <h1 className="text-3xl sm:text-5xl md:text-6xl font-bold text-white mb-4 leading-tight">
+              Sell tickets in
               <span className="block text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 to-orange-300">
-                Amazing Event
+                minutes, not days
               </span>
             </h1>
-            <p className="text-xl text-white/90 max-w-2xl mx-auto">
-              Paperless from day one — sell digital tickets and check in guests with the Tikiti Scanner app.
+            <p className="text-base sm:text-xl text-white/90 max-w-2xl mx-auto">
+              Paperless from day one — digital tickets, secure payments, and free door scanning.
             </p>
           </div>
         </div>
@@ -400,8 +396,8 @@ export default function CreateEvent() {
             </div>
 
             {/* Form Content */}
-            <div className="p-8">
-              <form onSubmit={handleSubmit} className="space-y-8">
+            <div className="p-5 sm:p-8">
+              <form id="create-event-form" onSubmit={handleSubmit} className="space-y-8">
                 {/* Event Title */}
                 <div className="space-y-3">
                   <label htmlFor="title" className="flex items-center gap-2 text-lg font-semibold text-gray-800">
@@ -414,7 +410,7 @@ export default function CreateEvent() {
                     name="title"
                     value={formData.title}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-4 bg-gray-50 text-gray-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:shadow-lg border border-gray-200 hover:border-green-300 transition-all duration-200"
+                    className="w-full px-4 py-4 text-base bg-gray-50 text-gray-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:shadow-lg border border-gray-200 hover:border-green-300 transition-colors duration-200"
                     placeholder="Enter your event title"
                     required
                   />
@@ -432,7 +428,7 @@ export default function CreateEvent() {
                     value={formData.description}
                     onChange={handleInputChange}
                     rows={4}
-                    className="w-full px-4 py-4 bg-gray-50 text-gray-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:shadow-lg border border-gray-200 hover:border-green-300 transition-all duration-200 resize-none"
+                    className="w-full px-4 py-4 text-base bg-gray-50 text-gray-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:shadow-lg border border-gray-200 hover:border-green-300 transition-colors duration-200 resize-none"
                     placeholder="Describe your event in detail..."
                     required
                   />
@@ -451,7 +447,7 @@ export default function CreateEvent() {
                       name="date"
                       value={formData.date}
                       onChange={handleInputChange}
-                      className="w-full px-4 py-4 bg-gray-50 text-gray-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:shadow-lg border border-gray-200 hover:border-green-300 transition-all duration-200"
+                      className="w-full px-4 py-4 text-base bg-gray-50 text-gray-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:shadow-lg border border-gray-200 hover:border-green-300 transition-colors duration-200"
                       required
                     />
                   </div>
@@ -466,7 +462,7 @@ export default function CreateEvent() {
                       name="time"
                       value={formData.time}
                       onChange={handleInputChange}
-                      className="w-full px-4 py-4 bg-gray-50 text-gray-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:shadow-lg border border-gray-200 hover:border-green-300 transition-all duration-200"
+                      className="w-full px-4 py-4 text-base bg-gray-50 text-gray-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:shadow-lg border border-gray-200 hover:border-green-300 transition-colors duration-200"
                       required
                     />
                   </div>
@@ -484,7 +480,7 @@ export default function CreateEvent() {
                     name="location"
                     value={formData.location}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-4 bg-gray-50 text-gray-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:shadow-lg border border-gray-200 hover:border-green-300 transition-all duration-200"
+                    className="w-full px-4 py-4 text-base bg-gray-50 text-gray-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:shadow-lg border border-gray-200 hover:border-green-300 transition-colors duration-200"
                     placeholder="Enter venue or location"
                     required
                   />
@@ -663,31 +659,45 @@ export default function CreateEvent() {
                   </div>
                 )}
 
-                {/* Submit Button */}
-                <div className="flex justify-center pt-6 border-t border-gray-100">
-                  <button
+                {/* Submit — desktop */}
+                <div className="hidden md:flex justify-center pt-6 border-t border-gray-100">
+                  <CtaButton
                     type="submit"
+                    form="create-event-form"
                     disabled={submitting}
-                    className="bg-gradient-to-r from-green-500 to-green-600 text-white px-12 py-4 rounded-xl font-semibold hover:from-green-600 hover:to-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 flex items-center gap-3"
+                    variant="primary"
+                    className="px-12 py-4 text-lg font-bold gap-3"
                   >
                     {submitting ? (
                       <>
-                        <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></div>
-                        Creating Event...
+                        <span className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent" aria-hidden />
+                        Publishing…
                       </>
                     ) : (
                       <>
-                        <PlusIcon className="h-5 w-5" />
-                        Create Event
+                        <PlusIcon className="h-5 w-5" aria-hidden />
+                        Publish event & start selling
                       </>
                     )}
-                  </button>
+                  </CtaButton>
                 </div>
               </form>
             </div>
           </div>
         </div>
       </section>
+
+      <div className="md:hidden fixed left-0 right-0 z-40 border-t border-green-200 bg-white/95 backdrop-blur-md px-4 py-3 shadow-[0_-4px_20px_rgba(0,0,0,0.08)] mobile-sticky-cta">
+        <CtaButton
+          type="submit"
+          form="create-event-form"
+          disabled={submitting}
+          variant="primary"
+          className="w-full py-3.5 text-base font-bold max-w-lg mx-auto"
+        >
+          {submitting ? "Publishing…" : "Publish event & start selling"}
+        </CtaButton>
+      </div>
     </div>
   );
 }
