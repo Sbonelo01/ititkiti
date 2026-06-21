@@ -14,9 +14,17 @@ interface AdminEvent {
   poster_url?: string;
 }
 
+type EventRevenueStats = {
+  ticketsSold: number;
+  ticketRevenue: number;
+  tikitiRevenue: number;
+  totalProcessed: number;
+};
+
 export default function AdminDashboard() {
   const [events, setEvents] = useState<AdminEvent[]>([]);
-  const [ticketCounts, setTicketCounts] = useState<Record<string, number>>({});
+  const [eventStats, setEventStats] = useState<Record<string, EventRevenueStats>>({});
+  const [platformTikitiRevenue, setPlatformTikitiRevenue] = useState(0);
   const [loading, setLoading] = useState(true);
   const [authorized, setAuthorized] = useState<boolean | null>(null);
   const router = useRouter();
@@ -48,16 +56,56 @@ export default function AdminDashboard() {
       setEvents(eventsData || []);
       if (eventsData && eventsData.length > 0) {
         const ids = eventsData.map((e) => e.id);
+        const eventPriceMap = Object.fromEntries(eventsData.map((e) => [e.id, e.price]));
+
         const { data: ticketsData } = await supabase
           .from("tickets")
-          .select("event_id")
+          .select(`
+            event_id,
+            ticket_type_id,
+            ticket_types ( price )
+          `)
           .in("event_id", ids)
           .eq("payment_status", "paid");
-        const counts: Record<string, number> = {};
-        (ticketsData || []).forEach((row: { event_id: string }) => {
-          counts[row.event_id] = (counts[row.event_id] || 0) + 1;
+
+        const stats: Record<string, EventRevenueStats> = {};
+        let totalTikitiRevenue = 0;
+
+        (ticketsData || []).forEach((row) => {
+          const eventId = row.event_id as string;
+          if (!stats[eventId]) {
+            stats[eventId] = {
+              ticketsSold: 0,
+              ticketRevenue: 0,
+              tikitiRevenue: 0,
+              totalProcessed: 0,
+            };
+          }
+
+          let ticketPrice = eventPriceMap[eventId] ?? 0;
+          const tt = row.ticket_types as { price?: number } | { price?: number }[] | null;
+          if (Array.isArray(tt) && tt[0]?.price != null) {
+            ticketPrice = Number(tt[0].price);
+          } else if (tt && !Array.isArray(tt) && tt.price != null) {
+            ticketPrice = Number(tt.price);
+          }
+
+          stats[eventId].ticketsSold += 1;
+          stats[eventId].ticketRevenue += ticketPrice;
+          stats[eventId].tikitiRevenue += SERVICE_FEE_PER_TICKET;
         });
-        setTicketCounts(counts);
+
+        for (const eventId of Object.keys(stats)) {
+          const s = stats[eventId];
+          s.totalProcessed = s.ticketRevenue + s.tikitiRevenue;
+          totalTikitiRevenue += s.tikitiRevenue;
+        }
+
+        setEventStats(stats);
+        setPlatformTikitiRevenue(totalTikitiRevenue);
+      } else {
+        setEventStats({});
+        setPlatformTikitiRevenue(0);
       }
       setLoading(false);
     }
@@ -79,7 +127,7 @@ export default function AdminDashboard() {
   }, []);
 
   const formatPrice = (price: number) => {
-    if (price === 0) return "Free";
+    if (price === 0) return "R0.00";
     return `R${price.toFixed(2)}`;
   };
 
@@ -182,7 +230,20 @@ export default function AdminDashboard() {
         ) : (
           // Admin view - full dashboard
           <>
-            <h1 className="text-4xl font-bold mb-8">Admin Event Revenue Dashboard</h1>
+            <h1 className="text-4xl font-bold mb-4">Admin Event Revenue Dashboard</h1>
+            {!loading && events.length > 0 && (
+              <div className="mb-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="bg-white rounded-2xl shadow-lg border border-green-100 p-5">
+                  <p className="text-sm font-medium text-gray-600">Tikiti platform revenue (all events)</p>
+                  <p className="text-2xl font-bold text-green-700 mt-1 tabular-nums">
+                    {formatPrice(platformTikitiRevenue)}
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    R{SERVICE_FEE_PER_TICKET} service fee × paid tickets sold
+                  </p>
+                </div>
+              </div>
+            )}
             <div className="flex flex-wrap gap-3 mb-8">
               <Link
                 href="/dashboard/admin/invoices"
@@ -231,8 +292,12 @@ export default function AdminDashboard() {
             ) : (
               <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                 {events.map((event) => {
-                  const sold = ticketCounts[event.id] || 0;
-                  const revenue = event.price * sold + SERVICE_FEE_PER_TICKET * sold;
+                  const stats = eventStats[event.id] ?? {
+                    ticketsSold: 0,
+                    ticketRevenue: 0,
+                    tikitiRevenue: 0,
+                    totalProcessed: 0,
+                  };
                   return (
                     <div
                       key={event.id}
@@ -254,16 +319,28 @@ export default function AdminDashboard() {
                         </h3>
                         <div className="flex justify-between items-center pt-4 border-t border-gray-100">
                           <span className="text-lg font-semibold text-green-600">
-                            {formatPrice(event.price)}
+                            {event.price === 0 ? "Free" : formatPrice(event.price)}
                           </span>
                           <span className="text-sm text-gray-500">
-                            Sold: {sold}
+                            Sold: {stats.ticketsSold}
                           </span>
                         </div>
-                        <div className="mt-2 text-sm text-gray-700">
-                          <span className="font-bold">Total Revenue: </span>
-                          <span className="text-green-700 font-bold">{formatPrice(revenue)}</span>
-                        </div>
+                        <dl className="mt-3 space-y-2 text-sm text-gray-700">
+                          <div className="flex justify-between gap-4">
+                            <dt>Ticket sales (organizer)</dt>
+                            <dd className="font-semibold tabular-nums">{formatPrice(stats.ticketRevenue)}</dd>
+                          </div>
+                          <div className="flex justify-between gap-4">
+                            <dt>Tikiti revenue</dt>
+                            <dd className="font-bold text-green-700 tabular-nums">
+                              {formatPrice(stats.tikitiRevenue)}
+                            </dd>
+                          </div>
+                          <div className="flex justify-between gap-4 pt-2 border-t border-gray-100">
+                            <dt className="font-medium">Total processed</dt>
+                            <dd className="font-bold tabular-nums">{formatPrice(stats.totalProcessed)}</dd>
+                          </div>
+                        </dl>
                       </div>
                     </div>
                   );
