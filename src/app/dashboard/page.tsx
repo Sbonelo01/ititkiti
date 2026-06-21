@@ -9,6 +9,7 @@ import { AppRouterInstance } from "next/dist/shared/lib/app-router-context.share
 import Image from "next/image";
 import { SERVICE_FEE_PER_TICKET } from "@/constants/pricing";
 import { generateInvoice } from "@/utils/invoicesApi";
+import { canGenerateInvoiceForEvent } from "@/utils/eventSchedule";
 import EventShareBar from "@/components/EventShareBar";
 import { 
   CalendarIcon, 
@@ -607,17 +608,23 @@ function OrganizerDashboard({
                             {formatPrice(eventSalesData[event.id].ticketsSold * SERVICE_FEE_PER_TICKET)}
                           </span>
                         </div>
-                        <button
-                          type="button"
-                          onClick={() => handleGenerateInvoice(event.id)}
-                          disabled={generatingInvoiceEventId === event.id}
-                          className="w-full mt-1 flex items-center justify-center gap-2 rounded-lg bg-green-600 text-white py-2.5 text-sm font-semibold hover:bg-green-700 disabled:opacity-50 transition-colors"
-                        >
-                          <DocumentTextIcon className="h-4 w-4" aria-hidden />
-                          {generatingInvoiceEventId === event.id
-                            ? "Generating invoice…"
-                            : "Invoice uninvoiced sales to Tikiti"}
-                        </button>
+                        {canGenerateInvoiceForEvent(event.date) ? (
+                          <button
+                            type="button"
+                            onClick={() => handleGenerateInvoice(event.id)}
+                            disabled={generatingInvoiceEventId === event.id}
+                            className="w-full mt-1 flex items-center justify-center gap-2 rounded-lg bg-green-600 text-white py-2.5 text-sm font-semibold hover:bg-green-700 disabled:opacity-50 transition-colors"
+                          >
+                            <DocumentTextIcon className="h-4 w-4" aria-hidden />
+                            {generatingInvoiceEventId === event.id
+                              ? "Generating invoice…"
+                              : "Invoice uninvoiced sales to Tikiti"}
+                          </button>
+                        ) : (
+                          <p className="text-xs text-amber-800 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2 mt-1 leading-relaxed">
+                            Invoicing opens after the event ({formatDate(event.date)}).
+                          </p>
+                        )}
                       </div>
                     )}
                   </div>

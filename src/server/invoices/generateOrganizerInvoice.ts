@@ -8,6 +8,7 @@ import {
   type RawInvoiceTicket,
 } from "@/server/invoices/buildInvoiceLineItems";
 import type { OrganizerInvoiceRecord } from "@/server/invoices/types";
+import { canGenerateInvoiceForEvent } from "@/utils/eventSchedule";
 
 export type GenerateInvoiceResult =
   | { ok: true; invoice: OrganizerInvoiceRecord }
@@ -43,6 +44,14 @@ export async function generateOrganizerInvoice(
 
   if (event.organizer_id !== organizer.id) {
     return { ok: false, status: 403, error: "Forbidden" };
+  }
+
+  if (!canGenerateInvoiceForEvent(event.date)) {
+    return {
+      ok: false,
+      status: 400,
+      error: "Invoices can only be generated after the event date and time have passed.",
+    };
   }
 
   const { data: invoicesForEvent, error: invoicesError } = await supabase
