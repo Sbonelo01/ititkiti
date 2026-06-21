@@ -8,6 +8,7 @@ import Image from "next/image";
 import { CalendarIcon, MapPinIcon, TicketIcon, ShieldCheckIcon, QrCodeIcon, ArrowTopRightOnSquareIcon, ClipboardDocumentIcon } from '@heroicons/react/24/outline';
 import PaystackPaymentButton from "@/components/PaystackButton";
 import { CtaLink, CtaButton } from "@/components/ui/CtaButton";
+import EventShareBar from "@/components/EventShareBar";
 import { buildAppleMapsSearchUrl, buildGoogleMapsSearchUrl } from "@/utils/mapsLinks";
 import { SERVICE_FEE_PER_TICKET } from "@/constants/pricing";
 import { buildPaystackReference } from "@/utils/paystackChargeMetadata";
@@ -445,6 +446,17 @@ export default function EventDetail() {
               From {formatPrice(lowestTicketPrice)}
             </span>
           </div>
+
+          <div className="mt-4 max-w-xl">
+            <EventShareBar
+              variant="hero"
+              eventId={eventId}
+              title={event.title}
+              dateLabel={formatDateCompact(event.date)}
+              location={event.location}
+              priceLabel={`From ${formatPrice(lowestTicketPrice)}`}
+            />
+          </div>
         </div>
       </div>
 
@@ -520,6 +532,14 @@ export default function EventDetail() {
               <h2 className="text-lg font-bold text-gray-900 mb-3">About this event</h2>
               <p className="text-gray-600 leading-relaxed text-base">{event.description}</p>
             </div>
+
+            <EventShareBar
+              eventId={eventId}
+              title={event.title}
+              dateLabel={formatDateCompact(event.date)}
+              location={event.location}
+              priceLabel={`From ${formatPrice(lowestTicketPrice)}`}
+            />
 
             <div className="grid grid-cols-2 gap-3 sm:gap-4">
               <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">

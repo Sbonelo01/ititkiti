@@ -9,6 +9,7 @@ import { AppRouterInstance } from "next/dist/shared/lib/app-router-context.share
 import Image from "next/image";
 import { SERVICE_FEE_PER_TICKET } from "@/constants/pricing";
 import { generateInvoice } from "@/utils/invoicesApi";
+import EventShareBar from "@/components/EventShareBar";
 import { 
   CalendarIcon, 
   MapPinIcon, 
@@ -584,6 +585,15 @@ function OrganizerDashboard({
                         </div>
                       ) : null}
                     </div>
+
+                    <EventShareBar
+                      compact
+                      eventId={event.id}
+                      title={event.title}
+                      dateLabel={formatDate(event.date)}
+                      location={event.location}
+                      priceLabel={formatPrice(event.price)}
+                    />
                     
                     {eventSalesData[event.id] && eventSalesData[event.id].ticketsSold > 0 && (
                       <div className="bg-gray-50 rounded-lg p-3 space-y-2">

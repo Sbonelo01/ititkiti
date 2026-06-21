@@ -6,6 +6,7 @@ import { User } from "@supabase/supabase-js";
 import Image from "next/image";
 import OrganizerAppPromo from "@/components/OrganizerAppPromo";
 import OrganizerSellGate from "@/components/OrganizerSellGate";
+import EventShareBar from "@/components/EventShareBar";
 import { CtaButton } from "@/components/ui/CtaButton";
 import { 
   CalendarIcon,
@@ -44,6 +45,7 @@ export default function CreateEvent() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const [createdEventId, setCreatedEventId] = useState<string | null>(null);
   const router = useRouter();
 
   const [formData, setFormData] = useState<EventFormData>({
@@ -292,10 +294,8 @@ export default function CreateEvent() {
       }
 
       console.log("Event created successfully!");
+      setCreatedEventId(eventResult.id);
       setSuccess(true);
-      setTimeout(() => {
-        router.push("/dashboard");
-      }, 2000);
     } catch (err: unknown) {
       console.error("Error creating event:", err);
       setError(err instanceof Error ? err.message : "Failed to create event");
@@ -323,19 +323,46 @@ export default function CreateEvent() {
     return null;
   }
 
-  if (success) {
+  if (success && createdEventId) {
+    const dateLabel = formData.date
+      ? new Date(`${formData.date}T${formData.time || "00:00"}`).toLocaleDateString("en-ZA", {
+          weekday: "short",
+          day: "numeric",
+          month: "short",
+        })
+      : undefined;
+    const lowestPrice = Math.min(...formData.ticket_types.map((t) => t.price));
+    const priceLabel =
+      lowestPrice === 0 ? "Free" : `From R${lowestPrice.toFixed(2)}`;
+
     return (
-      <div className="min-h-screen bg-gradient-to-br from-green-50 to-white flex items-center justify-center">
-        <div className="text-center">
-          <div className="bg-white rounded-2xl shadow-xl p-8 max-w-md mx-auto">
+      <div className="min-h-screen bg-gradient-to-br from-green-50 to-white flex items-center justify-center px-4 py-10">
+        <div className="w-full max-w-lg">
+          <div className="bg-white rounded-2xl shadow-xl p-6 sm:p-8 text-center">
             <div className="bg-green-100 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6">
               <CheckCircleIcon className="h-10 w-10 text-green-500" />
             </div>
-            <h2 className="text-2xl font-bold text-gray-800 mb-4">Event Created Successfully!</h2>
-            <p className="text-gray-600 mb-6">Your event has been created and is now live for ticket sales.</p>
-            <div className="animate-pulse">
-              <p className="text-sm text-gray-500">Redirecting to dashboard...</p>
+            <h2 className="text-2xl font-bold text-gray-800 mb-2">Event is live!</h2>
+            <p className="text-gray-600 mb-6">
+              Share your event link now to start selling tickets.
+            </p>
+            <div className="text-left mb-6">
+              <EventShareBar
+                eventId={createdEventId}
+                title={formData.title}
+                dateLabel={dateLabel}
+                location={formData.location}
+                priceLabel={priceLabel}
+              />
             </div>
+            <CtaButton
+              type="button"
+              variant="secondary"
+              className="w-full"
+              onClick={() => router.push("/dashboard")}
+            >
+              Go to dashboard
+            </CtaButton>
           </div>
         </div>
       </div>
