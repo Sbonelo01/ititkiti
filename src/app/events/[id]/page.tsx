@@ -5,9 +5,10 @@ import { supabase } from "@/utils/supabaseClient";
 import Link from "next/link";
 import { User } from "@supabase/supabase-js";
 import Image from "next/image";
-import { CalendarIcon, MapPinIcon, TicketIcon, ClockIcon, ShieldCheckIcon, QrCodeIcon } from '@heroicons/react/24/outline';
+import { CalendarIcon, MapPinIcon, TicketIcon, ShieldCheckIcon, QrCodeIcon, ArrowTopRightOnSquareIcon, ClipboardDocumentIcon } from '@heroicons/react/24/outline';
 import PaystackPaymentButton from "@/components/PaystackButton";
 import { CtaLink, CtaButton } from "@/components/ui/CtaButton";
+import { buildAppleMapsSearchUrl, buildGoogleMapsSearchUrl } from "@/utils/mapsLinks";
 import { SERVICE_FEE_PER_TICKET } from "@/constants/pricing";
 import { buildPaystackReference } from "@/utils/paystackChargeMetadata";
 
@@ -102,6 +103,7 @@ export default function EventDetail() {
   const [showPaystack, setShowPaystack] = useState(false);
   const [paystackReference, setPaystackReference] = useState<string>("");
   const [verifyingPayment, setVerifyingPayment] = useState(false);
+  const [locationCopied, setLocationCopied] = useState(false);
   const router = useRouter();
   const params = useParams();
   const pathname = usePathname();
@@ -313,6 +315,36 @@ export default function EventDetail() {
     });
   };
 
+  const formatDateCompact = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-ZA', {
+      weekday: 'short',
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  };
+
+  const copyLocation = async () => {
+    if (!event?.location) return;
+    try {
+      await navigator.clipboard.writeText(event.location);
+      setLocationCopied(true);
+      window.setTimeout(() => setLocationCopied(false), 2000);
+    } catch {
+      /* clipboard unavailable */
+    }
+  };
+
+  const mapsGoogleUrl = event ? buildGoogleMapsSearchUrl(event.location) : "";
+  const mapsAppleUrl = event ? buildAppleMapsSearchUrl(event.location) : "";
+  const lowestTicketPrice =
+    ticketTypes.length > 0
+      ? Math.min(...ticketTypes.map((t) => t.price))
+      : event?.price ?? 0;
+
   const formatPrice = (price: number) => {
     if (price === 0) return 'Free';
     return `R${price.toFixed(2)}`;
@@ -373,8 +405,8 @@ export default function EventDetail() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 to-white pb-32 lg:pb-0">
-      {/* Hero Section with Event Poster */}
-      <div className="relative min-h-[20vh]">
+      {/* Hero */}
+      <div className="relative min-h-[28vh] sm:min-h-[32vh]">
         {event.poster_url ? (
           <div className="absolute inset-0">
             <Image
@@ -384,61 +416,95 @@ export default function EventDetail() {
               className="object-cover"
               priority={true}
             />
-            <div className="absolute inset-0 bg-green-500 bg-opacity-40"></div>
+            <div className="absolute inset-0 bg-gradient-to-t from-green-900/80 via-green-900/50 to-green-900/30" />
           </div>
         ) : (
-          <div className="absolute inset-0 bg-gradient-to-br from-green-500 to-green-600"></div>
+          <div className="absolute inset-0 bg-gradient-to-br from-green-600 to-green-800" />
         )}
         
-        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 pb-8 sm:pb-10 h-full flex flex-col justify-center">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-4">
-            <Link
-              href="/events"
-              className="inline-flex items-center text-white hover:text-green-200 transition-colors duration-200 font-medium text-sm sm:text-base touch-target"
-            >
-              ← Back to events
-            </Link>
-            {!user && (
-              <CtaLink
-                href={`/login?redirect=${encodeURIComponent(`/events/${eventId}`)}`}
-                variant="secondary"
-                className="w-full sm:w-auto py-3 text-sm font-bold sm:px-5"
-              >
-                Sign in & buy
-              </CtaLink>
-            )}
-          </div>
+        <div className="relative z-10 max-w-3xl lg:max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-3 pb-6 sm:pb-8">
+          <Link
+            href="/events"
+            className="inline-flex items-center text-white/90 hover:text-white text-sm font-medium mb-4 touch-target"
+          >
+            ← Back to events
+          </Link>
           
-          <div className="max-w-4xl">
-            <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white mb-3 leading-tight">
-              {event.title}
-            </h1>
-            <div className="flex flex-wrap items-center gap-6 text-white/90">
-              <div className="flex items-center gap-2">
-                <CalendarIcon className="h-5 w-5" />
-                <span className="font-medium">{formatDate(event.date)}</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <MapPinIcon className="h-5 w-5" />
-                <span className="font-medium">{event.location}</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <TicketIcon className="h-5 w-5" />
-                <span className="font-medium">{event.total_tickets} tickets available</span>
-              </div>
-            </div>
+          <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white mb-4 leading-tight">
+            {event.title}
+          </h1>
+
+          <div className="flex flex-wrap gap-2 sm:gap-3">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-white/15 backdrop-blur-sm px-3 py-1.5 text-sm text-white">
+              <CalendarIcon className="h-4 w-4 shrink-0" aria-hidden />
+              <span className="sm:hidden">{formatDateCompact(event.date)}</span>
+              <span className="hidden sm:inline">{formatDate(event.date)}</span>
+            </span>
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-white/15 backdrop-blur-sm px-3 py-1.5 text-sm text-white max-w-full">
+              <TicketIcon className="h-4 w-4 shrink-0" aria-hidden />
+              From {formatPrice(lowestTicketPrice)}
+            </span>
           </div>
         </div>
       </div>
 
+      {/* Location — easy to find */}
+      <section
+        id="event-location"
+        className="max-w-3xl lg:max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-3 relative z-20 mb-5 sm:mb-8"
+        aria-labelledby="event-location-heading"
+      >
+        <div className="bg-white rounded-2xl shadow-lg border border-blue-100 overflow-hidden">
+          <div className="flex items-start gap-3 p-4 sm:p-5">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
+              <MapPinIcon className="h-6 w-6" aria-hidden />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p id="event-location-heading" className="text-xs font-semibold uppercase tracking-wide text-blue-600 mb-0.5">
+                Event location
+              </p>
+              <p className="text-base sm:text-lg font-semibold text-gray-900 leading-snug break-words">
+                {event.location}
+              </p>
+            </div>
+          </div>
+          <div className="flex flex-col sm:flex-row gap-2 px-4 pb-4 sm:px-5 sm:pb-5">
+            <a
+              href={mapsGoogleUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-green-600 px-4 py-3 text-sm font-semibold text-white hover:bg-green-700 transition-colors touch-target"
+            >
+              <ArrowTopRightOnSquareIcon className="h-4 w-4" aria-hidden />
+              Open in Google Maps
+            </a>
+            <a
+              href={mapsAppleUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm font-semibold text-gray-800 hover:bg-gray-100 transition-colors touch-target sm:hidden"
+            >
+              Open in Apple Maps
+            </a>
+            <button
+              type="button"
+              onClick={copyLocation}
+              className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors touch-target"
+            >
+              <ClipboardDocumentIcon className="h-4 w-4" aria-hidden />
+              {locationCopied ? "Copied!" : "Copy address"}
+            </button>
+          </div>
+        </div>
+      </section>
+
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-8 relative z-20">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
+      <div className="max-w-3xl lg:max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-4">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 lg:gap-8">
           {/* Event Details — below tickets on mobile */}
-          <div className="lg:col-span-2 space-y-6 order-2 lg:order-1">
-            {/* Poster (desktop only — hero already shows it on mobile) */}
+          <div className="lg:col-span-2 space-y-5 order-2 lg:order-1">
             {event.poster_url && (
-              <div className="hidden lg:block bg-white rounded-2xl shadow-xl overflow-hidden">
+              <div className="hidden lg:block bg-white rounded-2xl shadow-md overflow-hidden border border-gray-100">
                 <Image
                   src={event.poster_url}
                   alt={event.title + ' poster'}
@@ -450,67 +516,44 @@ export default function EventDetail() {
               </div>
             )}
 
-            {/* Description Card */}
-            <div className="bg-white rounded-2xl shadow-xl p-5 sm:p-8">
-              <h2 className="text-xl sm:text-2xl font-bold text-gray-800 mb-4 sm:mb-6">About this event</h2>
-              <p className="text-gray-600 leading-relaxed text-base sm:text-lg">{event.description}</p>
+            <div className="bg-white rounded-2xl shadow-md border border-gray-100 p-5 sm:p-6">
+              <h2 className="text-lg font-bold text-gray-900 mb-3">About this event</h2>
+              <p className="text-gray-600 leading-relaxed text-base">{event.description}</p>
             </div>
 
-            {/* Event Info Cards — compact on mobile */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
-              <div className="bg-white rounded-2xl shadow-xl p-6">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="bg-green-100 p-3 rounded-xl">
-                    <CalendarIcon className="h-6 w-6 text-green-600" />
-                  </div>
-                  <h3 className="text-xl font-semibold text-gray-800">Date & Time</h3>
+            <div className="grid grid-cols-2 gap-3 sm:gap-4">
+              <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <CalendarIcon className="h-5 w-5 text-green-600" aria-hidden />
+                  <h3 className="text-sm font-semibold text-gray-800">When</h3>
                 </div>
-                <p className="text-gray-600">{formatDate(event.date)}</p>
+                <p className="text-sm text-gray-600 leading-snug">{formatDateCompact(event.date)}</p>
               </div>
 
-              <div className="bg-white rounded-2xl shadow-xl p-6">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="bg-blue-100 p-3 rounded-xl">
-                    <MapPinIcon className="h-6 w-6 text-blue-600" />
-                  </div>
-                  <h3 className="text-xl font-semibold text-gray-800">Location</h3>
+              <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <TicketIcon className="h-5 w-5 text-purple-600" aria-hidden />
+                  <h3 className="text-sm font-semibold text-gray-800">Tickets</h3>
                 </div>
-                <p className="text-gray-600">{event.location}</p>
-              </div>
-
-              <div className="bg-white rounded-2xl shadow-xl p-6">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="bg-purple-100 p-3 rounded-xl">
-                    <TicketIcon className="h-6 w-6 text-purple-600" />
-                  </div>
-                  <h3 className="text-xl font-semibold text-gray-800">Ticket Price</h3>
-                </div>
-                <p className="text-green-600 font-bold text-2xl">{formatPrice(event.price)}</p>
-              </div>
-
-              <div className="bg-white rounded-2xl shadow-xl p-6">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="bg-orange-100 p-3 rounded-xl">
-                    <ClockIcon className="h-6 w-6 text-orange-600" />
-                  </div>
-                  <h3 className="text-xl font-semibold text-gray-800">Available Tickets</h3>
-                </div>
-                <p className="text-gray-600 text-2xl font-bold">{event.total_tickets} tickets</p>
+                <p className="text-sm text-gray-600">
+                  From <span className="font-bold text-green-600">{formatPrice(lowestTicketPrice)}</span>
+                </p>
+                <p className="text-xs text-gray-500 mt-1">{event.total_tickets} total</p>
               </div>
             </div>
           </div>
 
-          {/* Purchase — first on mobile for faster checkout */}
+          {/* Purchase — first in grid on mobile (after location strip) */}
           <div className="lg:col-span-1 order-1 lg:order-2">
-            <div className="bg-white rounded-2xl shadow-2xl p-5 sm:p-8 lg:sticky lg:top-24 border border-green-100">
-              <div className="text-center mb-6">
-                <h2 className="text-2xl font-bold text-gray-900 mb-2">Get your tickets</h2>
-                <p className="text-gray-600 text-sm">Select tickets below — checkout takes under a minute</p>
+            <div className="bg-white rounded-2xl shadow-lg p-5 sm:p-6 lg:sticky lg:top-24 border border-green-100">
+              <div className="mb-5">
+                <h2 className="text-xl font-bold text-gray-900">Get tickets</h2>
+                <p className="text-gray-500 text-sm mt-1">Instant QR codes after payment</p>
               </div>
               
               {user ? (
-                <div className="space-y-6">
-                  <ul className="flex flex-wrap gap-2 justify-center text-xs text-gray-600">
+                <div className="space-y-5">
+                  <ul className="flex flex-wrap gap-2 text-xs text-gray-600">
                     <li className="inline-flex items-center gap-1 rounded-full bg-green-50 px-3 py-1">
                       <QrCodeIcon className="h-3.5 w-3.5 text-green-600" aria-hidden />
                       Instant QR delivery
@@ -521,14 +564,14 @@ export default function EventDetail() {
                     </li>
                   </ul>
                   <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-3">
-                      Select Tickets
-                    </label>
-                    <div className="space-y-4">
+                    <p className="block text-sm font-semibold text-gray-800 mb-3">
+                      Choose tickets
+                    </p>
+                    <div className="space-y-3">
                       {ticketTypes.map((ticketType) => (
                         <div
                           key={ticketType.id}
-                          className="bg-gray-50 rounded-xl p-4 border-2 border-gray-200 hover:border-green-300 transition-all duration-200"
+                          className="bg-gray-50 rounded-xl p-4 border border-gray-200"
                         >
                           <div className="flex justify-between items-start mb-3">
                             <div className="flex-1">
@@ -583,7 +626,7 @@ export default function EventDetail() {
                   </div>
 
                   {totalQuantity > 0 && (
-                    <div className="bg-gray-50 rounded-xl p-6 space-y-4">
+                    <div className="bg-gray-50 rounded-xl p-4 space-y-3 text-sm">
                       <div className="flex justify-between items-center">
                         <span className="text-gray-600">Subtotal:</span>
                         <span className="font-semibold text-gray-800">{formatPrice(subtotal)}</span>
@@ -592,10 +635,10 @@ export default function EventDetail() {
                         <span className="text-gray-600">Service fee (R10/ticket):</span>
                         <span className="font-semibold text-gray-800">{formatPrice(serviceFee)}</span>
                       </div>
-                      <div className="border-t border-gray-200 pt-4">
+                      <div className="border-t border-gray-200 pt-3">
                         <div className="flex justify-between items-center">
-                          <span className="text-lg font-bold text-gray-800">Total:</span>
-                          <span className="text-2xl font-bold text-green-600">{formatPrice(totalWithFee)}</span>
+                          <span className="font-bold text-gray-800">Total</span>
+                          <span className="text-xl font-bold text-green-600">{formatPrice(totalWithFee)}</span>
                         </div>
                       </div>
                     </div>
@@ -629,9 +672,9 @@ export default function EventDetail() {
                   </CtaButton>
                 </div>
               ) : (
-                <div className="text-center space-y-5">
-                  <div className="rounded-xl bg-green-50 p-5 text-left space-y-3">
-                    <p className="font-semibold text-gray-900">Why sign in?</p>
+                <div className="space-y-4">
+                  <div className="rounded-xl bg-green-50 p-4 text-left space-y-2.5 border border-green-100">
+                    <p className="font-semibold text-gray-900 text-sm">Sign in to checkout</p>
                     <ul className="text-sm text-gray-600 space-y-2">
                       <li className="flex items-start gap-2">
                         <ShieldCheckIcon className="h-4 w-4 text-green-600 shrink-0 mt-0.5" aria-hidden />
@@ -650,11 +693,11 @@ export default function EventDetail() {
                   <CtaLink
                     href={`/login?redirect=${encodeURIComponent(`/events/${eventId}`)}`}
                     variant="primary"
-                    className="w-full py-4 text-lg font-bold"
+                    className="w-full py-3.5 text-base font-bold"
                   >
                     Sign in & buy tickets
                   </CtaLink>
-                  <p className="text-xs text-gray-500">
+                  <p className="text-xs text-gray-500 text-center">
                     New here?{" "}
                     <Link href={`/login?redirect=${encodeURIComponent(`/events/${eventId}`)}`} className="text-green-700 font-medium hover:underline">
                       Create a free account
