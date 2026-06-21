@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/utils/supabaseClient";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import QRScanner from "@/components/QRScanner";
 import { SERVICE_FEE_PER_TICKET } from "@/constants/pricing";
 
@@ -182,12 +183,20 @@ export default function AdminDashboard() {
           // Admin view - full dashboard
           <>
             <h1 className="text-4xl font-bold mb-8">Admin Event Revenue Dashboard</h1>
-            <button
-              className="mb-8 bg-green-600 text-white px-6 py-3 rounded-xl font-bold text-lg hover:bg-green-700 transition-all duration-200 shadow-lg hover:shadow-xl"
-              onClick={() => { setShowScanner(true); setScanResult(null); }}
-            >
-              Open Ticket Scanner
-            </button>
+            <div className="flex flex-wrap gap-3 mb-8">
+              <Link
+                href="/dashboard/admin/invoices"
+                className="bg-gray-800 text-white px-6 py-3 rounded-xl font-semibold hover:bg-gray-900 transition-colors"
+              >
+                Organizer invoices
+              </Link>
+              <button
+                className="bg-green-600 text-white px-6 py-3 rounded-xl font-bold text-lg hover:bg-green-700 transition-all duration-200 shadow-lg"
+                onClick={() => { setShowScanner(true); setScanResult(null); }}
+              >
+                Open Ticket Scanner
+              </button>
+            </div>
             {showScanner && (
               <QRScanner
                 onScan={qrValue => { setShowScanner(false); handleScan(qrValue); }}

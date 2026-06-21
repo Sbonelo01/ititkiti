@@ -8,6 +8,7 @@ import { QRCodeCanvas } from "qrcode.react";
 import { AppRouterInstance } from "next/dist/shared/lib/app-router-context.shared-runtime";
 import Image from "next/image";
 import { SERVICE_FEE_PER_TICKET } from "@/constants/pricing";
+import { generateInvoice } from "@/utils/invoicesApi";
 import { 
   CalendarIcon, 
   MapPinIcon, 
@@ -146,6 +147,7 @@ function OrganizerDashboard({
     totalServiceFees: 0,
   });
   const [loadingSales, setLoadingSales] = useState(true);
+  const [generatingInvoiceEventId, setGeneratingInvoiceEventId] = useState<string | null>(null);
 
   const fetchOrganizerEvents = useCallback(async () => {
     try {
@@ -356,6 +358,18 @@ function OrganizerDashboard({
     router.push(`/dashboard/edit-event/${eventId}`);
   };
 
+  const handleGenerateInvoice = async (eventId: string) => {
+    setGeneratingInvoiceEventId(eventId);
+    try {
+      const invoice = await generateInvoice(eventId);
+      router.push(`/dashboard/invoices/${invoice.id}`);
+    } catch (e) {
+      alert(e instanceof Error ? e.message : "Failed to generate invoice");
+    } finally {
+      setGeneratingInvoiceEventId(null);
+    }
+  };
+
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString("en-US", {
@@ -378,11 +392,12 @@ function OrganizerDashboard({
       {/* Hero Header */}
       <div className="bg-gradient-to-r from-green-600 to-green-700 text-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="flex justify-between items-center mb-6">
+          <div className="flex justify-between items-center mb-6 flex-wrap gap-4">
             <div>
               <h1 className="text-4xl font-bold mb-2">Your Events</h1>
               <p className="text-green-100">Manage and organize your events</p>
             </div>
+            <div className="flex flex-wrap gap-3">
             <Link
               href="/dashboard/create-event"
               className="bg-white text-green-600 px-6 py-3 rounded-xl font-semibold hover:bg-green-50 transition-all duration-200 shadow-lg hover:shadow-xl flex items-center gap-2"
@@ -390,6 +405,14 @@ function OrganizerDashboard({
               <PlusIcon className="h-5 w-5" />
               Create New Event
             </Link>
+            <Link
+              href="/dashboard/invoices"
+              className="bg-green-800/40 text-white border border-white/30 px-5 py-3 rounded-xl font-semibold hover:bg-green-800/60 transition-colors flex items-center gap-2"
+            >
+              <DocumentTextIcon className="h-5 w-5" aria-hidden />
+              Invoices
+            </Link>
+            </div>
           </div>
         </div>
       </div>
@@ -563,7 +586,7 @@ function OrganizerDashboard({
                     </div>
                     
                     {eventSalesData[event.id] && eventSalesData[event.id].ticketsSold > 0 && (
-                      <div className="bg-gray-50 rounded-lg p-3 space-y-1">
+                      <div className="bg-gray-50 rounded-lg p-3 space-y-2">
                         <div className="flex justify-between text-xs text-gray-600">
                           <span>Revenue:</span>
                           <span className="font-semibold">{formatPrice(eventSalesData[event.id].revenue)}</span>
@@ -574,6 +597,17 @@ function OrganizerDashboard({
                             {formatPrice(eventSalesData[event.id].ticketsSold * SERVICE_FEE_PER_TICKET)}
                           </span>
                         </div>
+                        <button
+                          type="button"
+                          onClick={() => handleGenerateInvoice(event.id)}
+                          disabled={generatingInvoiceEventId === event.id}
+                          className="w-full mt-1 flex items-center justify-center gap-2 rounded-lg bg-green-600 text-white py-2.5 text-sm font-semibold hover:bg-green-700 disabled:opacity-50 transition-colors"
+                        >
+                          <DocumentTextIcon className="h-4 w-4" aria-hidden />
+                          {generatingInvoiceEventId === event.id
+                            ? "Generating invoice…"
+                            : "Invoice uninvoiced sales to Tikiti"}
+                        </button>
                       </div>
                     )}
                   </div>

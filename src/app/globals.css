@@ -42,6 +42,16 @@ body {
   min-width: 44px;
 }
 
+@media print {
+  body {
+    background: white !important;
+  }
+  nav,
+  header {
+    display: none !important;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
