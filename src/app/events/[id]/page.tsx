@@ -446,17 +446,6 @@ export default function EventDetail() {
               From {formatPrice(lowestTicketPrice)}
             </span>
           </div>
-
-          <div className="mt-4 max-w-xl">
-            <EventShareBar
-              variant="hero"
-              eventId={eventId}
-              title={event.title}
-              dateLabel={formatDateCompact(event.date)}
-              location={event.location}
-              priceLabel={`From ${formatPrice(lowestTicketPrice)}`}
-            />
-          </div>
         </div>
       </div>
 
@@ -532,14 +521,6 @@ export default function EventDetail() {
               <h2 className="text-lg font-bold text-gray-900 mb-3">About this event</h2>
               <p className="text-gray-600 leading-relaxed text-base">{event.description}</p>
             </div>
-
-            <EventShareBar
-              eventId={eventId}
-              title={event.title}
-              dateLabel={formatDateCompact(event.date)}
-              location={event.location}
-              priceLabel={`From ${formatPrice(lowestTicketPrice)}`}
-            />
 
             <div className="grid grid-cols-2 gap-3 sm:gap-4">
               <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
@@ -729,6 +710,20 @@ export default function EventDetail() {
           </div>
         </div>
       </div>
+
+      <section
+        className="max-w-3xl lg:max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8"
+        aria-label="Share this event"
+      >
+        <EventShareBar
+          eventId={eventId}
+          title={event.title}
+          dateLabel={formatDateCompact(event.date)}
+          location={event.location}
+          priceLabel={`From ${formatPrice(lowestTicketPrice)}`}
+        />
+      </section>
+
       {user && totalQuantity > 0 && !showPaystack && (
         <div
           className="lg:hidden fixed left-0 right-0 z-40 border-t border-green-200 bg-white/95 backdrop-blur-md px-4 py-3 shadow-[0_-4px_20px_rgba(0,0,0,0.08)] mobile-sticky-cta"

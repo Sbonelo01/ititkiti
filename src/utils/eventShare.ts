@@ -59,6 +59,11 @@ export function buildLinkedInShareUrl(url: string): string {
   return `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`;
 }
 
+/** Opens TikTok upload; copies share text first (no official web sharer for external URLs). */
+export function buildTikTokShareUrl(): string {
+  return "https://www.tiktok.com/upload";
+}
+
 export function buildEmailShareUrl(subject: string, body: string): string {
   return `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
 }

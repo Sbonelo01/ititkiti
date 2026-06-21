@@ -1,6 +1,7 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 import {
   buildEventShareMessage,
+  buildTikTokShareUrl,
   buildWhatsAppShareUrl,
   getEventShareUrl,
 } from "@/utils/eventShare";
@@ -35,5 +36,9 @@ describe("eventShare", () => {
     const url = buildWhatsAppShareUrl("Hello world");
     expect(url).toContain("wa.me");
     expect(url).toContain(encodeURIComponent("Hello world"));
+  });
+
+  it("builds TikTok upload URL", () => {
+    expect(buildTikTokShareUrl()).toBe("https://www.tiktok.com/upload");
   });
 });
