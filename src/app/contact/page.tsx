@@ -1,3 +1,12 @@
+import { buildPageMetadata } from "@/lib/seo/metadata";
+import { BRAND } from "@/constants/branding";
+
+export const metadata = buildPageMetadata({
+  title: "Contact Us",
+  description: `Contact ${BRAND.name} for ticketing support, event setup help, and platform questions. Durban, South Africa.`,
+  path: "/contact",
+});
+
 export default function ContactPage() {
   return (
     <main className="min-h-screen bg-gradient-to-br from-green-50 to-white">

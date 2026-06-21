@@ -1,3 +1,12 @@
+import { buildPageMetadata } from "@/lib/seo/metadata";
+import { BRAND } from "@/constants/branding";
+
+export const metadata = buildPageMetadata({
+  title: "Privacy Policy",
+  description: `How ${BRAND.name} collects, uses, and protects your personal data. Payments are processed securely by Paystack.`,
+  path: "/privacy",
+});
+
 export default function PrivacyPage() {
   return (
     <main className="min-h-screen bg-gradient-to-br from-green-50 to-white">

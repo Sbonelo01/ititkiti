@@ -1,4 +1,12 @@
 import Link from "next/link";
+import { buildPageMetadata } from "@/lib/seo/metadata";
+import { BRAND } from "@/constants/branding";
+
+export const metadata = buildPageMetadata({
+  title: "Help Center",
+  description: `Get help buying tickets, creating events, and validating QR entry with ${BRAND.name} and the Tikiti Scanner app.`,
+  path: "/help",
+});
 
 export default function HelpPage() {
   return (
@@ -16,7 +24,11 @@ export default function HelpPage() {
             <li>How ticket validation works for staff and admins</li>
           </ul>
           <p className="text-gray-700">
-            Still stuck? Visit <Link href="/contact" className="text-green-600 hover:text-green-700 font-semibold">Contact Us</Link>.
+            Still stuck? Visit{" "}
+            <Link href="/contact" className="text-green-600 hover:text-green-700 font-semibold">
+              Contact Us
+            </Link>
+            .
           </p>
         </div>
       </div>

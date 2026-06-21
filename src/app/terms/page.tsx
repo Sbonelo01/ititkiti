@@ -1,3 +1,12 @@
+import { buildPageMetadata } from "@/lib/seo/metadata";
+import { BRAND } from "@/constants/branding";
+
+export const metadata = buildPageMetadata({
+  title: "Terms of Service",
+  description: `Terms for using ${BRAND.name} as an event organizer or ticket buyer in South Africa.`,
+  path: "/terms",
+});
+
 export default function TermsPage() {
   return (
     <main className="min-h-screen bg-gradient-to-br from-green-50 to-white">

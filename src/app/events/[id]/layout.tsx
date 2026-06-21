@@ -1,7 +1,10 @@
 import type { Metadata } from "next";
 import { getSupabaseAdmin } from "@/server/supabaseAdmin";
-import { getEventShareUrl } from "@/utils/eventShare";
 import { BRAND } from "@/constants/branding";
+import { buildPageMetadata } from "@/lib/seo/metadata";
+import { lowestTicketPrice } from "@/server/events/publicEvents";
+
+const DEFAULT_EVENT_DESCRIPTION = `Discover events and buy paperless tickets on ${BRAND.name}.`;
 
 type LayoutProps = {
   children: React.ReactNode;
@@ -20,46 +23,57 @@ export async function generateMetadata({ params }: LayoutProps): Promise<Metadat
       .maybeSingle();
 
     if (!event) {
-      return { title: `Event not found | ${BRAND.name}` };
+      return buildPageMetadata({
+        title: `Event not found`,
+        description: `This event is not available on ${BRAND.name}.`,
+        path: `/events/${id}`,
+      });
     }
 
-    const url = getEventShareUrl(id);
+    const { data: ticketTypes } = await supabase
+      .from("ticket_types")
+      .select("price")
+      .eq("event_id", id);
+
+    const minPrice = lowestTicketPrice(
+      {
+        id,
+        title: event.title,
+        description: event.description ?? "",
+        date: event.date,
+        location: event.location,
+        price: event.price,
+        total_tickets: 0,
+        organizer_id: "",
+      },
+      (ticketTypes ?? []).map((row) => ({
+        id: "",
+        event_id: id,
+        name: "",
+        price: row.price,
+        quantity: 0,
+        available_quantity: 0,
+      }))
+    );
+
     const description =
       event.description?.trim().slice(0, 200) ||
       `${event.title} — ${event.location}. Get paperless tickets on ${BRAND.name}.`;
     const priceNote =
-      Number(event.price) === 0 ? "Free tickets" : `From R${Number(event.price).toFixed(2)}`;
+      minPrice === 0 ? "Free tickets available." : `Tickets from R${minPrice.toFixed(2)}.`;
 
-    return {
-      title: `${event.title} | ${BRAND.name}`,
-      description: `${description} ${priceNote}.`,
-      openGraph: {
-        title: event.title,
-        description,
-        url,
-        siteName: BRAND.name,
-        locale: "en_ZA",
-        type: "website",
-        ...(event.poster_url
-          ? {
-              images: [
-                {
-                  url: event.poster_url,
-                  alt: `${event.title} poster`,
-                },
-              ],
-            }
-          : {}),
-      },
-      twitter: {
-        card: event.poster_url ? "summary_large_image" : "summary",
-        title: event.title,
-        description,
-        ...(event.poster_url ? { images: [event.poster_url] } : {}),
-      },
-    };
+    return buildPageMetadata({
+      title: event.title,
+      description: `${description} ${priceNote}`,
+      path: `/events/${id}`,
+      ogImage: event.poster_url ?? undefined,
+    });
   } catch {
-    return { title: `Event | ${BRAND.name}` };
+    return buildPageMetadata({
+      title: "Event",
+      description: DEFAULT_EVENT_DESCRIPTION,
+      path: `/events/${id}`,
+    });
   }
 }
 

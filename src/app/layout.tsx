@@ -3,6 +3,12 @@ import { Roboto, Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import { BRAND } from "@/constants/branding";
+import {
+  buildPageMetadata,
+  DEFAULT_SITE_DESCRIPTION,
+  getMetadataBase,
+} from "@/lib/seo/metadata";
 
 const roboto = Roboto({
   subsets: ["latin"],
@@ -17,9 +23,28 @@ const plusJakarta = Plus_Jakarta_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "Tikiti — Paperless Event Ticketing",
-  description:
-    "Green, innovative, paperless ticketing for South Africa. Digital QR tickets, secure payments, and a free scanner app for event organizers on iOS and Android.",
+  metadataBase: getMetadataBase(),
+  ...buildPageMetadata({
+    title: `${BRAND.name} — Paperless Event Ticketing`,
+    description: DEFAULT_SITE_DESCRIPTION,
+  }),
+  title: {
+    default: `${BRAND.name} — Paperless Event Ticketing`,
+    template: `%s | ${BRAND.name}`,
+  },
+  keywords: [
+    "event tickets",
+    "paperless ticketing",
+    "South Africa events",
+    "QR tickets",
+    "Durban events",
+    "sell tickets online",
+    "Tikiti",
+  ],
+  authors: [{ name: "IZIBONELO TECH PTY LTD", url: "https://www.tikiti.fun" }],
+  creator: BRAND.name,
+  publisher: "IZIBONELO TECH PTY LTD",
+  category: "technology",
   icons: {
     icon: "/tikiti-logo.png",
     apple: "/tikiti-logo.png",
@@ -32,16 +57,14 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en-ZA">
       <body
         className={`${roboto.variable} ${plusJakarta.variable} antialiased bg-background text-foreground font-sans`}
       >
         <Navbar />
-        {/* Main content with padding for navbars */}
         <main className="pt-16 md:pt-20 pb-[var(--mobile-nav-offset)] md:pb-8 min-h-screen bg-background">
           {children}
         </main>
-        {/* Modern Footer */}
         <Footer />
       </body>
     </html>
