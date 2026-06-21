@@ -37,8 +37,15 @@ function LoginForm() {
   const searchParams = useSearchParams();
   const redirectTo = searchParams.get("redirect") || "/dashboard";
   const isCheckoutRedirect = redirectTo.startsWith("/events/");
+  const isSellRedirect = redirectTo.includes("create-event");
 
-  // Check if user is already logged in
+  useEffect(() => {
+    if (!isLogin && isSellRedirect) {
+      setRole("organizer");
+    }
+  }, [isLogin, isSellRedirect]);
+
+  // Redirect if already logged in (attendees can reach sell flow to upgrade)
   useEffect(() => {
     const checkUser = async () => {
       const {
@@ -228,17 +235,25 @@ function LoginForm() {
                 ? isLogin
                   ? "Almost there!"
                   : "Quick signup to checkout"
-                : isLogin
-                  ? "Welcome back!"
-                  : "Join Tikiti today"}
+                : isSellRedirect
+                  ? isLogin
+                    ? "Sign in to sell tickets"
+                    : "Create your seller account"
+                  : isLogin
+                    ? "Welcome back!"
+                    : "Join Tikiti today"}
             </h1>
             
             <p className="text-xl text-white/90 mb-8 max-w-2xl mx-auto">
               {isCheckoutRedirect
                 ? "Sign in once — your QR tickets land in your dashboard right after payment."
-                : isLogin
-                  ? "Sign in to access your events and manage your tickets"
-                  : "Create your account and start discovering amazing events or organizing your own"}
+                : isSellRedirect
+                  ? isLogin
+                    ? "Sign in, then we'll help you enable organizer tools on your account."
+                    : "Choose Event Organizer at signup — list events and sell paperless tickets."
+                  : isLogin
+                    ? "Sign in to access your events and manage your tickets"
+                    : "Create your account and start discovering amazing events or organizing your own"}
             </p>
           </div>
         </div>
@@ -261,16 +276,22 @@ function LoginForm() {
                     ? isLogin
                       ? "Sign in to buy tickets"
                       : "Create account & buy"
-                    : isLogin
-                      ? "Sign in"
-                      : "Create account"}
+                    : isSellRedirect
+                      ? isLogin
+                        ? "Sign in to continue"
+                        : "Sign up as organizer"
+                      : isLogin
+                        ? "Sign in"
+                        : "Create account"}
                 </h2>
                 <p className="text-gray-600">
                   {isCheckoutRedirect
                     ? "Takes under a minute — then you're back to checkout."
-                    : isLogin
-                      ? "Welcome back to Tikiti"
-                      : "Join thousands of event organizers and attendees"}
+                    : isSellRedirect && isLogin
+                      ? "Already a buyer? You'll enable selling on the next screen."
+                      : isLogin
+                        ? "Welcome back to Tikiti"
+                        : "Join thousands of event organizers and attendees"}
                 </p>
               </div>
 

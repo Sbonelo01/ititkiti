@@ -5,6 +5,7 @@ import { supabase } from "@/utils/supabaseClient";
 import { User } from "@supabase/supabase-js";
 import Image from "next/image";
 import OrganizerAppPromo from "@/components/OrganizerAppPromo";
+import OrganizerSellGate from "@/components/OrganizerSellGate";
 import { CtaButton } from "@/components/ui/CtaButton";
 import { 
   CalendarIcon,
@@ -38,6 +39,7 @@ interface EventFormData {
 
 export default function CreateEvent() {
   const [user, setUser] = useState<User | null>(null);
+  const [userRole, setUserRole] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -75,18 +77,24 @@ export default function CreateEvent() {
         return;
       }
 
-      const userRole = session.user.user_metadata?.role;
-      if (userRole !== "organizer") {
-        router.push("/dashboard");
-        return;
-      }
-
+      const role = session.user.user_metadata?.role || "attendee";
       setUser(session.user);
+      setUserRole(role);
       setLoading(false);
     };
 
     checkAuth();
   }, [router]);
+
+  const handleOrganizerUpgrade = async () => {
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+    if (session?.user) {
+      setUser(session.user);
+      setUserRole(session.user.user_metadata?.role || "attendee");
+    }
+  };
 
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -305,6 +313,14 @@ export default function CreateEvent() {
         </div>
       </div>
     );
+  }
+
+  if (user && userRole !== "organizer") {
+    return <OrganizerSellGate user={user} onUpgraded={handleOrganizerUpgrade} />;
+  }
+
+  if (!user) {
+    return null;
   }
 
   if (success) {
