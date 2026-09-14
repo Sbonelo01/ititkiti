@@ -1,6 +1,7 @@
 import AppStoreBadges from "@/components/AppStoreBadges";
 import JsonLd from "@/components/seo/JsonLd";
 import { ORGANIZER_APP, BRAND } from "@/constants/branding";
+import { INVOICE_FAQ_ITEMS } from "@/constants/organizerCopy";
 import { buildFaqPageJsonLd } from "@/lib/seo/jsonLd";
 import { buildPageMetadata } from "@/lib/seo/metadata";
 
@@ -35,6 +36,7 @@ const FAQ_ITEMS = [
     answer:
       "Buyers pay a service fee on top of the ticket price: R5 under R50, R10 from R50 to R200, and 5% above R200. Organizers receive 100% of ticket face value.",
   },
+  ...INVOICE_FAQ_ITEMS,
 ];
 
 export default function FaqPage() {
@@ -48,7 +50,10 @@ export default function FaqPage() {
         </p>
         <div className="bg-white rounded-2xl shadow-md p-6 space-y-5 text-gray-700">
           {FAQ_ITEMS.map((item) => (
-            <div key={item.question}>
+            <div
+              key={item.question}
+              id={item.question.startsWith("How do organizer invoices") ? "invoices" : undefined}
+            >
               <h2 className="font-semibold text-gray-900">{item.question}</h2>
               <p>{item.answer}</p>
               {item.question === "Do organizers get a mobile app?" && (

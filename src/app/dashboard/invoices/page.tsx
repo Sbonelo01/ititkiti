@@ -93,7 +93,7 @@ export default function OrganizerInvoicesPage() {
                       </p>
                     </div>
                     <div className="text-right">
-                      <span className="text-xs font-bold uppercase px-2 py-1 rounded-full bg-gray-100 text-gray-700">
+                      <span className="text-xs font-bold uppercase px-2 py-1 rounded-full bg-[#F0FDF4] text-[#166534]">
                         {invoiceStatusLabel(inv.status)}
                       </span>
                       <p className="font-bold text-green-700 mt-2 tabular-nums">{formatMoney(inv.net_amount_due)}</p>

@@ -10,7 +10,7 @@ describe("sendOrganizerWelcomeEmail", () => {
     vi.unstubAllEnvs();
   });
 
-  it("builds subject and mentions scanner plus invoicing", () => {
+  it("builds subject and mirrors share + scanner steps only", () => {
     const email = buildOrganizerWelcomeEmail({
       eventTitle: "Jazz Night",
       eventId: "evt-1",
@@ -19,7 +19,8 @@ describe("sendOrganizerWelcomeEmail", () => {
     expect(email.subject).toContain("Jazz Night");
     expect(email.text).toContain("Hi Sbonelo");
     expect(email.text.toLowerCase()).toContain("scanner");
-    expect(email.text.toLowerCase()).toContain("invoice");
+    expect(email.text.toLowerCase()).toContain("share");
+    expect(email.text.toLowerCase()).not.toContain("settlement");
     expect(email.html).toContain("Jazz Night");
   });
 

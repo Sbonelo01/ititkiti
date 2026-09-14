@@ -42,9 +42,9 @@ export default function InvoiceDocument({ invoice, showPrintButton = true }: Inv
   const seller = invoice.seller as BillParty;
 
   const statusColors: Record<string, string> = {
-    draft: "bg-blue-100 text-blue-800",
-    issued: "bg-amber-100 text-amber-800",
-    paid: "bg-green-100 text-green-800",
+    draft: "bg-white text-[#166534] border border-[#22C55E]/40",
+    issued: "bg-amber-100 text-amber-900",
+    paid: "bg-[#DCFCE7] text-[#166534]",
     void: "bg-gray-200 text-gray-700",
   };
 

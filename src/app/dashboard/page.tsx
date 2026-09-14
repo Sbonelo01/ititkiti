@@ -13,6 +13,14 @@ import { listInvoices } from "@/utils/invoicesApi";
 import type { OrganizerInvoiceRecord } from "@/server/invoices/types";
 import EventShareBar from "@/components/EventShareBar";
 import EventInvoiceActions from "@/components/EventInvoiceActions";
+import EventOnboardingChecklist from "@/components/EventOnboardingChecklist";
+import InvoiceStatusPill from "@/components/InvoiceStatusPill";
+import { getEventInvoiceUi } from "@/server/invoices/invoiceEligibility";
+import {
+  ORGANIZER_COPY,
+  organizerInvoicePill,
+  payoutProfileFromMetadata,
+} from "@/constants/organizerCopy";
 import { 
   CalendarIcon, 
   MapPinIcon, 
@@ -316,16 +324,17 @@ function OrganizerDashboard({
     fetchSalesData();
   }, [events]);
 
-  useEffect(() => {
-    async function fetchInvoices() {
-      try {
-        setInvoices(await listInvoices());
-      } catch {
-        setInvoices([]);
-      }
+  const fetchInvoices = useCallback(async () => {
+    try {
+      setInvoices(await listInvoices());
+    } catch {
+      setInvoices([]);
     }
-    fetchInvoices();
   }, []);
+
+  useEffect(() => {
+    fetchInvoices();
+  }, [fetchInvoices]);
 
   const handleDeleteEvent = async (eventId: string, posterUrl?: string) => {
     if (
@@ -394,6 +403,17 @@ function OrganizerDashboard({
     return `R${price.toFixed(2)}`;
   };
 
+  const payoutProfile = payoutProfileFromMetadata(user.email, user.user_metadata);
+  const readyToInvoiceCount = events.filter((event) => {
+    const ui = getEventInvoiceUi({
+      eventDate: event.date,
+      paidTicketCount: eventSalesData[event.id]?.ticketsSold ?? eventTicketCounts[event.id] ?? 0,
+      invoices: invoices.filter((inv) => inv.event_id === event.id),
+    });
+    const pill = organizerInvoicePill(ui);
+    return pill === "ready" || pill === "draft";
+  }).length;
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 to-white">
       {/* Hero Header */}
@@ -403,6 +423,12 @@ function OrganizerDashboard({
             <div>
               <h1 className="text-4xl font-bold mb-2">Your Events</h1>
               <p className="text-green-100">Manage and organize your events</p>
+              {readyToInvoiceCount > 0 && (
+                <p className="mt-3 inline-flex items-center rounded-full bg-[#22C55E] px-3 py-1 text-xs font-bold uppercase tracking-wide text-white">
+                  {ORGANIZER_COPY.invoice.readyChip}
+                  {readyToInvoiceCount > 1 ? ` · ${readyToInvoiceCount}` : ""}
+                </p>
+              )}
             </div>
             <div className="flex flex-wrap gap-3">
             <Link
@@ -512,7 +538,7 @@ function OrganizerDashboard({
             {events.map((event) => (
               <div
                 key={event.id}
-                className="bg-white rounded-2xl shadow-xl overflow-hidden hover:shadow-2xl transition-all duration-300 transform hover:scale-105"
+                className="bg-white rounded-2xl shadow-xl overflow-hidden hover:shadow-2xl transition-all duration-300"
               >
                 {event.poster_url && (
                   <div className="w-full h-48 relative">
@@ -525,11 +551,25 @@ function OrganizerDashboard({
                   </div>
                 )}
                 <div className="p-6">
-                  <div className="flex justify-between items-start mb-4">
+                  <div className="flex justify-between items-start mb-4 gap-2">
                     <h3 className="text-xl font-bold text-gray-800 line-clamp-2">
                       {event.title}
                     </h3>
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 shrink-0">
+                      {(() => {
+                        const ui = getEventInvoiceUi({
+                          eventDate: event.date,
+                          paidTicketCount:
+                            eventSalesData[event.id]?.ticketsSold ??
+                            eventTicketCounts[event.id] ??
+                            0,
+                          invoices: invoices.filter((inv) => inv.event_id === event.id),
+                        });
+                        const pill = organizerInvoicePill(ui);
+                        return pill === "ready" || pill === "draft" ? (
+                          <InvoiceStatusPill pill={pill} />
+                        ) : null;
+                      })()}
                       <button
                         onClick={() => handleEditEvent(event.id)}
                         className="bg-blue-500 text-white p-2 rounded-xl hover:bg-blue-600 transition-all duration-200 shadow-md hover:shadow-lg"
@@ -600,21 +640,15 @@ function OrganizerDashboard({
                       location={event.location}
                       priceLabel={formatPrice(event.price)}
                     />
-                    
-                    {eventSalesData[event.id] && eventSalesData[event.id].ticketsSold > 0 && (
-                      <div className="bg-gray-50 rounded-lg p-3 space-y-2">
-                        <div className="flex justify-between text-xs text-gray-600">
-                          <span>Revenue:</span>
-                          <span className="font-semibold">{formatPrice(eventSalesData[event.id].revenue)}</span>
-                        </div>
-                        <div className="flex justify-between text-xs text-gray-600">
-                          <span>Buyer-paid fees:</span>
-                          <span className="font-semibold">
-                            {formatPrice(eventSalesData[event.id].serviceFees)}
-                          </span>
-                        </div>
-                      </div>
-                    )}
+                    <EventOnboardingChecklist
+                      eventId={event.id}
+                      eventDate={event.date}
+                      settlementDone={invoices.some(
+                        (inv) =>
+                          inv.event_id === event.id &&
+                          (inv.status === "issued" || inv.status === "paid")
+                      )}
+                    />
                     <EventInvoiceActions
                       eventId={event.id}
                       eventDate={event.date}
@@ -624,7 +658,11 @@ function OrganizerDashboard({
                         eventTicketCounts[event.id] ??
                         0
                       }
+                      faceValue={eventSalesData[event.id]?.revenue ?? 0}
+                      buyerFees={eventSalesData[event.id]?.serviceFees ?? 0}
                       invoices={invoices.filter((inv) => inv.event_id === event.id)}
+                      profile={payoutProfile}
+                      onChanged={fetchInvoices}
                     />
                   </div>
                 </div>

@@ -14,50 +14,38 @@ export function buildOrganizerWelcomeEmail(input: {
   const hello = input.organizerName?.trim() ? `Hi ${input.organizerName.trim()},` : "Hi,";
   const eventUrl = getEventShareUrl(input.eventId);
   const dashboardUrl = `${getSiteOrigin()}/dashboard`;
-  const invoicesUrl = `${getSiteOrigin()}/dashboard/invoices`;
   const appStore = APP_STORE_URL || "Coming soon on the App Store";
   const playStore = PLAY_STORE_URL || "Coming soon on Google Play";
+  const copy = ORGANIZER_COPY.onboarding;
 
   const subject = ORGANIZER_COPY.email.subject(input.eventTitle);
   const text = [
     hello,
     "",
-    `${input.eventTitle} is live on ${BRAND.name}.`,
-    ORGANIZER_COPY.onboarding.subhead(input.eventTitle),
-    "",
-    `Public page: ${eventUrl}`,
+    `${copy.step1Title}: ${input.eventTitle} is live on ${BRAND.name}.`,
+    copy.step1Body,
+    `Share link: ${eventUrl}`,
     `Dashboard: ${dashboardUrl}`,
     "",
-    ORGANIZER_COPY.onboarding.scannerTitle,
-    ORGANIZER_COPY.onboarding.scannerBody,
-    `iOS: ${appStore}`,
-    `Android: ${playStore}`,
-    "",
-    ORGANIZER_COPY.onboarding.invoiceTitle,
-    ORGANIZER_COPY.onboarding.invoiceBody,
-    `Invoices: ${invoicesUrl}`,
-    "",
-    ...ORGANIZER_COPY.onboarding.confidenceItems,
+    copy.step2Headline,
+    copy.step2Body,
+    `${ORGANIZER_APP.name}: ${appStore} · ${playStore}`,
     "",
     `— ${BRAND.name}`,
   ].join("\n");
 
   const html = `<!DOCTYPE html>
 <html>
-<body style="font-family:Arial,sans-serif;line-height:1.5;color:#111;background:#f7faf7;padding:24px;">
-  <div style="max-width:560px;margin:0 auto;background:#fff;border-radius:16px;padding:28px;border:1px solid #e5e7eb;">
-    <p style="font-size:13px;font-weight:700;color:#15803d;text-transform:uppercase;letter-spacing:.04em;margin:0 0 8px;">${BRAND.name}</p>
-    <h1 style="font-size:22px;margin:0 0 12px;">${ORGANIZER_COPY.onboarding.headline}</h1>
+<body style="font-family:Arial,sans-serif;line-height:1.5;color:#111;background:#F0FDF4;padding:24px;">
+  <div style="max-width:560px;margin:0 auto;background:#fff;border-radius:16px;padding:28px;border:1px solid #dcfce7;">
+    <p style="display:inline-block;background:#16A34A;color:#fff;border-radius:999px;padding:4px 12px;font-size:14px;font-weight:600;letter-spacing:-0.02em;">tikiti.</p>
+    <h1 style="font-size:22px;margin:16px 0 12px;">${copy.step1Title}</h1>
     <p>${hello}</p>
-    <p>${ORGANIZER_COPY.onboarding.subhead(input.eventTitle)}</p>
-    <p><a href="${eventUrl}" style="color:#15803d;font-weight:600;">Open your public event page</a> · <a href="${dashboardUrl}" style="color:#15803d;font-weight:600;">Dashboard</a></p>
-    <h2 style="font-size:16px;margin:24px 0 8px;">${ORGANIZER_COPY.onboarding.scannerTitle}</h2>
-    <p>${ORGANIZER_COPY.onboarding.scannerBody}</p>
+    <p><strong>${input.eventTitle}</strong> is live. ${copy.step1Body}</p>
+    <p><a href="${eventUrl}" style="color:#15803d;font-weight:600;">Share event link</a> · <a href="${dashboardUrl}" style="color:#15803d;font-weight:600;">Dashboard</a></p>
+    <h2 style="font-size:16px;margin:24px 0 8px;">${copy.step2Headline}</h2>
+    <p>${copy.step2Body}</p>
     <p style="font-size:14px;">${ORGANIZER_APP.name}: ${appStore} · ${playStore}</p>
-    <h2 style="font-size:16px;margin:24px 0 8px;">${ORGANIZER_COPY.onboarding.invoiceTitle}</h2>
-    <p>${ORGANIZER_COPY.onboarding.invoiceBody}</p>
-    <p><a href="${invoicesUrl}" style="color:#15803d;font-weight:600;">Invoice dashboard</a></p>
-    <ul>${ORGANIZER_COPY.onboarding.confidenceItems.map((item) => `<li>${item}</li>`).join("")}</ul>
     <p style="font-size:13px;color:#6b7280;margin-top:28px;">IZIBONELO TECH PTY LTD · tikiti.fun</p>
   </div>
 </body>

@@ -1,14 +1,29 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { supabase } from "@/utils/supabaseClient";
 import { getInvoice, submitInvoice } from "@/utils/invoicesApi";
 import type { OrganizerInvoiceRecord } from "@/server/invoices/types";
-import InvoiceDocument from "@/components/InvoiceDocument";
-import { ORGANIZER_COPY } from "@/constants/organizerCopy";
+import { getEventInvoiceUi } from "@/server/invoices/invoiceEligibility";
+import {
+  ORGANIZER_COPY,
+  payoutProfileFromMetadata,
+  type OrganizerPayoutProfile,
+} from "@/constants/organizerCopy";
+import InvoiceSettlementWorkspace from "@/components/InvoiceSettlementWorkspace";
 import { ArrowLeftIcon } from "@heroicons/react/24/outline";
+
+function sellerToProfile(seller: Record<string, unknown>, fallback: OrganizerPayoutProfile): OrganizerPayoutProfile {
+  return {
+    email: typeof seller.email === "string" ? seller.email : fallback.email,
+    name: typeof seller.name === "string" ? seller.name : fallback.name,
+    surname: typeof seller.surname === "string" ? seller.surname : fallback.surname,
+    companyName: typeof seller.companyName === "string" ? seller.companyName : fallback.companyName,
+    cellphone: typeof seller.cellphone === "string" ? seller.cellphone : fallback.cellphone,
+  };
+}
 
 export default function InvoiceDetailPage() {
   const params = useParams();
@@ -18,8 +33,14 @@ export default function InvoiceDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  const [submitError, setSubmitError] = useState<string | null>(null);
-  const [confirmSubmit, setConfirmSubmit] = useState(false);
+  const [submittedJustNow, setSubmittedJustNow] = useState(false);
+  const [profile, setProfile] = useState<OrganizerPayoutProfile>({
+    email: "",
+    name: "",
+    surname: "",
+    companyName: "",
+    cellphone: "",
+  });
 
   useEffect(() => {
     async function load() {
@@ -30,6 +51,7 @@ export default function InvoiceDetailPage() {
         router.push(`/login?redirect=/dashboard/invoices/${id}`);
         return;
       }
+      setProfile(payoutProfileFromMetadata(session.user.email, session.user.user_metadata));
       try {
         setInvoice(await getInvoice(id));
       } catch (e) {
@@ -41,85 +63,73 @@ export default function InvoiceDetailPage() {
     load();
   }, [id, router]);
 
+  const ui = useMemo(() => {
+    if (!invoice) {
+      return getEventInvoiceUi({ eventDate: "1970-01-01T00:00:00.000Z", paidTicketCount: 0, invoices: [] });
+    }
+    return getEventInvoiceUi({
+      eventDate: invoice.line_items?.event?.date ?? invoice.issued_at,
+      paidTicketCount: invoice.ticket_count,
+      invoices: [
+        {
+          id: invoice.id,
+          status: invoice.status,
+          invoice_number: invoice.invoice_number,
+          ticket_count: invoice.ticket_count,
+        },
+      ],
+    });
+  }, [invoice]);
+
   const handleSubmit = async () => {
     if (!invoice) return;
     setSubmitting(true);
-    setSubmitError(null);
+    setError(null);
     try {
       const updated = await submitInvoice(invoice.id);
       setInvoice(updated);
-      setConfirmSubmit(false);
+      setSubmittedJustNow(true);
     } catch (e) {
-      setSubmitError(e instanceof Error ? e.message : "Failed to submit invoice");
+      setError(e instanceof Error ? e.message : "Failed to submit invoice");
     } finally {
       setSubmitting(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 to-white pb-24 md:pb-8 print:bg-white print:pb-0">
-      <div className="max-w-3xl mx-auto px-4 py-6 print:max-w-none print:px-0 print:py-0">
+    <div className="min-h-screen bg-[#F0FDF4] pb-24 md:pb-8 print:bg-white print:pb-0">
+      <div className="max-w-6xl mx-auto px-4 py-6 print:max-w-none print:px-0 print:py-0">
         <Link
           href="/dashboard/invoices"
-          className="inline-flex items-center gap-1 text-green-700 font-medium text-sm mb-6 print:hidden"
+          className="inline-flex items-center gap-1 text-[#15803D] font-medium text-sm mb-6 print:hidden"
         >
           <ArrowLeftIcon className="h-4 w-4" aria-hidden />
-          All invoices
+          {ORGANIZER_COPY.invoice.listTitle}
         </Link>
         {loading && <p className="text-gray-600">Loading invoice…</p>}
-        {error && (
+        {error && !invoice && (
           <div className="rounded-xl bg-red-50 border border-red-200 p-4 text-red-700 text-sm">{error}</div>
         )}
         {invoice && (
-          <div className="space-y-4">
-            {invoice.status === "draft" && (
-              <div className="print:hidden rounded-2xl border border-green-200 bg-white p-5 shadow-sm">
-                <p className="text-sm text-gray-700 leading-relaxed">{ORGANIZER_COPY.invoice.draftBanner}</p>
-                {confirmSubmit ? (
-                  <div className="mt-4 space-y-3">
-                    <p className="font-semibold text-gray-900">{ORGANIZER_COPY.invoice.confirmSubmitTitle}</p>
-                    <p className="text-sm text-gray-600">{ORGANIZER_COPY.invoice.confirmSubmitBody}</p>
-                    <div className="flex flex-wrap gap-2">
-                      <button
-                        type="button"
-                        disabled={submitting}
-                        onClick={handleSubmit}
-                        className="rounded-xl bg-green-600 text-white px-4 py-2.5 text-sm font-semibold hover:bg-green-700 disabled:opacity-50"
-                      >
-                        {submitting ? ORGANIZER_COPY.invoice.submittingCta : ORGANIZER_COPY.invoice.submitCta}
-                      </button>
-                      <button
-                        type="button"
-                        disabled={submitting}
-                        onClick={() => setConfirmSubmit(false)}
-                        className="rounded-xl px-4 py-2.5 text-sm font-semibold text-gray-600 hover:bg-gray-100"
-                      >
-                        Cancel
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => setConfirmSubmit(true)}
-                    className="mt-4 rounded-xl bg-green-600 text-white px-4 py-2.5 text-sm font-semibold hover:bg-green-700"
-                  >
-                    {ORGANIZER_COPY.invoice.submitCta}
-                  </button>
-                )}
-                {submitError && (
-                  <p className="mt-3 text-sm text-red-700" role="alert">
-                    {submitError}
-                  </p>
-                )}
-              </div>
-            )}
-            {invoice.status === "issued" && (
-              <p className="print:hidden text-sm text-green-800 bg-green-50 border border-green-100 rounded-xl px-4 py-3">
-                {ORGANIZER_COPY.invoice.submittedBanner}
-              </p>
-            )}
-            <InvoiceDocument invoice={invoice} />
+          <div className="rounded-2xl overflow-hidden border border-[#22C55E]/20 shadow-lg min-h-[70vh]">
+            <InvoiceSettlementWorkspace
+              ui={ui}
+              invoice={invoice}
+              summary={{
+                faceValue: Number(invoice.ticket_revenue) || 0,
+                ticketsSold: invoice.ticket_count,
+                buyerFees: Number(invoice.service_fee_total) || 0,
+              }}
+              profile={sellerToProfile(invoice.seller, profile)}
+              generating={false}
+              submitting={submitting}
+              error={error}
+              submittedJustNow={submittedJustNow}
+              onGenerate={() => undefined}
+              onSubmit={handleSubmit}
+              onBack={() => router.push("/dashboard/invoices")}
+              showGenerate={false}
+            />
           </div>
         )}
       </div>
