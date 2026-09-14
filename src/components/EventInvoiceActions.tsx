@@ -15,6 +15,7 @@ import {
   type OrganizerPayoutProfile,
 } from "@/constants/organizerCopy";
 import InvoiceStatusPill from "@/components/InvoiceStatusPill";
+import CopyToast, { useCopyToast } from "@/components/CopyToast";
 import InvoiceSettlementWorkspace, {
   InvoiceMoneySummaryBlock,
   OrganizerPayoutFields,
@@ -80,6 +81,7 @@ export default function EventInvoiceActions({
   const [error, setError] = useState<string | null>(null);
   const [submittedJustNow, setSubmittedJustNow] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const { message, showToast } = useCopyToast();
 
   useEffect(() => {
     setMounted(true);
@@ -104,6 +106,7 @@ export default function EventInvoiceActions({
       setInvoice(created);
       onChanged?.();
       setWorkspaceOpen(true);
+      showToast(ORGANIZER_COPY.toasts.invoiceDraftCreated);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to generate invoice");
       setWorkspaceOpen(true);
@@ -152,11 +155,15 @@ export default function EventInvoiceActions({
         <p className="text-xs font-bold uppercase tracking-wide text-[#166534]">{copy.cardTitle}</p>
         <InvoiceStatusPill pill={pill} />
       </div>
+      <p className="text-xs text-gray-600 leading-relaxed">{copy.cardHelper}</p>
 
       <InvoiceMoneySummaryBlock summary={summary} />
       <OrganizerPayoutFields profile={profile} />
 
-      <p className="text-xs text-gray-600 leading-relaxed">{kindReason(ui.kind)}</p>
+      {kindReason(ui.kind) !== copy.cardHelper && (
+        <p className="text-xs text-gray-600 leading-relaxed">{kindReason(ui.kind)}</p>
+      )}
+      <p className="text-xs text-gray-500 leading-relaxed">{ORGANIZER_COPY.feesExplainer}</p>
       <p className="text-xs text-gray-500">
         {copy.batchHelper}{" "}
         <Link href={copy.timingFaqHref} className="font-semibold text-[#15803D] hover:underline">
@@ -200,6 +207,8 @@ export default function EventInvoiceActions({
       </div>
 
       {mounted &&
+        createPortal(<CopyToast message={message} />, document.body)}
+      {mounted &&
         workspaceOpen &&
         createPortal(
           <div className="fixed inset-0 z-[80] flex flex-col bg-black/50 lg:items-center lg:justify-center lg:p-6">
@@ -229,6 +238,7 @@ export default function EventInvoiceActions({
           </div>,
           document.body
         )}
+      <CopyToast message={message} />
     </div>
   );
 }

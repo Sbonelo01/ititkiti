@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import CopyToast, { useCopyToast } from "@/components/CopyToast";
 import EventOnboardingModal from "@/components/EventOnboardingModal";
 import TikitiWordmark from "@/components/TikitiWordmark";
 import { ORGANIZER_COPY } from "@/constants/organizerCopy";
@@ -18,6 +19,11 @@ export default function EventCreatedOnboarding({
   onGoToDashboard,
 }: EventCreatedOnboardingProps) {
   const [modalOpen, setModalOpen] = useState(true);
+  const { message, showToast } = useCopyToast();
+
+  useEffect(() => {
+    showToast(ORGANIZER_COPY.toasts.eventCreated);
+  }, [showToast]);
 
   useEffect(() => {
     let cancelled = false;
@@ -68,6 +74,7 @@ export default function EventCreatedOnboarding({
         onClose={() => setModalOpen(false)}
         onFinished={onGoToDashboard}
       />
+      <CopyToast message={message} />
     </div>
   );
 }

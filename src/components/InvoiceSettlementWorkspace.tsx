@@ -136,6 +136,7 @@ export default function InvoiceSettlementWorkspace({
           </div>
           <InvoiceMoneySummaryBlock summary={summary} />
           <OrganizerPayoutFields profile={profile} />
+          <p className="text-xs text-gray-500 leading-relaxed">{ORGANIZER_COPY.feesExplainer}</p>
           <p className="text-xs text-gray-500">{copy.batchHelper}</p>
           <Link href={copy.timingFaqHref} className="text-xs font-semibold text-[#15803D] hover:underline">
             {copy.timingHelper}
@@ -192,14 +193,17 @@ export default function InvoiceSettlementWorkspace({
             onClick={onGenerate}
             className="rounded-xl border border-[#16A34A] text-[#166534] bg-white px-4 py-2.5 text-sm font-semibold hover:bg-[#F0FDF4] disabled:opacity-50"
           >
-            {generating ? copy.generatingCta : copy.generateCta}
+            {generating ? copy.generatingCta : copy.generateSettlementCta}
           </button>
         )}
         {canSubmit && (
           <button
             type="button"
             disabled={submitting}
-            onClick={onSubmit}
+            onClick={() => {
+              if (!window.confirm(copy.confirmSubmit)) return;
+              onSubmit();
+            }}
             className="rounded-xl bg-[#16A34A] text-white px-4 py-2.5 text-sm font-semibold hover:bg-[#15803D] disabled:opacity-50"
           >
             {submitting ? copy.submittingCta : copy.submitCta}

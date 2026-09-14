@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { CheckIcon, LinkIcon, ShareIcon, XMarkIcon } from "@heroicons/react/24/outline";
 import AppStoreBadges from "@/components/AppStoreBadges";
+import CopyToast, { useCopyToast } from "@/components/CopyToast";
 import TikitiWordmark from "@/components/TikitiWordmark";
 import { ORGANIZER_COPY } from "@/constants/organizerCopy";
 import { patchEventChecklist } from "@/utils/eventChecklist";
@@ -26,6 +27,7 @@ export default function EventOnboardingModal({
   const copy = ORGANIZER_COPY.onboarding;
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [copied, setCopied] = useState(false);
+  const { message, showToast } = useCopyToast();
   const url = getEventShareUrl(eventId);
 
   useEffect(() => {
@@ -44,6 +46,7 @@ export default function EventOnboardingModal({
       await navigator.clipboard.writeText(url);
       setCopied(true);
       patchEventChecklist(eventId, { shareDone: true });
+      showToast(ORGANIZER_COPY.toasts.linkCopied);
       window.setTimeout(() => setCopied(false), 2000);
     } catch {
       window.prompt("Copy this event link:", url);
@@ -65,8 +68,9 @@ export default function EventOnboardingModal({
     setStep(2);
   };
 
-  const markScannerLater = () => {
+  const markScannerDone = () => {
     patchEventChecklist(eventId, { scannerDone: true });
+    showToast(ORGANIZER_COPY.toasts.scannerTipSaved);
     setStep(3);
   };
 
@@ -112,6 +116,7 @@ export default function EventOnboardingModal({
                   {copied ? copy.copiedCta : copy.copyCta}
                 </button>
               </div>
+              <p className="text-xs text-gray-500">{copy.checklistShareHelper}</p>
               <button
                 type="button"
                 onClick={shareLink}
@@ -127,10 +132,11 @@ export default function EventOnboardingModal({
             <div className="space-y-4">
               <p className="text-xs font-bold uppercase tracking-wide text-[#166534]">{copy.step2Title}</p>
               <h2 id="onboarding-title" className="text-2xl font-bold text-gray-900">
-                {copy.step2Headline}
+                {copy.getScannerCta}
               </h2>
-              <p className="text-gray-600">{copy.step2Body}</p>
-              <p className="text-sm font-semibold text-gray-800">{copy.getScannerCta}</p>
+              <p className="text-gray-600">{ORGANIZER_COPY.empty.scannerNotConnected}</p>
+              <p className="text-sm text-gray-600">{copy.step2Body}</p>
+              <p className="text-sm text-gray-500">{copy.scannerTestHelper}</p>
               <div
                 onClick={() => patchEventChecklist(eventId, { scannerDone: true })}
                 onKeyDown={() => undefined}
@@ -140,7 +146,7 @@ export default function EventOnboardingModal({
               </div>
               <button
                 type="button"
-                onClick={markScannerLater}
+                onClick={markScannerDone}
                 className="w-full rounded-xl border border-gray-200 bg-white py-3 font-semibold text-gray-700 hover:bg-gray-50"
               >
                 {copy.laterCta}
@@ -174,6 +180,7 @@ export default function EventOnboardingModal({
           )}
         </div>
       </div>
+      <CopyToast message={message} />
     </div>
   );
 }

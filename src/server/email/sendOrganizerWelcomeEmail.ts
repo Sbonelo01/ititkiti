@@ -1,9 +1,20 @@
-import { BRAND, ORGANIZER_APP, APP_STORE_URL, PLAY_STORE_URL } from "@/constants/branding";
-import { ORGANIZER_COPY } from "@/constants/organizerCopy";
-import { getEventShareUrl, getSiteOrigin } from "@/utils/eventShare";
+import { ORGANIZER_COPY, interpolateOrganizerCopy, organizerFirstName } from "@/constants/organizerCopy";
+import { getEventShareUrl } from "@/utils/eventShare";
 
 export function isTransactionalEmailConfigured(): boolean {
   return Boolean(process.env.RESEND_API_KEY?.trim());
+}
+
+function escapeHtml(value: string): string {
+  return value
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;");
+}
+
+function withBold(text: string, phrase: string): string {
+  return escapeHtml(text).replaceAll(escapeHtml(phrase), `<strong>${escapeHtml(phrase)}</strong>`);
 }
 
 export function buildOrganizerWelcomeEmail(input: {
@@ -11,27 +22,35 @@ export function buildOrganizerWelcomeEmail(input: {
   eventId: string;
   organizerName?: string;
 }): { subject: string; html: string; text: string } {
-  const hello = input.organizerName?.trim() ? `Hi ${input.organizerName.trim()},` : "Hi,";
+  const copy = ORGANIZER_COPY.email;
+  const firstName = organizerFirstName(input.organizerName);
+  const hello = firstName
+    ? interpolateOrganizerCopy(copy.greeting, { organizer_first_name: firstName })
+    : "Hi,";
+  const intro = interpolateOrganizerCopy(copy.intro, { event_name: input.eventTitle });
   const eventUrl = getEventShareUrl(input.eventId);
-  const dashboardUrl = `${getSiteOrigin()}/dashboard`;
-  const appStore = APP_STORE_URL || "Coming soon on the App Store";
-  const playStore = PLAY_STORE_URL || "Coming soon on Google Play";
-  const copy = ORGANIZER_COPY.onboarding;
 
-  const subject = ORGANIZER_COPY.email.subject(input.eventTitle);
+  const subject = copy.subject;
   const text = [
     hello,
     "",
-    `${copy.step1Title}: ${input.eventTitle} is live on ${BRAND.name}.`,
-    copy.step1Body,
-    `Share link: ${eventUrl}`,
-    `Dashboard: ${dashboardUrl}`,
+    intro,
     "",
-    copy.step2Headline,
-    copy.step2Body,
-    `${ORGANIZER_APP.name}: ${appStore} · ${playStore}`,
+    copy.attendees,
     "",
-    `— ${BRAND.name}`,
+    copy.nextStepsTitle,
+    `1. ${copy.nextStepShare}`,
+    eventUrl,
+    `2. ${copy.nextStepScanner}`,
+    `3. ${copy.nextStepInvoice}`,
+    "",
+    copy.reminder,
+    "",
+    copy.contact,
+    "",
+    copy.signoff,
+    copy.signoffName,
+    copy.site,
   ].join("\n");
 
   const html = `<!DOCTYPE html>
@@ -39,14 +58,18 @@ export function buildOrganizerWelcomeEmail(input: {
 <body style="font-family:Arial,sans-serif;line-height:1.5;color:#111;background:#F0FDF4;padding:24px;">
   <div style="max-width:560px;margin:0 auto;background:#fff;border-radius:16px;padding:28px;border:1px solid #dcfce7;">
     <p style="display:inline-block;background:#16A34A;color:#fff;border-radius:999px;padding:4px 12px;font-size:14px;font-weight:600;letter-spacing:-0.02em;">tikiti.</p>
-    <h1 style="font-size:22px;margin:16px 0 12px;">${copy.step1Title}</h1>
-    <p>${hello}</p>
-    <p><strong>${input.eventTitle}</strong> is live. ${copy.step1Body}</p>
-    <p><a href="${eventUrl}" style="color:#15803d;font-weight:600;">Share event link</a> · <a href="${dashboardUrl}" style="color:#15803d;font-weight:600;">Dashboard</a></p>
-    <h2 style="font-size:16px;margin:24px 0 8px;">${copy.step2Headline}</h2>
-    <p>${copy.step2Body}</p>
-    <p style="font-size:14px;">${ORGANIZER_APP.name}: ${appStore} · ${playStore}</p>
-    <p style="font-size:13px;color:#6b7280;margin-top:28px;">IZIBONELO TECH PTY LTD · tikiti.fun</p>
+    <p>${escapeHtml(hello)}</p>
+    <p>${withBold(intro, input.eventTitle)}</p>
+    <p>${withBold(copy.attendees, "Tikiti Scanner")}</p>
+    <p><strong>${escapeHtml(copy.nextStepsTitle)}</strong></p>
+    <ol style="padding-left:20px;">
+      <li>${escapeHtml(copy.nextStepShare)}<br /><a href="${escapeHtml(eventUrl)}" style="color:#15803d;font-weight:600;">${escapeHtml(eventUrl)}</a></li>
+      <li>${escapeHtml(copy.nextStepScanner)}</li>
+      <li>${withBold(copy.nextStepInvoice, "settlement invoice")}</li>
+    </ol>
+    <p>${withBold(copy.reminder, "100% of ticket face value")}</p>
+    <p>${escapeHtml(copy.contact)}</p>
+    <p>${escapeHtml(copy.signoff)}<br />${escapeHtml(copy.signoffName)}<br /><a href="${escapeHtml(copy.site)}" style="color:#15803d;">${escapeHtml(copy.site)}</a></p>
   </div>
 </body>
 </html>`;

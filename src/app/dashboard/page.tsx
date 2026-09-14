@@ -15,6 +15,7 @@ import EventShareBar from "@/components/EventShareBar";
 import EventInvoiceActions from "@/components/EventInvoiceActions";
 import EventOnboardingChecklist from "@/components/EventOnboardingChecklist";
 import InvoiceStatusPill from "@/components/InvoiceStatusPill";
+import AppStoreBadges from "@/components/AppStoreBadges";
 import { getEventInvoiceUi } from "@/server/invoices/invoiceEligibility";
 import {
   ORGANIZER_COPY,
@@ -511,6 +512,13 @@ function OrganizerDashboard({
           </div>
         )}
 
+        {!loading && events.length > 0 && (
+          <div className="bg-white rounded-2xl shadow-md border border-gray-100 p-5 mb-8">
+            <p className="text-sm text-gray-700">{ORGANIZER_COPY.empty.scannerNotConnected}</p>
+            <AppStoreBadges className="mt-3 justify-start" />
+          </div>
+        )}
+
         {loading ? (
           <div className="text-center py-12">
             <div className="animate-spin rounded-full h-12 w-12 border-4 border-green-200 border-t-green-500 mx-auto mb-4"></div>
@@ -520,9 +528,9 @@ function OrganizerDashboard({
           <div className="text-center py-12">
             <div className="bg-white rounded-2xl shadow-xl p-8 max-w-md mx-auto">
               <div className="text-green-500 text-6xl mb-4">🎉</div>
-              <h2 className="text-2xl font-bold text-gray-800 mb-4">No Events Yet</h2>
+              <h2 className="text-2xl font-bold text-gray-800 mb-4">No events yet</h2>
               <p className="text-gray-600 mb-6">
-                You haven&apos;t created any events yet. Start by creating your first event!
+                {ORGANIZER_COPY.empty.noEvents}
               </p>
               <Link
                 href="/dashboard/create-event"
@@ -615,20 +623,32 @@ function OrganizerDashboard({
                       {deletingEventId === event.id ? (
                         <span className="text-sm text-gray-500">Deleting...</span>
                       ) : eventSalesData[event.id] ? (
-                        <div className="text-right">
-                          <p className="text-sm text-gray-600">
-                            {eventSalesData[event.id].ticketsSold} sold
+                        eventSalesData[event.id].ticketsSold === 0 ? (
+                          <p className="text-xs text-gray-500 max-w-[14rem] text-right">
+                            {ORGANIZER_COPY.empty.noTicketSales}
                           </p>
-                          <p className="text-sm font-semibold text-green-600">
-                            Profit: {formatPrice(eventSalesData[event.id].profit)}
-                          </p>
-                        </div>
+                        ) : (
+                          <div className="text-right">
+                            <p className="text-sm text-gray-600">
+                              {eventSalesData[event.id].ticketsSold} sold
+                            </p>
+                            <p className="text-sm font-semibold text-green-600">
+                              Profit: {formatPrice(eventSalesData[event.id].profit)}
+                            </p>
+                          </div>
+                        )
                       ) : eventTicketCounts[event.id] !== undefined ? (
-                        <div className="text-right">
-                          <p className="text-sm text-gray-600">
-                            {eventTicketCounts[event.id]} sold
+                        eventTicketCounts[event.id] === 0 ? (
+                          <p className="text-xs text-gray-500 max-w-[14rem] text-right">
+                            {ORGANIZER_COPY.empty.noTicketSales}
                           </p>
-                        </div>
+                        ) : (
+                          <div className="text-right">
+                            <p className="text-sm text-gray-600">
+                              {eventTicketCounts[event.id]} sold
+                            </p>
+                          </div>
+                        )
                       ) : null}
                     </div>
 

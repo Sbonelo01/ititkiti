@@ -1,4 +1,5 @@
 import { describe, expect, it, vi, afterEach } from "vitest";
+import { ORGANIZER_COPY } from "@/constants/organizerCopy";
 import {
   buildOrganizerWelcomeEmail,
   isTransactionalEmailConfigured,
@@ -10,18 +11,23 @@ describe("sendOrganizerWelcomeEmail", () => {
     vi.unstubAllEnvs();
   });
 
-  it("builds subject and mirrors share + scanner steps only", () => {
+  it("uses ads welcome copy including settlement step 3", () => {
     const email = buildOrganizerWelcomeEmail({
       eventTitle: "Jazz Night",
       eventId: "evt-1",
-      organizerName: "Sbonelo",
+      organizerName: "Sbonelo Dlamini",
     });
-    expect(email.subject).toContain("Jazz Night");
-    expect(email.text).toContain("Hi Sbonelo");
-    expect(email.text.toLowerCase()).toContain("scanner");
-    expect(email.text.toLowerCase()).toContain("share");
-    expect(email.text.toLowerCase()).not.toContain("settlement");
-    expect(email.html).toContain("Jazz Night");
+    expect(email.subject).toBe(ORGANIZER_COPY.email.subject);
+    expect(email.text).toContain("Hi Sbonelo,");
+    expect(email.text).toContain("You made the right call listing Jazz Night on Tikiti.");
+    expect(email.text).toContain(ORGANIZER_COPY.email.nextStepShare);
+    expect(email.text).toContain(ORGANIZER_COPY.email.nextStepScanner);
+    expect(email.text).toContain(ORGANIZER_COPY.email.nextStepInvoice);
+    expect(email.text).toContain(ORGANIZER_COPY.email.reminder);
+    expect(email.text).toContain(ORGANIZER_COPY.email.contact);
+    expect(email.html).toContain("<strong>Jazz Night</strong>");
+    expect(email.html).toContain("<strong>Tikiti Scanner</strong>");
+    expect(email.html).toContain("<strong>settlement invoice</strong>");
   });
 
   it("skips sending when RESEND_API_KEY is unset", async () => {
@@ -55,6 +61,6 @@ describe("sendOrganizerWelcomeEmail", () => {
     expect(headers.Authorization).toBe("Bearer re_test");
     const body = JSON.parse(String(init.body)) as { to: string[]; subject: string };
     expect(body.to).toEqual(["org@test.com"]);
-    expect(body.subject).toContain("Jazz Night");
+    expect(body.subject).toBe(ORGANIZER_COPY.email.subject);
   });
 });

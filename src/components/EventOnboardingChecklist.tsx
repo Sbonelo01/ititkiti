@@ -38,11 +38,23 @@ export default function EventOnboardingChecklist({
 
   const settlementUnlocked = canGenerateInvoiceForEvent(eventDate) || settlementDone;
   const items = [
-    { id: "share" as const, label: copy.checklistShare, done: state.shareDone },
-    { id: "scanner" as const, label: copy.checklistScanner, done: state.scannerDone },
+    {
+      id: "share" as const,
+      label: copy.checklistShare,
+      helper: copy.checklistShareHelper,
+      done: state.shareDone,
+    },
+    {
+      id: "scanner" as const,
+      label: copy.checklistScanner,
+      helper: copy.checklistScannerHelper,
+      extraHelper: copy.scannerTestHelper,
+      done: state.scannerDone,
+    },
     {
       id: "settle" as const,
       label: copy.checklistSettle,
+      helper: copy.checklistSettleHelper,
       done: settlementDone,
       locked: !settlementUnlocked,
     },
@@ -82,32 +94,47 @@ export default function EventOnboardingChecklist({
             <li key={item.id}>
               {item.id === "settle" ? (
                 <div
-                  className={`flex items-center gap-2 text-sm ${
+                  className={`flex items-start gap-2 text-sm ${
                     locked ? "text-gray-400" : item.done ? "text-[#166534]" : "text-gray-700"
                   }`}
                 >
                   {locked ? (
-                    <LockClosedIcon className="h-4 w-4" aria-hidden />
+                    <LockClosedIcon className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
                   ) : item.done ? (
-                    <CheckIcon className="h-4 w-4 text-[#16A34A]" aria-hidden />
+                    <CheckIcon className="mt-0.5 h-4 w-4 shrink-0 text-[#16A34A]" aria-hidden />
                   ) : (
-                    <span className="h-4 w-4 rounded-full border border-[#22C55E]/40" />
+                    <span className="mt-0.5 h-4 w-4 shrink-0 rounded-full border border-[#22C55E]/40" />
                   )}
-                  <span className={item.done ? "line-through" : ""}>{item.label}</span>
-                  {locked && <span className="text-xs">({copy.checklistLocked})</span>}
+                  <span>
+                    <span className={`block ${item.done ? "line-through" : ""}`}>{item.label}</span>
+                    <span className="block text-xs font-normal text-gray-500 mt-0.5">{item.helper}</span>
+                    {locked && <span className="block text-xs">({copy.checklistLocked})</span>}
+                  </span>
                 </div>
               ) : (
                 <button
                   type="button"
                   onClick={() => toggle(item.id)}
-                  className="flex w-full items-center gap-2 text-sm text-left text-gray-700"
+                  className="flex w-full items-start gap-2 text-sm text-left text-gray-700"
                 >
                   {item.done ? (
-                    <CheckIcon className="h-4 w-4 text-[#16A34A]" aria-hidden />
+                    <CheckIcon className="mt-0.5 h-4 w-4 shrink-0 text-[#16A34A]" aria-hidden />
                   ) : (
-                    <span className="h-4 w-4 rounded-full border border-[#22C55E]/50" />
+                    <span className="mt-0.5 h-4 w-4 shrink-0 rounded-full border border-[#22C55E]/50" />
                   )}
-                  <span className={item.done ? "line-through text-[#166534]" : ""}>{item.label}</span>
+                  <span>
+                    <span className={`block ${item.done ? "line-through text-[#166534]" : ""}`}>
+                      {item.label}
+                    </span>
+                    {!item.done && (
+                      <span className="block text-xs font-normal text-gray-500 mt-0.5">{item.helper}</span>
+                    )}
+                    {item.id === "scanner" && !item.done && "extraHelper" in item && (
+                      <span className="block text-xs font-normal text-gray-500 mt-0.5">
+                        {item.extraHelper}
+                      </span>
+                    )}
+                  </span>
                 </button>
               )}
             </li>

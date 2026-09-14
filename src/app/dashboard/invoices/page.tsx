@@ -7,7 +7,7 @@ import { supabase } from "@/utils/supabaseClient";
 import { getProductRole } from "@/utils/roles";
 import { listInvoices } from "@/utils/invoicesApi";
 import type { OrganizerInvoiceRecord } from "@/server/invoices/types";
-import { ORGANIZER_COPY, invoiceStatusLabel } from "@/constants/organizerCopy";
+import { ORGANIZER_COPY, invoiceStatusHelper, invoiceStatusLabel } from "@/constants/organizerCopy";
 import { DocumentTextIcon, ArrowLeftIcon } from "@heroicons/react/24/outline";
 
 export default function OrganizerInvoicesPage() {
@@ -67,7 +67,7 @@ export default function OrganizerInvoicesPage() {
             <DocumentTextIcon className="h-12 w-12 text-gray-300 mx-auto mb-3" aria-hidden />
             <p className="text-gray-700 font-medium">{ORGANIZER_COPY.invoice.emptyTitle}</p>
             <p className="text-sm text-gray-500 mt-2">
-              {ORGANIZER_COPY.invoice.emptyBody}
+              {ORGANIZER_COPY.empty.noInvoices}
             </p>
             <Link href="/dashboard" className="inline-block mt-4 text-green-700 font-semibold hover:underline">
               Go to dashboard
@@ -96,6 +96,11 @@ export default function OrganizerInvoicesPage() {
                       <span className="text-xs font-bold uppercase px-2 py-1 rounded-full bg-[#F0FDF4] text-[#166534]">
                         {invoiceStatusLabel(inv.status)}
                       </span>
+                      {invoiceStatusHelper(inv.status) && (
+                        <p className="text-xs text-gray-500 mt-1 max-w-[14rem]">
+                          {invoiceStatusHelper(inv.status)}
+                        </p>
+                      )}
                       <p className="font-bold text-green-700 mt-2 tabular-nums">{formatMoney(inv.net_amount_due)}</p>
                       <p className="text-xs text-gray-500">net due</p>
                     </div>

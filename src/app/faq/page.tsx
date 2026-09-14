@@ -52,7 +52,7 @@ export default function FaqPage() {
           {FAQ_ITEMS.map((item) => (
             <div
               key={item.question}
-              id={item.question.startsWith("How do organizer invoices") ? "invoices" : undefined}
+                id={item.question.startsWith("How do organizer payouts") ? "invoices" : undefined}
             >
               <h2 className="font-semibold text-gray-900">{item.question}</h2>
               <p>{item.answer}</p>
