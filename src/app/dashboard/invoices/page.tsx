@@ -7,6 +7,7 @@ import { supabase } from "@/utils/supabaseClient";
 import { getProductRole } from "@/utils/roles";
 import { listInvoices } from "@/utils/invoicesApi";
 import type { OrganizerInvoiceRecord } from "@/server/invoices/types";
+import { ORGANIZER_COPY, invoiceStatusLabel } from "@/constants/organizerCopy";
 import { DocumentTextIcon, ArrowLeftIcon } from "@heroicons/react/24/outline";
 
 export default function OrganizerInvoicesPage() {
@@ -49,9 +50,9 @@ export default function OrganizerInvoicesPage() {
             <ArrowLeftIcon className="h-4 w-4" aria-hidden />
             Dashboard
           </Link>
-          <h1 className="text-2xl sm:text-3xl font-bold">Invoices to Tikiti</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold">{ORGANIZER_COPY.invoice.listTitle}</h1>
           <p className="text-green-100 mt-1 text-sm sm:text-base">
-            Settlement invoices from your ticket sales — generated from paid tickets only.
+            {ORGANIZER_COPY.invoice.listSubtitle}
           </p>
         </div>
       </div>
@@ -64,9 +65,9 @@ export default function OrganizerInvoicesPage() {
         {!loading && !error && invoices.length === 0 && (
           <div className="bg-white rounded-2xl shadow-md p-8 text-center border border-gray-100">
             <DocumentTextIcon className="h-12 w-12 text-gray-300 mx-auto mb-3" aria-hidden />
-            <p className="text-gray-700 font-medium">No invoices yet</p>
+            <p className="text-gray-700 font-medium">{ORGANIZER_COPY.invoice.emptyTitle}</p>
             <p className="text-sm text-gray-500 mt-2">
-              Generate an invoice from an event with paid ticket sales on your dashboard.
+              {ORGANIZER_COPY.invoice.emptyBody}
             </p>
             <Link href="/dashboard" className="inline-block mt-4 text-green-700 font-semibold hover:underline">
               Go to dashboard
@@ -93,7 +94,7 @@ export default function OrganizerInvoicesPage() {
                     </div>
                     <div className="text-right">
                       <span className="text-xs font-bold uppercase px-2 py-1 rounded-full bg-gray-100 text-gray-700">
-                        {inv.status}
+                        {invoiceStatusLabel(inv.status)}
                       </span>
                       <p className="font-bold text-green-700 mt-2 tabular-nums">{formatMoney(inv.net_amount_due)}</p>
                       <p className="text-xs text-gray-500">net due</p>

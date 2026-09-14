@@ -9,9 +9,10 @@ import { QRCodeCanvas } from "qrcode.react";
 import { AppRouterInstance } from "next/dist/shared/lib/app-router-context.shared-runtime";
 import Image from "next/image";
 import { computeBuyerServiceFeeZar } from "@/constants/pricing";
-import { generateInvoice } from "@/utils/invoicesApi";
-import { canGenerateInvoiceForEvent } from "@/utils/eventSchedule";
+import { listInvoices } from "@/utils/invoicesApi";
+import type { OrganizerInvoiceRecord } from "@/server/invoices/types";
 import EventShareBar from "@/components/EventShareBar";
+import EventInvoiceActions from "@/components/EventInvoiceActions";
 import { 
   CalendarIcon, 
   MapPinIcon, 
@@ -151,7 +152,7 @@ function OrganizerDashboard({
     totalServiceFees: 0,
   });
   const [loadingSales, setLoadingSales] = useState(true);
-  const [generatingInvoiceEventId, setGeneratingInvoiceEventId] = useState<string | null>(null);
+  const [invoices, setInvoices] = useState<OrganizerInvoiceRecord[]>([]);
 
   const fetchOrganizerEvents = useCallback(async () => {
     try {
@@ -315,6 +316,17 @@ function OrganizerDashboard({
     fetchSalesData();
   }, [events]);
 
+  useEffect(() => {
+    async function fetchInvoices() {
+      try {
+        setInvoices(await listInvoices());
+      } catch {
+        setInvoices([]);
+      }
+    }
+    fetchInvoices();
+  }, []);
+
   const handleDeleteEvent = async (eventId: string, posterUrl?: string) => {
     if (
       !confirm(
@@ -363,18 +375,6 @@ function OrganizerDashboard({
 
   const handleEditEvent = (eventId: string) => {
     router.push(`/dashboard/edit-event/${eventId}`);
-  };
-
-  const handleGenerateInvoice = async (eventId: string) => {
-    setGeneratingInvoiceEventId(eventId);
-    try {
-      const invoice = await generateInvoice(eventId);
-      router.push(`/dashboard/invoices/${invoice.id}`);
-    } catch (e) {
-      alert(e instanceof Error ? e.message : "Failed to generate invoice");
-    } finally {
-      setGeneratingInvoiceEventId(null);
-    }
   };
 
   const formatDate = (dateString: string) => {
@@ -613,25 +613,19 @@ function OrganizerDashboard({
                             {formatPrice(eventSalesData[event.id].serviceFees)}
                           </span>
                         </div>
-                        {canGenerateInvoiceForEvent(event.date) ? (
-                          <button
-                            type="button"
-                            onClick={() => handleGenerateInvoice(event.id)}
-                            disabled={generatingInvoiceEventId === event.id}
-                            className="w-full mt-1 flex items-center justify-center gap-2 rounded-lg bg-green-600 text-white py-2.5 text-sm font-semibold hover:bg-green-700 disabled:opacity-50 transition-colors"
-                          >
-                            <DocumentTextIcon className="h-4 w-4" aria-hidden />
-                            {generatingInvoiceEventId === event.id
-                              ? "Generating invoice…"
-                              : "Invoice uninvoiced sales to Tikiti"}
-                          </button>
-                        ) : (
-                          <p className="text-xs text-amber-800 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2 mt-1 leading-relaxed">
-                            Invoicing opens after the event ({formatDate(event.date)}).
-                          </p>
-                        )}
                       </div>
                     )}
+                    <EventInvoiceActions
+                      eventId={event.id}
+                      eventDate={event.date}
+                      eventDateLabel={formatDate(event.date)}
+                      paidTicketCount={
+                        eventSalesData[event.id]?.ticketsSold ??
+                        eventTicketCounts[event.id] ??
+                        0
+                      }
+                      invoices={invoices.filter((inv) => inv.event_id === event.id)}
+                    />
                   </div>
                 </div>
               </div>

@@ -9,6 +9,9 @@ export const TIKITI_BILL_TO = {
   address: process.env.TIKITI_BILLING_ADDRESS ?? "South Africa",
 } as const;
 
-export type InvoiceStatus = "issued" | "paid" | "void";
+export type InvoiceStatus = "draft" | "issued" | "paid" | "void";
 
-export const INVOICE_STATUSES: InvoiceStatus[] = ["issued", "paid", "void"];
+export const INVOICE_STATUSES: InvoiceStatus[] = ["draft", "issued", "paid", "void"];
+
+/** Staff settlement actions — never applied to drafts. */
+export const STAFF_INVOICE_STATUSES = ["paid", "void"] as const satisfies readonly InvoiceStatus[];

@@ -6,10 +6,9 @@ import {
   getInvoiceById,
   updateInvoiceStatus,
 } from "@/server/invoices/generateOrganizerInvoice";
-import { type InvoiceStatus } from "@/constants/billing";
 
 const bodySchema = z.object({
-  status: z.enum(["paid", "void"] satisfies [InvoiceStatus, InvoiceStatus]),
+  status: z.enum(["paid", "void"]),
 });
 
 type RouteContext = { params: Promise<{ id: string }> };
