@@ -3,6 +3,7 @@ import { Roboto, Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import { AuthPendingRedirect } from "@/components/AuthPendingRedirect";
 import { BRAND } from "@/constants/branding";
 import {
   buildPageMetadata,
@@ -62,6 +63,7 @@ export default function RootLayout({
         className={`${roboto.variable} ${plusJakarta.variable} antialiased bg-background text-foreground font-sans`}
       >
         <Navbar />
+        <AuthPendingRedirect />
         <main className="pt-16 md:pt-20 pb-[var(--mobile-nav-offset)] md:pb-8 min-h-screen bg-background">
           {children}
         </main>

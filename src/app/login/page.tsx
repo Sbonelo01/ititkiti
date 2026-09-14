@@ -15,7 +15,11 @@ import {
 } from '@heroicons/react/24/outline';
 import { AuthPageSkeleton } from "@/components/AppLoadingSkeleton";
 import { CtaButton } from "@/components/ui/CtaButton";
-import { getOAuthRedirectTo, safeAuthRedirectPath } from "@/utils/authRedirect";
+import {
+  getOAuthRedirectTo,
+  persistAuthRedirectPath,
+  safeAuthRedirectPath,
+} from "@/utils/authRedirect";
 
 function GoogleGlyph() {
   return (
@@ -114,6 +118,7 @@ function LoginForm() {
     setMessage(null);
 
     if (isLogin) {
+      persistAuthRedirectPath(redirectTo);
       // Login
       const { error } = await supabase.auth.signInWithPassword({
         email,
@@ -141,11 +146,15 @@ function LoginForm() {
         }
       }
       // Do NOT upload logo here
+      persistAuthRedirectPath(
+        redirectTo || (role === "organizer" ? "/dashboard/create-event" : "/dashboard")
+      );
       // Signup with extended metadata (without company_logo)
       const { error } = await supabase.auth.signUp({
         email,
         password,
         options: {
+          emailRedirectTo: getOAuthRedirectTo(window.location.origin),
           data: {
             role: sanitizeProductRole(role),
             name,
@@ -174,10 +183,11 @@ function LoginForm() {
     setError(null);
     setMessage(null);
     setGoogleLoading(true);
+    persistAuthRedirectPath(redirectTo);
     const { error: oauthError } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: getOAuthRedirectTo(window.location.origin, redirectTo),
+        redirectTo: getOAuthRedirectTo(window.location.origin),
         queryParams: {
           prompt: "select_account",
         },
