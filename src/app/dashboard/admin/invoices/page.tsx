@@ -7,6 +7,7 @@ import { supabase } from "@/utils/supabaseClient";
 import { isStaffOrAdmin } from "@/utils/roles";
 import { listInvoices, updateInvoiceStatusClient } from "@/utils/invoicesApi";
 import type { OrganizerInvoiceRecord } from "@/server/invoices/types";
+import { invoiceStatusLabel } from "@/constants/organizerCopy";
 import { ArrowLeftIcon } from "@heroicons/react/24/outline";
 
 export default function StaffInvoicesPage() {
@@ -104,7 +105,7 @@ export default function StaffInvoicesPage() {
                     <td className="p-3 text-right tabular-nums">{inv.ticket_count}</td>
                     <td className="p-3 text-right tabular-nums font-semibold">{formatMoney(inv.net_amount_due)}</td>
                     <td className="p-3">
-                      <span className="text-xs font-bold uppercase">{inv.status}</span>
+                      <span className="text-xs font-bold uppercase">{invoiceStatusLabel(inv.status)}</span>
                     </td>
                     <td className="p-3 space-x-2 whitespace-nowrap">
                       {inv.status === "issued" && (
@@ -126,6 +127,9 @@ export default function StaffInvoicesPage() {
                             Void
                           </button>
                         </>
+                      )}
+                      {inv.status === "draft" && (
+                        <span className="text-xs text-gray-500">Awaiting organizer submit</span>
                       )}
                     </td>
                   </tr>

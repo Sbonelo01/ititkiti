@@ -9,6 +9,7 @@ import {
 } from "@/server/invoices/buildInvoiceLineItems";
 import type { OrganizerInvoiceRecord } from "@/server/invoices/types";
 import { canGenerateInvoiceForEvent } from "@/utils/eventSchedule";
+import { submitInvoiceGuard } from "@/server/invoices/invoiceEligibility";
 
 export type GenerateInvoiceResult =
   | { ok: true; invoice: OrganizerInvoiceRecord }
@@ -133,7 +134,7 @@ export async function generateOrganizerInvoice(
       invoice_number: invoiceNumber as string,
       organizer_id: organizer.id,
       event_id: eventId,
-      status: "issued",
+      status: "draft",
       currency: "ZAR",
       ticket_count: lineItems.totals.ticketCount,
       ticket_revenue: ticketRevenue,
@@ -255,6 +256,38 @@ export async function updateInvoiceStatus(
 
   if (error || !data) {
     return { ok: false, status: 404, error: "Invoice not found" };
+  }
+
+  return { ok: true, invoice: data as OrganizerInvoiceRecord };
+}
+
+export async function submitOrganizerInvoice(
+  organizer: User,
+  invoiceId: string
+): Promise<GenerateInvoiceResult> {
+  const existing = await getInvoiceById(invoiceId);
+  const gate = submitInvoiceGuard({ invoice: existing, userId: organizer.id });
+  if (!gate.ok) {
+    return gate;
+  }
+
+  const supabase = getSupabaseAdmin();
+  const now = new Date().toISOString();
+  const { data, error } = await supabase
+    .from("organizer_invoices")
+    .update({
+      status: "issued",
+      issued_at: now,
+      updated_at: now,
+    })
+    .eq("id", invoiceId)
+    .eq("organizer_id", organizer.id)
+    .eq("status", "draft")
+    .select("*")
+    .single();
+
+  if (error || !data) {
+    return { ok: false, status: 409, error: "Invoice could not be submitted" };
   }
 
   return { ok: true, invoice: data as OrganizerInvoiceRecord };

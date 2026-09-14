@@ -1,6 +1,7 @@
 "use client";
 
 import { BRAND } from "@/constants/branding";
+import { invoiceStatusLabel } from "@/constants/organizerCopy";
 import type { InvoiceLineItems, OrganizerInvoiceRecord } from "@/server/invoices/types";
 
 function formatMoney(amount: number, currency: string) {
@@ -41,6 +42,7 @@ export default function InvoiceDocument({ invoice, showPrintButton = true }: Inv
   const seller = invoice.seller as BillParty;
 
   const statusColors: Record<string, string> = {
+    draft: "bg-blue-100 text-blue-800",
     issued: "bg-amber-100 text-amber-800",
     paid: "bg-green-100 text-green-800",
     void: "bg-gray-200 text-gray-700",
@@ -58,9 +60,11 @@ export default function InvoiceDocument({ invoice, showPrintButton = true }: Inv
           <span
             className={`inline-block rounded-full px-3 py-1 text-xs font-bold uppercase ${statusColors[invoice.status] ?? "bg-gray-100"}`}
           >
-            {invoice.status}
+            {invoiceStatusLabel(invoice.status)}
           </span>
-          <p className="text-sm text-gray-600">Issued {formatDate(invoice.issued_at)}</p>
+          <p className="text-sm text-gray-600">
+            {invoice.status === "draft" ? "Created" : "Issued"} {formatDate(invoice.issued_at)}
+          </p>
           {showPrintButton && (
             <button
               type="button"

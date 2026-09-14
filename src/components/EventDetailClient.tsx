@@ -12,6 +12,7 @@ import EventShareBar from "@/components/EventShareBar";
 import { buildAppleMapsSearchUrl, buildGoogleMapsSearchUrl } from "@/utils/mapsLinks";
 import { computeBuyerServiceFeeZar } from "@/constants/pricing";
 import { buildPaystackReference } from "@/utils/paystackChargeMetadata";
+import { ORGANIZER_COPY } from "@/constants/organizerCopy";
 
 interface Event {
   id: string;
@@ -461,6 +462,30 @@ export default function EventDetailClient({
           </div>
         </div>
       </div>
+
+      {user?.id === event.organizer_id && (
+        <div className="max-w-3xl lg:max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-1 mb-4 relative z-20">
+          <div className="rounded-2xl border border-green-200 bg-green-50 px-4 py-3 sm:px-5 sm:py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <p className="text-sm text-green-900">
+              You organize this event. After it starts, generate and submit an invoice from your dashboard.
+            </p>
+            <div className="flex flex-wrap gap-2">
+              <Link
+                href="/dashboard"
+                className="inline-flex items-center justify-center rounded-xl bg-green-600 px-4 py-2 text-sm font-semibold text-white hover:bg-green-700"
+              >
+                Dashboard
+              </Link>
+              <Link
+                href="/dashboard/invoices"
+                className="inline-flex items-center justify-center rounded-xl border border-green-300 bg-white px-4 py-2 text-sm font-semibold text-green-800 hover:bg-green-50"
+              >
+                {ORGANIZER_COPY.invoice.listTitle}
+              </Link>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Location — easy to find */}
       <section

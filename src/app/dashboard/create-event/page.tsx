@@ -7,13 +7,12 @@ import { User } from "@supabase/supabase-js";
 import Image from "next/image";
 import OrganizerAppPromo from "@/components/OrganizerAppPromo";
 import OrganizerSellGate from "@/components/OrganizerSellGate";
-import EventShareBar from "@/components/EventShareBar";
+import EventCreatedOnboarding from "@/components/EventCreatedOnboarding";
 import { CtaButton } from "@/components/ui/CtaButton";
 import { 
   CalendarIcon,
   ArrowLeftIcon,
   PlusIcon,
-  CheckCircleIcon,
   ExclamationTriangleIcon,
   ClockIcon,
   MapPinIcon,
@@ -337,36 +336,14 @@ export default function CreateEvent() {
       lowestPrice === 0 ? "Free" : `From R${lowestPrice.toFixed(2)}`;
 
     return (
-      <div className="min-h-screen bg-gradient-to-br from-green-50 to-white flex items-center justify-center px-4 py-10">
-        <div className="w-full max-w-lg">
-          <div className="bg-white rounded-2xl shadow-xl p-6 sm:p-8 text-center">
-            <div className="bg-green-100 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6">
-              <CheckCircleIcon className="h-10 w-10 text-green-500" />
-            </div>
-            <h2 className="text-2xl font-bold text-gray-800 mb-2">Event is live!</h2>
-            <p className="text-gray-600 mb-6">
-              Share your event link now to start selling tickets.
-            </p>
-            <div className="text-left mb-6">
-              <EventShareBar
-                eventId={createdEventId}
-                title={formData.title}
-                dateLabel={dateLabel}
-                location={formData.location}
-                priceLabel={priceLabel}
-              />
-            </div>
-            <CtaButton
-              type="button"
-              variant="secondary"
-              className="w-full"
-              onClick={() => router.push("/dashboard")}
-            >
-              Go to dashboard
-            </CtaButton>
-          </div>
-        </div>
-      </div>
+      <EventCreatedOnboarding
+        eventId={createdEventId}
+        eventTitle={formData.title}
+        dateLabel={dateLabel}
+        location={formData.location}
+        priceLabel={priceLabel}
+        onGoToDashboard={() => router.push("/dashboard")}
+      />
     );
   }
 

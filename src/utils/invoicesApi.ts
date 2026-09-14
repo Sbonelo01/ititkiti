@@ -49,6 +49,18 @@ export async function getInvoice(id: string): Promise<OrganizerInvoiceRecord> {
   return data.invoice as OrganizerInvoiceRecord;
 }
 
+export async function submitInvoice(id: string): Promise<OrganizerInvoiceRecord> {
+  const res = await fetch(`/api/invoices/${id}/submit`, {
+    method: "POST",
+    headers: await authHeaders(),
+  });
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(data.error || "Failed to submit invoice");
+  }
+  return data.invoice as OrganizerInvoiceRecord;
+}
+
 export async function updateInvoiceStatusClient(
   id: string,
   status: "paid" | "void"
