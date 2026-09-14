@@ -2,11 +2,12 @@ import crypto from "crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { applyRateLimit } from "@/utils/rateLimit";
 import { finalizePurchaseAtomic } from "@/server/payments/finalizePurchase";
+import { computeExpectedAmountKobo } from "@/server/payments/computeExpectedAmountKobo";
 import {
+  assertPaystackAmountMatches,
   resolvePurchaseFromWebhookCharge,
   type PaystackChargeData,
 } from "@/server/payments/verifyPaystackCharge";
-import { computeExpectedAmountKobo } from "@/utils/paystackChargeMetadata";
 
 type PaystackChargeSuccessPayload = {
   event?: string;
@@ -30,7 +31,9 @@ export async function POST(req: NextRequest) {
   }
 
   const expectedSignature = crypto.createHmac("sha512", secret).update(rawBody).digest("hex");
-  if (signature !== expectedSignature) {
+  const provided = Buffer.from(signature);
+  const expectedBuf = Buffer.from(expectedSignature);
+  if (provided.length !== expectedBuf.length || !crypto.timingSafeEqual(provided, expectedBuf)) {
     return NextResponse.json({ error: "Invalid webhook signature" }, { status: 401 });
   }
 
@@ -62,11 +65,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: expected.error }, { status: expected.status });
   }
 
-  const paidAmount = Number(chargeData?.amount);
-  const paidCurrency = (chargeData?.currency || "ZAR").toUpperCase();
-
-  if (paidCurrency !== expected.currency || !Number.isFinite(paidAmount) || paidAmount < expected.amountKobo) {
-    return NextResponse.json({ error: "Payment amount does not match ticket total" }, { status: 400 });
+  const amountCheck = assertPaystackAmountMatches(chargeData ?? {}, expected);
+  if (!amountCheck.ok) {
+    return NextResponse.json({ error: amountCheck.error }, { status: 400 });
   }
 
   const finalized = await finalizePurchaseAtomic({

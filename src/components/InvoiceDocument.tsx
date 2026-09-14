@@ -176,24 +176,21 @@ export default function InvoiceDocument({ invoice, showPrintButton = true }: Inv
           </span>
         </div>
         <div className="flex justify-between">
-          <span className="text-gray-600">
-            Tikiti platform fee ({formatMoney(invoice.service_fee_per_ticket, invoice.currency)} ×{" "}
-            {invoice.ticket_count} tickets)
-          </span>
-          <span className="font-semibold tabular-nums text-red-700">
-            − {formatMoney(invoice.service_fee_total, invoice.currency)}
+          <span className="text-gray-600">Buyer-paid platform fees (retained by Tikiti)</span>
+          <span className="font-semibold tabular-nums">
+            {formatMoney(invoice.service_fee_total, invoice.currency)}
           </span>
         </div>
         <div className="flex justify-between pt-2 border-t border-gray-300 text-base">
-          <span className="font-bold text-gray-900">Net amount due to organizer</span>
+          <span className="font-bold text-gray-900">Amount due to organizer (100% of face value)</span>
           <span className="font-bold text-green-700 tabular-nums">
             {formatMoney(invoice.net_amount_due, invoice.currency)}
           </span>
         </div>
         <p className="text-xs text-gray-500 pt-2 leading-relaxed">
           This invoice is generated from verified paid tickets in Tikiti. Amounts match recorded sales
-          at generation time. Platform fees are retained by Tikiti; net amount is payable to the organizer
-          per your agreement.
+          at generation time. Platform fees are paid by buyers. Organizers receive 100% of ticket face
+          value.
         </p>
       </footer>
     </article>

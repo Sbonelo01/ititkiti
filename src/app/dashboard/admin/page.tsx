@@ -5,7 +5,7 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import QRScanner from "@/components/QRScanner";
-import { SERVICE_FEE_PER_TICKET } from "@/constants/pricing";
+import { computeBuyerServiceFeeZar } from "@/constants/pricing";
 
 interface AdminEvent {
   id: string;
@@ -92,7 +92,7 @@ export default function AdminDashboard() {
 
           stats[eventId].ticketsSold += 1;
           stats[eventId].ticketRevenue += ticketPrice;
-          stats[eventId].tikitiRevenue += SERVICE_FEE_PER_TICKET;
+          stats[eventId].tikitiRevenue += computeBuyerServiceFeeZar(ticketPrice);
         });
 
         for (const eventId of Object.keys(stats)) {
@@ -239,7 +239,7 @@ export default function AdminDashboard() {
                     {formatPrice(platformTikitiRevenue)}
                   </p>
                   <p className="text-xs text-gray-500 mt-1">
-                    R{SERVICE_FEE_PER_TICKET} service fee × paid tickets sold
+                    Buyer-paid service fees from paid tickets (organizers keep 100% of face value)
                   </p>
                 </div>
               </div>

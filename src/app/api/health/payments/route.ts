@@ -7,29 +7,33 @@ function isMissingFunctionError(message: string): boolean {
 }
 
 export async function GET() {
-  // Paystack signs webhooks with the secret key; either env var is acceptable.
-  const webhookSecretConfigured = Boolean(
+  const paymentsConfigured = Boolean(
     process.env.PAYSTACK_WEBHOOK_SECRET || process.env.PAYSTACK_SECRET_KEY
   );
 
-  const supabase = getSupabaseAdmin();
-  const { error } = await supabase.rpc("finalize_ticket_purchase", {
-    p_reference: null,
-    p_event_id: null,
-    p_ticket_user: {},
-    p_ticket_selections: [],
-    p_quantity: null,
-  });
+  let ticketIssuanceAvailable = false;
+  try {
+    const supabase = getSupabaseAdmin();
+    const { error } = await supabase.rpc("finalize_ticket_purchase", {
+      p_reference: null,
+      p_event_id: null,
+      p_ticket_user: {},
+      p_ticket_selections: [],
+      p_quantity: null,
+    });
+    ticketIssuanceAvailable = !error || !isMissingFunctionError(error.message || "");
+  } catch {
+    ticketIssuanceAvailable = false;
+  }
 
-  const rpcFunctionAvailable = !error || !isMissingFunctionError(error.message || "");
-  const healthy = webhookSecretConfigured && rpcFunctionAvailable;
+  const healthy = paymentsConfigured && ticketIssuanceAvailable;
 
   return NextResponse.json(
     {
       ok: healthy,
       checks: {
-        webhookSecretConfigured,
-        rpcFunctionAvailable,
+        paymentsConfigured,
+        ticketIssuanceAvailable,
       },
     },
     { status: healthy ? 200 : 503 }

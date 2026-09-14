@@ -120,6 +120,38 @@ describe("POST /api/purchase-tickets", () => {
     );
   });
 
+  it("does not leak postgres details when finalize fails", async () => {
+    vi.mocked(resolveAndVerifyPurchase).mockResolvedValue({
+      ok: true,
+      charge: {},
+      purchase: {
+        reference: "R1",
+        eventId: EVENT_ID,
+        quantity: 1,
+        ticketUser: { email: "a@b.com" },
+      },
+    });
+    vi.mocked(finalizePurchaseAtomic).mockResolvedValue({
+      success: false,
+      error: "Failed to finalize purchase",
+      status: 500,
+      pgMessage: "relation payment_receipts does not exist",
+    });
+    const res = await POST(
+      jsonPost({
+        reference: "R1",
+        eventId: EVENT_ID,
+        quantity: 1,
+        user: { email: "a@b.com" },
+      })
+    );
+    expect(res.status).toBe(500);
+    const json = await res.json();
+    expect(json.error).toBe("Failed to finalize purchase");
+    expect(json.details).toBeUndefined();
+    expect(JSON.stringify(json)).not.toContain("payment_receipts");
+  });
+
   it("rejects underpaid charges from verifier", async () => {
     vi.mocked(resolveAndVerifyPurchase).mockResolvedValue({
       ok: false,

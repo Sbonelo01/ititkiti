@@ -60,10 +60,7 @@ export async function POST(req: NextRequest) {
 
     if (!finalized.success) {
       return NextResponse.json(
-        {
-          error: finalized.error || "Failed to finalize purchase",
-          details: finalized.pgMessage,
-        },
+        { error: finalized.error || "Failed to finalize purchase" },
         { status: finalized.status || 500 }
       );
     }

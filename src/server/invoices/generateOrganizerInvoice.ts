@@ -113,7 +113,6 @@ export async function generateOrganizerInvoice(
   const lineItems = buildInvoiceLineItems({
     event,
     tickets: eligible as RawInvoiceTicket[],
-    serviceFeePerTicket: SERVICE_FEE_PER_TICKET,
   });
 
   const { data: invoiceNumber, error: numberError } = await supabase.rpc(

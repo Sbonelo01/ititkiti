@@ -10,7 +10,7 @@ import PaystackPaymentButton from "@/components/PaystackButton";
 import { CtaLink, CtaButton } from "@/components/ui/CtaButton";
 import EventShareBar from "@/components/EventShareBar";
 import { buildAppleMapsSearchUrl, buildGoogleMapsSearchUrl } from "@/utils/mapsLinks";
-import { SERVICE_FEE_PER_TICKET } from "@/constants/pricing";
+import { computeBuyerServiceFeeZar } from "@/constants/pricing";
 import { buildPaystackReference } from "@/utils/paystackChargeMetadata";
 
 interface Event {
@@ -204,6 +204,13 @@ export default function EventDetailClient({
     }, 0);
   };
 
+  const getServiceFee = () => {
+    return ticketTypes.reduce((total, ticketType) => {
+      const quantity = ticketSelections[ticketType.id] || 0;
+      return total + computeBuyerServiceFeeZar(ticketType.price) * quantity;
+    }, 0);
+  };
+
   const handlePurchase = async () => {
     if (!user) {
       router.push(`/login?redirect=${encodeURIComponent(pathname)}`);
@@ -360,7 +367,7 @@ export default function EventDetailClient({
   // Calculate service fee and total
   const totalQuantity = getTotalQuantity();
   const subtotal = getTotalPrice();
-  const serviceFee = SERVICE_FEE_PER_TICKET * totalQuantity;
+  const serviceFee = getServiceFee();
   const totalWithFee = subtotal + serviceFee;
 
   if (loading) {
@@ -639,7 +646,7 @@ export default function EventDetailClient({
                         <span className="font-semibold text-gray-800">{formatPrice(subtotal)}</span>
                       </div>
                       <div className="flex justify-between items-center">
-                        <span className="text-gray-600">Service fee (R10/ticket):</span>
+                        <span className="text-gray-600">Service fee (buyer-paid):</span>
                         <span className="font-semibold text-gray-800">{formatPrice(serviceFee)}</span>
                       </div>
                       <div className="border-t border-gray-200 pt-3">

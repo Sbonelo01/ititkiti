@@ -48,18 +48,30 @@ export async function validateAndMarkTicketUsed(qrCodeData: string): Promise<Val
     };
   }
 
-  const { error: updateError } = await supabase
+  const { data: updated, error: updateError } = await supabase
     .from("tickets")
     .update({ used: true })
-    .eq("id", ticket.id);
+    .eq("id", ticket.id)
+    .eq("used", false)
+    .select("id, attendee_name, email, used, event_id, created_at")
+    .maybeSingle();
 
   if (updateError) {
     return { success: false, status: "error", error: "Failed to mark ticket as used" };
   }
 
+  if (!updated) {
+    return {
+      success: false,
+      status: "already_used",
+      error: "Ticket has already been used",
+      ticket: { ...ticket, used: true },
+    };
+  }
+
   return {
     success: true,
     status: "valid",
-    ticket: { ...ticket, used: true },
+    ticket: updated,
   };
 }
