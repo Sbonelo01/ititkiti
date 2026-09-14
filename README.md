@@ -34,6 +34,12 @@ await getSupabaseAdmin().auth.admin.updateUserById(userId, {
 
 Then apply `supabase/migrations/20260914_sanitize_user_metadata_privileged_roles.sql` so signup/`updateUser` cannot persist `admin`/`staff` in `user_metadata`. Existing staff who only had `user_metadata.role` need the `app_metadata` grant above or they will lose staff access.
 
+## Row-level security
+
+Public tables have RLS enabled. Apply `supabase/migrations/20260915_public_rls_policies.sql` so catalog tables are readable, tickets/payments/invoices are not world-readable, and organizers can only change their own events. That migration also revokes `next_organizer_invoice_number` from `anon` / `authenticated` (same pattern as `finalize_ticket_purchase`).
+
+Merging the PR does **not** change production. Policy intent, apply order, and verification queries: [supabase/RLS.md](./supabase/RLS.md).
+
 ## Mobile scanner
 
 Staff QR scanning lives in the sibling [`../mobile-app`](../mobile-app) Expo project. It uses `/api/validate-ticket` with staff Bearer auth.
