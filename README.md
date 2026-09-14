@@ -18,7 +18,21 @@ See `.env.example` for the full list. Critical vars:
 
 ## Payments
 
-See [PAYMENT_TRACKING.md](./PAYMENT_TRACKING.md). Ticket issuance runs server-side via `finalize_ticket_purchase` (service role only).
+See [PAYMENT_TRACKING.md](./PAYMENT_TRACKING.md). Ticket issuance runs server-side via `finalize_ticket_purchase` (service role only). Apply `supabase/migrations/20260914_revoke_finalize_ticket_purchase_client_grants.sql` so `anon` / `authenticated` cannot execute that RPC.
+
+## Staff / admin roles
+
+Privileged roles (`admin`, `staff`) must be stored in Auth **`app_metadata.role`**. The client can write `user_metadata`, so it is only used for product roles (`organizer` / `attendee`).
+
+Grant staff with the service role (Dashboard → Authentication → user → App metadata, or Admin API):
+
+```ts
+await getSupabaseAdmin().auth.admin.updateUserById(userId, {
+  app_metadata: { role: "staff" }, // or "admin"
+});
+```
+
+Then apply `supabase/migrations/20260914_sanitize_user_metadata_privileged_roles.sql` so signup/`updateUser` cannot persist `admin`/`staff` in `user_metadata`. Existing staff who only had `user_metadata.role` need the `app_metadata` grant above or they will lose staff access.
 
 ## Mobile scanner
 

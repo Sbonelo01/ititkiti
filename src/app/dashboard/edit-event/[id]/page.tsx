@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { supabase } from "@/utils/supabaseClient";
+import { getProductRole } from "@/utils/roles";
 import { User } from "@supabase/supabase-js";
 import { 
   CalendarIcon, 
@@ -105,8 +106,7 @@ export default function EditEvent() {
         return;
       }
 
-      const userRole = session.user.user_metadata?.role;
-      if (userRole !== 'organizer') {
+      if (getProductRole(session.user) !== "organizer") {
         router.push('/dashboard');
         return;
       }

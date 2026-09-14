@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/utils/supabaseClient";
+import { isStaffOrAdmin } from "@/utils/roles";
 
 export default function StaffLogin() {
   const [email, setEmail] = useState("");
@@ -25,7 +26,7 @@ export default function StaffLogin() {
     }
     // Check user role
     const { data: { user } } = await supabase.auth.getUser();
-    if (user?.user_metadata?.role === "admin" || user?.user_metadata?.role === "staff") {
+    if (isStaffOrAdmin(user)) {
       router.push("/dashboard/admin");
     } else {
       setError("You do not have staff or admin access.");

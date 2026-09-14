@@ -1,6 +1,7 @@
 import { User } from "@supabase/supabase-js";
 import { getSupabaseAdmin } from "@/server/supabaseAdmin";
 import { extractBearerToken, requireStaffAuth } from "@/server/auth/staffAuth";
+import { getProductRole } from "@/utils/roles";
 
 export type SessionAuthResult =
   | { ok: true; user: User }
@@ -39,8 +40,7 @@ export async function requireOrganizerAuth(
     return session;
   }
 
-  const role = session.user.user_metadata?.role as string | undefined;
-  if (role !== "organizer") {
+  if (getProductRole(session.user) !== "organizer") {
     return { ok: false, status: 403, error: "Organizer access required" };
   }
 
@@ -61,11 +61,8 @@ export async function canAccessInvoice(
     return { ok: true, user: session.user, isStaff: true };
   }
 
-  if (session.user.id === organizerId) {
-    const role = session.user.user_metadata?.role as string | undefined;
-    if (role === "organizer") {
-      return { ok: true, user: session.user, isStaff: false };
-    }
+  if (session.user.id === organizerId && getProductRole(session.user) === "organizer") {
+    return { ok: true, user: session.user, isStaff: false };
   }
 
   return { ok: false, status: 403, error: "Forbidden" };

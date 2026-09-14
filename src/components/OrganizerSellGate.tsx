@@ -12,6 +12,7 @@ import {
   CheckCircleIcon,
 } from "@heroicons/react/24/outline";
 import { supabase } from "@/utils/supabaseClient";
+import { sanitizeProductRole } from "@/utils/roles";
 import { CtaButton } from "@/components/ui/CtaButton";
 
 type OrganizerSellGateProps = {
@@ -43,7 +44,7 @@ export default function OrganizerSellGate({ user, onUpgraded }: OrganizerSellGat
     try {
       const { error: updateError } = await supabase.auth.updateUser({
         data: {
-          role: "organizer",
+          role: sanitizeProductRole("organizer"),
           name: name.trim(),
           surname: surname.trim() || undefined,
           company_name: companyName.trim(),

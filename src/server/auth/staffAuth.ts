@@ -1,7 +1,8 @@
 import { getSupabaseAdmin } from "@/server/supabaseAdmin";
+import { getPrivilegedRole, type PrivilegedRole } from "@/utils/roles";
 
 export type StaffAuthResult =
-  | { ok: true; userId: string; role: string }
+  | { ok: true; userId: string; role: PrivilegedRole }
   | { ok: false; status: 401; error: string };
 
 export async function requireStaffAuth(accessToken: string | null | undefined): Promise<StaffAuthResult> {
@@ -16,8 +17,8 @@ export async function requireStaffAuth(accessToken: string | null | undefined): 
     return { ok: false, status: 401, error: "Unauthorized" };
   }
 
-  const role = user.user_metadata?.role as string | undefined;
-  if (role !== "admin" && role !== "staff") {
+  const role = getPrivilegedRole(user);
+  if (!role) {
     return { ok: false, status: 401, error: "Unauthorized" };
   }
 

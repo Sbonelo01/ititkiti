@@ -2,6 +2,7 @@
 import { useEffect, useState, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/utils/supabaseClient";
+import { getProductRole } from "@/utils/roles";
 import { User } from "@supabase/supabase-js";
 import Link from "next/link";
 import { QRCodeCanvas } from "qrcode.react";
@@ -72,7 +73,7 @@ export default function Dashboard() {
       }
 
       setUser(session.user);
-      setUserRole(session.user.user_metadata?.role || "attendee");
+      setUserRole(getProductRole(session.user));
       setLoading(false);
     };
 
@@ -85,7 +86,7 @@ export default function Dashboard() {
         router.push("/");
       } else if (session) {
         setUser(session.user);
-        setUserRole(session.user.user_metadata?.role || "attendee");
+        setUserRole(getProductRole(session.user));
       }
       setLoading(false);
     });
