@@ -3,20 +3,16 @@ import { NextRequest } from "next/server";
 import crypto from "crypto";
 import { POST } from "./route";
 import { finalizePurchaseAtomic } from "@/server/payments/finalizePurchase";
-import { computeExpectedAmountKobo } from "@/utils/paystackChargeMetadata";
+import { computeExpectedAmountKobo } from "@/server/payments/computeExpectedAmountKobo";
 import { resetRateLimitBucketsForTests } from "@/utils/rateLimit";
 
 vi.mock("@/server/payments/finalizePurchase", () => ({
   finalizePurchaseAtomic: vi.fn(),
 }));
 
-vi.mock("@/utils/paystackChargeMetadata", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("@/utils/paystackChargeMetadata")>();
-  return {
-    ...actual,
-    computeExpectedAmountKobo: vi.fn(),
-  };
-});
+vi.mock("@/server/payments/computeExpectedAmountKobo", () => ({
+  computeExpectedAmountKobo: vi.fn(),
+}));
 
 function sign(body: string, secret: string): string {
   return crypto.createHmac("sha512", secret).update(body).digest("hex");
@@ -47,6 +43,19 @@ describe("POST /api/paystack/webhook", () => {
   it("returns 401 when signature header is missing", async () => {
     const raw = JSON.stringify({ event: "charge.success" });
     const res = await POST(webhookRequest(raw, "203.0.113.10", null));
+    expect(res.status).toBe(401);
+  });
+
+  it("returns 401 when signature does not match", async () => {
+    const raw = JSON.stringify({ event: "charge.success" });
+    const res = await POST(webhookRequest(raw, "203.0.113.11", sign(raw, "wrong-secret")));
+    expect(res.status).toBe(401);
+    expect(finalizePurchaseAtomic).not.toHaveBeenCalled();
+  });
+
+  it("returns 401 when signature length differs", async () => {
+    const raw = JSON.stringify({ event: "charge.success" });
+    const res = await POST(webhookRequest(raw, "203.0.113.11", "short"));
     expect(res.status).toBe(401);
   });
 
@@ -134,6 +143,41 @@ describe("POST /api/paystack/webhook", () => {
     };
     const raw = JSON.stringify(body);
     const res = await POST(webhookRequest(raw, "203.0.113.16", sign(raw, secret)));
+    expect(res.status).toBe(400);
+    expect(finalizePurchaseAtomic).not.toHaveBeenCalled();
+  });
+
+  it("rejects overpaid webhook charges", async () => {
+    vi.mocked(computeExpectedAmountKobo).mockResolvedValue({ amountKobo: 10000, currency: "ZAR" });
+    const body = {
+      event: "charge.success",
+      data: {
+        reference: "EVT-e1-u-1",
+        amount: 10001,
+        currency: "ZAR",
+        customer: { email: "a@b.com" },
+        metadata: { event_id: EVENT_ID, quantity: 2 },
+      },
+    };
+    const raw = JSON.stringify(body);
+    const res = await POST(webhookRequest(raw, "203.0.113.17", sign(raw, secret)));
+    expect(res.status).toBe(400);
+    expect(finalizePurchaseAtomic).not.toHaveBeenCalled();
+  });
+
+  it("rejects currency mismatch", async () => {
+    const body = {
+      event: "charge.success",
+      data: {
+        reference: "EVT-e1-u-1",
+        amount: 10000,
+        currency: "NGN",
+        customer: { email: "a@b.com" },
+        metadata: { event_id: EVENT_ID, quantity: 2 },
+      },
+    };
+    const raw = JSON.stringify(body);
+    const res = await POST(webhookRequest(raw, "203.0.113.18", sign(raw, secret)));
     expect(res.status).toBe(400);
     expect(finalizePurchaseAtomic).not.toHaveBeenCalled();
   });

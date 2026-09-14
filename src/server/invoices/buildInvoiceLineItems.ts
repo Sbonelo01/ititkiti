@@ -1,4 +1,4 @@
-import { SERVICE_FEE_PER_TICKET } from "@/constants/pricing";
+import { SERVICE_FEE_PER_TICKET, computeBuyerServiceFeeZar, roundZar } from "@/constants/pricing";
 import type { InvoiceLineItems, InvoicePurchaseLine, InvoiceTicketTypeLine } from "@/server/invoices/types";
 
 export type RawInvoiceTicket = {
@@ -19,7 +19,6 @@ type BuildArgs = {
     price: number;
   };
   tickets: RawInvoiceTicket[];
-  serviceFeePerTicket?: number;
 };
 
 function ticketUnitPrice(ticket: RawInvoiceTicket, eventFallbackPrice: number): number {
@@ -44,24 +43,25 @@ function ticketTypeName(ticket: RawInvoiceTicket): string {
   return "General";
 }
 
-export function buildInvoiceLineItems({
-  event,
-  tickets,
-  serviceFeePerTicket = SERVICE_FEE_PER_TICKET,
-}: BuildArgs): InvoiceLineItems {
-  const feePerTicket = serviceFeePerTicket;
+export function roundMoney(amount: number): number {
+  return roundZar(amount);
+}
 
+export function buildInvoiceLineItems({ event, tickets }: BuildArgs): InvoiceLineItems {
   const byTypeMap = new Map<string, InvoiceTicketTypeLine>();
   const purchaseMap = new Map<string, InvoicePurchaseLine>();
 
   let ticketRevenue = 0;
+  let serviceFeeTotal = 0;
 
   for (const ticket of tickets) {
     const unitPrice = ticketUnitPrice(ticket, event.price);
+    const buyerFee = computeBuyerServiceFeeZar(unitPrice);
     const typeKey = ticket.ticket_type_id ?? "default";
     const typeName = ticketTypeName(ticket);
 
     ticketRevenue += unitPrice;
+    serviceFeeTotal += buyerFee;
 
     const existingType = byTypeMap.get(typeKey);
     if (existingType) {
@@ -82,7 +82,7 @@ export function buildInvoiceLineItems({
     if (existingPurchase) {
       existingPurchase.ticketCount += 1;
       existingPurchase.ticketRevenue += unitPrice;
-      existingPurchase.serviceFee += feePerTicket;
+      existingPurchase.serviceFee += buyerFee;
       existingPurchase.ticketIds.push(ticket.id);
     } else {
       purchaseMap.set(refKey, {
@@ -91,22 +91,21 @@ export function buildInvoiceLineItems({
         buyerEmail: ticket.email,
         ticketCount: 1,
         ticketRevenue: unitPrice,
-        serviceFee: feePerTicket,
+        serviceFee: buyerFee,
         ticketIds: [ticket.id],
       });
     }
   }
 
   const ticketCount = tickets.length;
-  const serviceFeeTotal = ticketCount * feePerTicket;
-  const netAmountDueToOrganizer = ticketRevenue - serviceFeeTotal;
+  // Buyer-paid fees only: organizer is owed 100% of ticket face value.
+  const netAmountDueToOrganizer = ticketRevenue;
 
   const byTicketType = [...byTypeMap.values()].sort((a, b) => a.name.localeCompare(b.name));
   const byPurchase = [...purchaseMap.values()].sort(
     (a, b) => new Date(a.purchasedAt).getTime() - new Date(b.purchasedAt).getTime()
   );
 
-  // Integrity check — totals must match line aggregation
   const typeSum = byTicketType.reduce((s, row) => s + row.lineTotal, 0);
   const purchaseSum = byPurchase.reduce((s, row) => s + row.ticketRevenue, 0);
   if (Math.abs(typeSum - ticketRevenue) > 0.001 || Math.abs(purchaseSum - ticketRevenue) > 0.001) {
@@ -122,7 +121,7 @@ export function buildInvoiceLineItems({
     },
     byTicketType,
     byPurchase,
-    serviceFeePerTicket: feePerTicket,
+    serviceFeePerTicket: SERVICE_FEE_PER_TICKET,
     totals: {
       ticketCount,
       ticketRevenue: roundMoney(ticketRevenue),
@@ -130,8 +129,4 @@ export function buildInvoiceLineItems({
       netAmountDueToOrganizer: roundMoney(netAmountDueToOrganizer),
     },
   };
-}
-
-export function roundMoney(amount: number): number {
-  return Math.round(amount * 100) / 100;
 }

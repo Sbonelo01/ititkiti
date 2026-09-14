@@ -1,6 +1,6 @@
 import type { TicketSelection, TicketUserPayload } from "@/server/payments/finalizePurchase";
+import { computeExpectedAmountKobo } from "@/server/payments/computeExpectedAmountKobo";
 import {
-  computeExpectedAmountKobo,
   extractEventIdFromReference,
   normalizePaystackTicketSelections,
 } from "@/utils/paystackChargeMetadata";
@@ -35,6 +35,24 @@ export type ResolvedPurchase = {
 export type VerifyPaystackResult =
   | { ok: true; charge: PaystackChargeData; purchase: ResolvedPurchase }
   | { ok: false; error: string; status: number };
+
+export function assertPaystackAmountMatches(
+  charge: Pick<PaystackChargeData, "amount" | "currency">,
+  expected: { amountKobo: number; currency: string }
+): { ok: true } | { ok: false; error: string } {
+  const paidAmount = Number(charge.amount);
+  const paidCurrency = (charge.currency || "ZAR").toUpperCase();
+
+  if (paidCurrency !== expected.currency) {
+    return { ok: false, error: "Payment currency mismatch" };
+  }
+
+  if (!Number.isFinite(paidAmount) || paidAmount !== expected.amountKobo) {
+    return { ok: false, error: "Payment amount does not match ticket total" };
+  }
+
+  return { ok: true };
+}
 
 export async function verifyPaystackReference(reference: string): Promise<
   | { ok: true; charge: PaystackChargeData }
@@ -94,18 +112,21 @@ export async function resolveAndVerifyPurchase(
   const metadataSelections = normalizePaystackTicketSelections(metadata.ticket_selections);
   const metadataQuantity = Number(metadata.quantity || 0) || undefined;
 
-  let ticketSelections = metadataSelections.length > 0 ? metadataSelections : clientTicketSelections;
-  let quantity = metadataSelections.length > 0 ? undefined : metadataQuantity ?? clientQuantity;
+  // Prefer Paystack metadata. Client body is only a fallback when metadata has no ticket data.
+  let ticketSelections = metadataSelections.length > 0 ? metadataSelections : undefined;
+  let quantity = metadataSelections.length > 0 ? undefined : metadataQuantity;
 
-  if (Array.isArray(clientTicketSelections) && clientTicketSelections.length > 0) {
-    const onlyDefault = clientTicketSelections.every((s) => s.ticketTypeId === "default");
-    if (onlyDefault) {
-      const sum = clientTicketSelections.reduce((acc, s) => acc + (Number(s.quantity) || 0), 0);
-      ticketSelections = undefined;
-      quantity = sum;
-    } else if (metadataSelections.length === 0 && !metadataQuantity) {
-      ticketSelections = clientTicketSelections;
-      quantity = undefined;
+  if (!ticketSelections && !quantity) {
+    if (Array.isArray(clientTicketSelections) && clientTicketSelections.length > 0) {
+      const onlyDefault = clientTicketSelections.every((s) => s.ticketTypeId === "default");
+      if (onlyDefault) {
+        const sum = clientTicketSelections.reduce((acc, s) => acc + (Number(s.quantity) || 0), 0);
+        quantity = sum || clientQuantity;
+      } else {
+        ticketSelections = clientTicketSelections;
+      }
+    } else if (clientQuantity) {
+      quantity = clientQuantity;
     }
   }
 
@@ -119,15 +140,9 @@ export async function resolveAndVerifyPurchase(
     return { ok: false, error: expected.error, status: expected.status };
   }
 
-  const paidAmount = Number(charge.amount);
-  const paidCurrency = (charge.currency || "ZAR").toUpperCase();
-
-  if (paidCurrency !== expected.currency) {
-    return { ok: false, error: "Payment currency mismatch", status: 400 };
-  }
-
-  if (!Number.isFinite(paidAmount) || paidAmount < expected.amountKobo) {
-    return { ok: false, error: "Payment amount does not match ticket total", status: 400 };
+  const amountCheck = assertPaystackAmountMatches(charge, expected);
+  if (!amountCheck.ok) {
+    return { ok: false, error: amountCheck.error, status: 400 };
   }
 
   const ticketUser: TicketUserPayload = {

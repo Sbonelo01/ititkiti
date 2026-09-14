@@ -7,7 +7,7 @@ import Link from "next/link";
 import { QRCodeCanvas } from "qrcode.react";
 import { AppRouterInstance } from "next/dist/shared/lib/app-router-context.shared-runtime";
 import Image from "next/image";
-import { SERVICE_FEE_PER_TICKET } from "@/constants/pricing";
+import { computeBuyerServiceFeeZar } from "@/constants/pricing";
 import { generateInvoice } from "@/utils/invoicesApi";
 import { canGenerateInvoiceForEvent } from "@/utils/eventSchedule";
 import EventShareBar from "@/components/EventShareBar";
@@ -120,6 +120,7 @@ interface EventSalesData {
   ticketsSold: number;
   revenue: number;
   profit: number;
+  serviceFees: number;
   ticketTypeBreakdown: Record<string, { count: number; revenue: number }>;
 }
 
@@ -257,6 +258,7 @@ function OrganizerDashboard({
               ticketsSold: 0,
               revenue: 0,
               profit: 0,
+              serviceFees: 0,
               ticketTypeBreakdown: {},
             };
           }
@@ -285,19 +287,21 @@ function OrganizerDashboard({
 
           totalTicketsSold += 1;
           totalRevenue += ticketPrice;
-          totalServiceFees += SERVICE_FEE_PER_TICKET;
+          const buyerFee = computeBuyerServiceFeeZar(ticketPrice);
+          totalServiceFees += buyerFee;
+          sales[eventId].serviceFees += buyerFee;
         });
 
-        // Calculate profit for each event (revenue - service fees)
+        // Organizers receive 100% of ticket face value; buyer-paid fees are Tikiti revenue.
         Object.keys(sales).forEach(eventId => {
-          sales[eventId].profit = sales[eventId].revenue - (sales[eventId].ticketsSold * SERVICE_FEE_PER_TICKET);
+          sales[eventId].profit = sales[eventId].revenue;
         });
 
         setEventSalesData(sales);
         setSalesSummary({
           totalTicketsSold,
           totalRevenue,
-          totalProfit: totalRevenue - totalServiceFees,
+          totalProfit: totalRevenue,
           totalServiceFees,
         });
       } catch (error) {
@@ -603,9 +607,9 @@ function OrganizerDashboard({
                           <span className="font-semibold">{formatPrice(eventSalesData[event.id].revenue)}</span>
                         </div>
                         <div className="flex justify-between text-xs text-gray-600">
-                          <span>Service Fees:</span>
+                          <span>Buyer-paid fees:</span>
                           <span className="font-semibold">
-                            {formatPrice(eventSalesData[event.id].ticketsSold * SERVICE_FEE_PER_TICKET)}
+                            {formatPrice(eventSalesData[event.id].serviceFees)}
                           </span>
                         </div>
                         {canGenerateInvoiceForEvent(event.date) ? (

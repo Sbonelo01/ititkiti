@@ -39,17 +39,18 @@ describe("buildInvoiceLineItems", () => {
           ticket_types: { id: "tt2", name: "VIP", price: 250 },
         },
       ],
-      serviceFeePerTicket: 10,
     });
 
     expect(lineItems.totals.ticketCount).toBe(3);
     expect(lineItems.totals.ticketRevenue).toBe(450);
-    expect(lineItems.totals.serviceFeeTotal).toBe(30);
-    expect(lineItems.totals.netAmountDueToOrganizer).toBe(420);
+    expect(lineItems.totals.serviceFeeTotal).toBe(32.5);
+    expect(lineItems.totals.netAmountDueToOrganizer).toBe(450);
     expect(lineItems.byTicketType).toHaveLength(2);
     expect(lineItems.byPurchase).toHaveLength(2);
     expect(lineItems.byPurchase[0].ticketCount).toBe(2);
     expect(lineItems.byPurchase[0].ticketRevenue).toBe(200);
+    expect(lineItems.byPurchase[0].serviceFee).toBe(20);
+    expect(lineItems.byPurchase[1].serviceFee).toBe(12.5);
   });
 
   it("uses event fallback price when ticket type is missing", () => {
@@ -68,6 +69,8 @@ describe("buildInvoiceLineItems", () => {
     });
 
     expect(lineItems.totals.ticketRevenue).toBe(100);
+    expect(lineItems.totals.serviceFeeTotal).toBe(10);
+    expect(lineItems.totals.netAmountDueToOrganizer).toBe(100);
     expect(lineItems.byTicketType[0].name).toBe("General");
   });
 });

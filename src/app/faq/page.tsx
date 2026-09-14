@@ -32,7 +32,8 @@ const FAQ_ITEMS = [
   },
   {
     question: "What is the service fee?",
-    answer: "The platform service fee is R10 per ticket.",
+    answer:
+      "Buyers pay a service fee on top of the ticket price: R5 under R50, R10 from R50 to R200, and 5% above R200. Organizers receive 100% of ticket face value.",
   },
 ];
 
