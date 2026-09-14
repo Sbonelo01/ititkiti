@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/utils/supabaseClient";
+import { getProductRole } from "@/utils/roles";
 import { User } from "@supabase/supabase-js";
 import Image from "next/image";
 import OrganizerAppPromo from "@/components/OrganizerAppPromo";
@@ -79,7 +80,7 @@ export default function CreateEvent() {
         return;
       }
 
-      const role = session.user.user_metadata?.role || "attendee";
+      const role = getProductRole(session.user);
       setUser(session.user);
       setUserRole(role);
       setLoading(false);
@@ -94,7 +95,7 @@ export default function CreateEvent() {
     } = await supabase.auth.getSession();
     if (session?.user) {
       setUser(session.user);
-      setUserRole(session.user.user_metadata?.role || "attendee");
+      setUserRole(getProductRole(session.user));
     }
   };
 

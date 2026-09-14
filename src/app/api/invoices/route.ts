@@ -3,6 +3,7 @@ import { applyRateLimit } from "@/utils/rateLimit";
 import { requireSession } from "@/server/auth/sessionAuth";
 import { requireStaffAuth, extractBearerToken } from "@/server/auth/staffAuth";
 import { listInvoicesForUser } from "@/server/invoices/generateOrganizerInvoice";
+import { getProductRole } from "@/utils/roles";
 
 export async function GET(req: NextRequest) {
   const rateLimited = applyRateLimit(req, {
@@ -19,9 +20,8 @@ export async function GET(req: NextRequest) {
 
   const staff = await requireStaffAuth(extractBearerToken(req.headers.get("authorization")));
   const isStaff = staff.ok;
-  const role = auth.user.user_metadata?.role as string | undefined;
 
-  if (!isStaff && role !== "organizer") {
+  if (!isStaff && getProductRole(auth.user) !== "organizer") {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 

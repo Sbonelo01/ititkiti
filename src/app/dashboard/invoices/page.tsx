@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/utils/supabaseClient";
+import { getProductRole } from "@/utils/roles";
 import { listInvoices } from "@/utils/invoicesApi";
 import type { OrganizerInvoiceRecord } from "@/server/invoices/types";
 import { DocumentTextIcon, ArrowLeftIcon } from "@heroicons/react/24/outline";
@@ -23,8 +24,7 @@ export default function OrganizerInvoicesPage() {
         router.push("/login?redirect=/dashboard/invoices");
         return;
       }
-      const role = session.user.user_metadata?.role;
-      if (role !== "organizer") {
+      if (getProductRole(session.user) !== "organizer") {
         router.push("/dashboard");
         return;
       }

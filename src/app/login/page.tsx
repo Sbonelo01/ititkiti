@@ -2,6 +2,7 @@
 import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "@/utils/supabaseClient";
+import { getProductRole, sanitizeProductRole } from "@/utils/roles";
 import Image from "next/image";
 import { 
   TicketIcon, 
@@ -146,7 +147,7 @@ function LoginForm() {
         password,
         options: {
           data: {
-            role,
+            role: sanitizeProductRole(role),
             name,
             surname: role === "organizer" ? surname : undefined,
             company_name: role === "organizer" ? companyName : undefined,
@@ -196,7 +197,7 @@ function LoginForm() {
       } = await supabase.auth.getUser();
       if (
         user &&
-        user.user_metadata?.role === "organizer" &&
+        getProductRole(user) === "organizer" &&
         companyLogo &&
         !user.user_metadata?.company_logo
       ) {

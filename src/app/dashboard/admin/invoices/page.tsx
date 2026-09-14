@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/utils/supabaseClient";
+import { isStaffOrAdmin } from "@/utils/roles";
 import { listInvoices, updateInvoiceStatusClient } from "@/utils/invoicesApi";
 import type { OrganizerInvoiceRecord } from "@/server/invoices/types";
 import { ArrowLeftIcon } from "@heroicons/react/24/outline";
@@ -20,8 +21,7 @@ export default function StaffInvoicesPage() {
       const {
         data: { session },
       } = await supabase.auth.getSession();
-      const role = session?.user?.user_metadata?.role;
-      if (!session || (role !== "admin" && role !== "staff")) {
+      if (!session || !isStaffOrAdmin(session.user)) {
         router.push("/dashboard");
         return;
       }

@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { supabase } from "@/utils/supabaseClient";
+import { getPrivilegedRole, isStaffOrAdmin } from "@/utils/roles";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -36,7 +37,7 @@ export default function AdminDashboard() {
     async function checkAuth() {
       const { data: { session } } = await supabase.auth.getSession();
       const user = session?.user;
-      if (!user || (user.user_metadata?.role !== "admin" && user.user_metadata?.role !== "staff")) {
+      if (!user || !isStaffOrAdmin(user)) {
         setAuthorized(false);
         setTimeout(() => router.push("/dashboard"), 2000);
         return;
@@ -120,7 +121,7 @@ export default function AdminDashboard() {
       const { data: { session } } = await supabase.auth.getSession();
       const user = session?.user;
       if (user) {
-        setUserRole(user.user_metadata?.role);
+        setUserRole(getPrivilegedRole(user));
       }
     }
     getUserRole();

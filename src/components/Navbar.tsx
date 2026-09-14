@@ -4,6 +4,7 @@ import Image from "next/image";
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { supabase } from "@/utils/supabaseClient";
+import { getProductRole } from "@/utils/roles";
 import { User } from "@supabase/supabase-js";
 import { 
   HomeIcon, 
@@ -32,7 +33,7 @@ export default function Navbar() {
     const getInitialSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       setUser(session?.user ?? null);
-      setUserRole(session?.user?.user_metadata?.role || "attendee");
+      setUserRole(getProductRole(session?.user));
       setLoading(false);
     };
 
@@ -41,7 +42,7 @@ export default function Navbar() {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         setUser(session?.user ?? null);
-        setUserRole(session?.user?.user_metadata?.role || "attendee");
+        setUserRole(getProductRole(session?.user));
         setLoading(false);
       }
     );
