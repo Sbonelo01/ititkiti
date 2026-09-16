@@ -6,7 +6,9 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { AuthPageSkeleton } from "@/components/AppLoadingSkeleton";
 import { CtaLink } from "@/components/ui/CtaButton";
 import {
+  consumeAuthRedirectPath,
   oauthErrorFromParams,
+  peekAuthRedirectPath,
   safeAuthRedirectPath,
 } from "@/utils/authRedirect";
 import { supabase } from "@/utils/supabaseClient";
@@ -14,7 +16,9 @@ import { supabase } from "@/utils/supabaseClient";
 function AuthCallbackHandler() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const next = safeAuthRedirectPath(searchParams.get("next"));
+  const next = safeAuthRedirectPath(
+    searchParams.get("next") || peekAuthRedirectPath()
+  );
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -31,6 +35,8 @@ function AuthCallbackHandler() {
     }
 
     let cancelled = false;
+
+    consumeAuthRedirectPath(searchParams.get("next"));
 
     const go = () => {
       if (!cancelled) router.replace(next);

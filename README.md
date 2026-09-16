@@ -15,6 +15,24 @@ See `.env.example` for the full list. Critical vars:
 
 - `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`
 - `NEXT_PUBLIC_PAYSTACK_KEY`, `PAYSTACK_SECRET_KEY`, `PAYSTACK_WEBHOOK_SECRET`
+- `NEXT_PUBLIC_SITE_URL` — production origin, e.g. `https://www.tikiti.fun` (never `http://localhost:3000` in production)
+
+## Auth / OAuth URL configuration
+
+Google and email-confirm links use `{origin}/auth/callback` as `redirectTo`. If this URL is missing from the Supabase allowlist, Auth falls back to **Site URL** — which is `http://localhost:3000/#` when that field is still the local default.
+
+In **Supabase Dashboard → Authentication → URL Configuration**, set:
+
+1. **Site URL:** `https://www.tikiti.fun`
+2. **Redirect URLs** (add each; wildcards are optional but recommended):
+   - `http://localhost:3000/auth/callback`
+   - `https://www.tikiti.fun/auth/callback`
+   - `https://tikiti.fun/auth/callback` (if the apex domain is used)
+   - `http://localhost:3000/**`
+   - `https://www.tikiti.fun/**`
+   - `https://tikiti.fun/**`
+
+Local `.env.local` may omit `NEXT_PUBLIC_SITE_URL` (OAuth then uses `http://localhost:3000`). Vercel production must set `NEXT_PUBLIC_SITE_URL=https://www.tikiti.fun`.
 
 ## Payments
 
