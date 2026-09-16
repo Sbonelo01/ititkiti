@@ -42,15 +42,20 @@ See [PAYMENT_TRACKING.md](./PAYMENT_TRACKING.md). Ticket issuance runs server-si
 
 Privileged roles (`admin`, `staff`) must be stored in Auth **`app_metadata.role`**. The client can write `user_metadata`, so it is only used for product roles (`organizer` / `attendee`).
 
-Grant staff with the service role (Dashboard → Authentication → user → App metadata, or Admin API):
+Grant staff/admin from the Tikiti app as the super admin (`sbonelomkhize15@gmail.com`) at `/dashboard/admin/users`. That UI calls a server route which uses the Auth Admin API (`updateUserById`) with the service role. The allowlist is a server-side constant — other admins cannot change roles.
 
-```ts
-await getSupabaseAdmin().auth.admin.updateUserById(userId, {
-  app_metadata: { role: "staff" }, // or "admin"
-});
-```
+Role writes:
 
-Then apply `supabase/migrations/20260914_sanitize_user_metadata_privileged_roles.sql` so signup/`updateUser` cannot persist `admin`/`staff` in `user_metadata`. Existing staff who only had `user_metadata.role` need the `app_metadata` grant above or they will lose staff access.
+| UI role | `app_metadata.role` | `user_metadata.role` |
+|---|---|---|
+| Clear (attendee) | removed (`null`) | `attendee` |
+| Organizer | removed (`null`) | `organizer` |
+| Staff | `staff` | `attendee` (privileged values are never stored here) |
+| Admin | `admin` | `attendee` |
+
+Staff APIs and RLS read **`app_metadata.role` only**. Organizer APIs read **`user_metadata.role`**. Apply `supabase/migrations/20260914_sanitize_user_metadata_privileged_roles.sql` so signup/`updateUser` cannot persist `admin`/`staff` in `user_metadata`. Existing staff who only had `user_metadata.role` need an `app_metadata` grant (via the super-admin UI or Dashboard) or they will lose staff access.
+
+**One-time founder setup:** the Users & staff page is gated on the super-admin email, but the rest of `/dashboard/admin` still requires `app_metadata.role` of `admin` or `staff`. If the founder cannot open the admin dashboard yet, set their Auth **App metadata** in the Supabase dashboard to `{ "role": "admin" }` once, then use the in-app UI going forward.
 
 ## Row-level security
 

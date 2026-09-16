@@ -6,6 +6,15 @@
 
 export type PrivilegedRole = "admin" | "staff";
 export type ProductRole = "organizer" | "attendee";
+/** Super-admin assignable roles. Privileged values write app_metadata; organizer/clear write user_metadata. */
+export type AssignableRole = "clear" | "organizer" | "staff" | "admin";
+
+export const ASSIGNABLE_ROLES = [
+  "clear",
+  "organizer",
+  "staff",
+  "admin",
+] as const satisfies readonly AssignableRole[];
 
 export type RoleMetadataSource = {
   app_metadata?: Record<string, unknown> | null;
@@ -46,4 +55,45 @@ export function getProductRole(
 export function sanitizeProductRole(role: unknown): ProductRole {
   if (typeof role !== "string") return "attendee";
   return role.trim().toLowerCase() === "organizer" ? "organizer" : "attendee";
+}
+
+/** Privileged app_metadata.role wins over product user_metadata.role. */
+export function assignableRoleOf(
+  user: RoleMetadataSource | null | undefined
+): AssignableRole {
+  const privileged = getPrivilegedRole(user);
+  if (privileged) return privileged;
+  return getProductRole(user) === "organizer" ? "organizer" : "clear";
+}
+
+export function roleUpdatePayload(role: AssignableRole): {
+  app_metadata: { role: PrivilegedRole | null };
+  user_metadata: { role: ProductRole };
+} {
+  switch (role) {
+    case "clear":
+      return {
+        app_metadata: { role: null },
+        user_metadata: { role: "attendee" },
+      };
+    case "organizer":
+      return {
+        app_metadata: { role: null },
+        user_metadata: { role: "organizer" },
+      };
+    case "staff":
+      return {
+        app_metadata: { role: "staff" },
+        user_metadata: { role: "attendee" },
+      };
+    case "admin":
+      return {
+        app_metadata: { role: "admin" },
+        user_metadata: { role: "attendee" },
+      };
+    default: {
+      const _never: never = role;
+      throw new Error(`Unhandled role: ${String(_never)}`);
+    }
+  }
 }
