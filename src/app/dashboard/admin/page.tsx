@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/utils/supabaseClient";
 import { getPrivilegedRole, isStaffOrAdmin } from "@/utils/roles";
+import { isSuperAdminEmail } from "@/utils/superAdmin";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -115,6 +116,7 @@ export default function AdminDashboard() {
 
   // Get user role for conditional rendering
   const [userRole, setUserRole] = useState<string | null>(null);
+  const [showUserAdmin, setShowUserAdmin] = useState(false);
 
   useEffect(() => {
     async function getUserRole() {
@@ -122,6 +124,7 @@ export default function AdminDashboard() {
       const user = session?.user;
       if (user) {
         setUserRole(getPrivilegedRole(user));
+        setShowUserAdmin(isSuperAdminEmail(user.email));
       }
     }
     getUserRole();
@@ -191,6 +194,16 @@ export default function AdminDashboard() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 to-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {showUserAdmin && (
+          <div className="mb-6">
+            <Link
+              href="/dashboard/admin/users"
+              className="inline-block bg-green-600 text-white px-6 py-3 rounded-xl font-semibold hover:bg-green-700 transition-colors"
+            >
+              Users &amp; staff
+            </Link>
+          </div>
+        )}
         {userRole === "staff" ? (
           // Staff view - only scanner
           <div className="text-center">
