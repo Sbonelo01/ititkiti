@@ -324,24 +324,10 @@ export default function CreateEvent() {
   }
 
   if (success && createdEventId) {
-    const dateLabel = formData.date
-      ? new Date(`${formData.date}T${formData.time || "00:00"}`).toLocaleDateString("en-ZA", {
-          weekday: "short",
-          day: "numeric",
-          month: "short",
-        })
-      : undefined;
-    const lowestPrice = Math.min(...formData.ticket_types.map((t) => t.price));
-    const priceLabel =
-      lowestPrice === 0 ? "Free" : `From R${lowestPrice.toFixed(2)}`;
-
     return (
       <EventCreatedOnboarding
         eventId={createdEventId}
         eventTitle={formData.title}
-        dateLabel={dateLabel}
-        location={formData.location}
-        priceLabel={priceLabel}
         onGoToDashboard={() => router.push("/dashboard")}
       />
     );

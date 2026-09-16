@@ -1,9 +1,20 @@
-import { BRAND, ORGANIZER_APP, APP_STORE_URL, PLAY_STORE_URL } from "@/constants/branding";
-import { ORGANIZER_COPY } from "@/constants/organizerCopy";
-import { getEventShareUrl, getSiteOrigin } from "@/utils/eventShare";
+import { ORGANIZER_COPY, interpolateOrganizerCopy, organizerFirstName } from "@/constants/organizerCopy";
+import { getEventShareUrl } from "@/utils/eventShare";
 
 export function isTransactionalEmailConfigured(): boolean {
   return Boolean(process.env.RESEND_API_KEY?.trim());
+}
+
+function escapeHtml(value: string): string {
+  return value
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;");
+}
+
+function withBold(text: string, phrase: string): string {
+  return escapeHtml(text).replaceAll(escapeHtml(phrase), `<strong>${escapeHtml(phrase)}</strong>`);
 }
 
 export function buildOrganizerWelcomeEmail(input: {
@@ -11,54 +22,54 @@ export function buildOrganizerWelcomeEmail(input: {
   eventId: string;
   organizerName?: string;
 }): { subject: string; html: string; text: string } {
-  const hello = input.organizerName?.trim() ? `Hi ${input.organizerName.trim()},` : "Hi,";
+  const copy = ORGANIZER_COPY.email;
+  const firstName = organizerFirstName(input.organizerName);
+  const hello = firstName
+    ? interpolateOrganizerCopy(copy.greeting, { organizer_first_name: firstName })
+    : "Hi,";
+  const intro = interpolateOrganizerCopy(copy.intro, { event_name: input.eventTitle });
   const eventUrl = getEventShareUrl(input.eventId);
-  const dashboardUrl = `${getSiteOrigin()}/dashboard`;
-  const invoicesUrl = `${getSiteOrigin()}/dashboard/invoices`;
-  const appStore = APP_STORE_URL || "Coming soon on the App Store";
-  const playStore = PLAY_STORE_URL || "Coming soon on Google Play";
 
-  const subject = ORGANIZER_COPY.email.subject(input.eventTitle);
+  const subject = copy.subject;
   const text = [
     hello,
     "",
-    `${input.eventTitle} is live on ${BRAND.name}.`,
-    ORGANIZER_COPY.onboarding.subhead(input.eventTitle),
+    intro,
     "",
-    `Public page: ${eventUrl}`,
-    `Dashboard: ${dashboardUrl}`,
+    copy.attendees,
     "",
-    ORGANIZER_COPY.onboarding.scannerTitle,
-    ORGANIZER_COPY.onboarding.scannerBody,
-    `iOS: ${appStore}`,
-    `Android: ${playStore}`,
+    copy.nextStepsTitle,
+    `1. ${copy.nextStepShare}`,
+    eventUrl,
+    `2. ${copy.nextStepScanner}`,
+    `3. ${copy.nextStepInvoice}`,
     "",
-    ORGANIZER_COPY.onboarding.invoiceTitle,
-    ORGANIZER_COPY.onboarding.invoiceBody,
-    `Invoices: ${invoicesUrl}`,
+    copy.reminder,
     "",
-    ...ORGANIZER_COPY.onboarding.confidenceItems,
+    copy.contact,
     "",
-    `— ${BRAND.name}`,
+    copy.signoff,
+    copy.signoffName,
+    copy.site,
   ].join("\n");
 
   const html = `<!DOCTYPE html>
 <html>
-<body style="font-family:Arial,sans-serif;line-height:1.5;color:#111;background:#f7faf7;padding:24px;">
-  <div style="max-width:560px;margin:0 auto;background:#fff;border-radius:16px;padding:28px;border:1px solid #e5e7eb;">
-    <p style="font-size:13px;font-weight:700;color:#15803d;text-transform:uppercase;letter-spacing:.04em;margin:0 0 8px;">${BRAND.name}</p>
-    <h1 style="font-size:22px;margin:0 0 12px;">${ORGANIZER_COPY.onboarding.headline}</h1>
-    <p>${hello}</p>
-    <p>${ORGANIZER_COPY.onboarding.subhead(input.eventTitle)}</p>
-    <p><a href="${eventUrl}" style="color:#15803d;font-weight:600;">Open your public event page</a> · <a href="${dashboardUrl}" style="color:#15803d;font-weight:600;">Dashboard</a></p>
-    <h2 style="font-size:16px;margin:24px 0 8px;">${ORGANIZER_COPY.onboarding.scannerTitle}</h2>
-    <p>${ORGANIZER_COPY.onboarding.scannerBody}</p>
-    <p style="font-size:14px;">${ORGANIZER_APP.name}: ${appStore} · ${playStore}</p>
-    <h2 style="font-size:16px;margin:24px 0 8px;">${ORGANIZER_COPY.onboarding.invoiceTitle}</h2>
-    <p>${ORGANIZER_COPY.onboarding.invoiceBody}</p>
-    <p><a href="${invoicesUrl}" style="color:#15803d;font-weight:600;">Invoice dashboard</a></p>
-    <ul>${ORGANIZER_COPY.onboarding.confidenceItems.map((item) => `<li>${item}</li>`).join("")}</ul>
-    <p style="font-size:13px;color:#6b7280;margin-top:28px;">IZIBONELO TECH PTY LTD · tikiti.fun</p>
+<body style="font-family:Arial,sans-serif;line-height:1.5;color:#111;background:#F0FDF4;padding:24px;">
+  <div style="max-width:560px;margin:0 auto;background:#fff;border-radius:16px;padding:28px;border:1px solid #dcfce7;">
+    <p style="display:inline-block;background:#16A34A;color:#fff;border-radius:999px;padding:4px 12px;font-size:14px;font-weight:600;letter-spacing:-0.02em;">tikiti.</p>
+    <p>${escapeHtml(hello)}</p>
+    <p>${withBold(intro, input.eventTitle)}</p>
+    <p>${withBold(copy.attendees, "Tikiti Scanner")}</p>
+    <p><strong>${escapeHtml(copy.nextStepsTitle)}</strong></p>
+    <ol style="padding-left:20px;">
+      <li>${escapeHtml(copy.nextStepShare)}<br /><a href="${escapeHtml(eventUrl)}" style="color:#15803d;font-weight:600;">${escapeHtml(eventUrl)}</a></li>
+      <li>${escapeHtml(copy.nextStepScanner)}</li>
+      <li>${withBold(copy.nextStepInvoice, "settlement invoice")}</li>
+    </ol>
+    <p>${withBold(copy.reminder, "100% of ticket face value")}</p>
+    <p>${escapeHtml(copy.contact)}</p>
+    <p>${escapeHtml(copy.signoff)}<br />${escapeHtml(copy.signoffName)}<br /><a href="${escapeHtml(copy.site)}" style="color:#15803d;">${escapeHtml(copy.site)}</a></p>
   </div>
 </body>
 </html>`;

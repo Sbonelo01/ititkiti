@@ -1,7 +1,7 @@
 "use client";
 
 import { BRAND } from "@/constants/branding";
-import { invoiceStatusLabel } from "@/constants/organizerCopy";
+import { ORGANIZER_COPY, invoiceStatusLabel } from "@/constants/organizerCopy";
 import type { InvoiceLineItems, OrganizerInvoiceRecord } from "@/server/invoices/types";
 
 function formatMoney(amount: number, currency: string) {
@@ -42,9 +42,9 @@ export default function InvoiceDocument({ invoice, showPrintButton = true }: Inv
   const seller = invoice.seller as BillParty;
 
   const statusColors: Record<string, string> = {
-    draft: "bg-blue-100 text-blue-800",
-    issued: "bg-amber-100 text-amber-800",
-    paid: "bg-green-100 text-green-800",
+    draft: "bg-white text-[#166534] border border-[#22C55E]/40",
+    issued: "bg-amber-100 text-amber-900",
+    paid: "bg-[#DCFCE7] text-[#166534]",
     void: "bg-gray-200 text-gray-700",
   };
 
@@ -53,7 +53,7 @@ export default function InvoiceDocument({ invoice, showPrintButton = true }: Inv
       <header className="border-b border-gray-200 px-6 py-5 sm:px-8 sm:py-6 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
         <div>
           <p className="text-sm font-semibold uppercase tracking-wide text-green-700">{BRAND.name}</p>
-          <h1 className="text-2xl font-bold text-gray-900 mt-1">Organizer invoice</h1>
+          <h1 className="text-2xl font-bold text-gray-900 mt-1">{ORGANIZER_COPY.invoice.cardTitle}</h1>
           <p className="text-sm text-gray-500 mt-1">Invoice #{invoice.invoice_number}</p>
         </div>
         <div className="text-left sm:text-right space-y-2">
@@ -71,7 +71,7 @@ export default function InvoiceDocument({ invoice, showPrintButton = true }: Inv
               onClick={() => window.print()}
               className="print:hidden mt-2 text-sm font-semibold text-green-700 hover:underline"
             >
-              Print / Save PDF
+              {ORGANIZER_COPY.invoice.downloadCta}
             </button>
           )}
         </div>

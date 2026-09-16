@@ -1,6 +1,8 @@
 "use client";
 
 import { useCallback, useState, type ReactNode } from "react";
+import CopyToast, { useCopyToast } from "@/components/CopyToast";
+import { ORGANIZER_COPY } from "@/constants/organizerCopy";
 import {
   ShareIcon,
   LinkIcon,
@@ -36,6 +38,7 @@ export default function EventShareBar({
 }: EventShareBarProps) {
   const [copied, setCopied] = useState(false);
   const [tiktokReady, setTiktokReady] = useState(false);
+  const { message: toastMessage, showToast } = useCopyToast();
   const url = getEventShareUrl(eventId);
   const message = buildEventShareMessage({ eventId, title, dateLabel, location, priceLabel });
   const tweetText = `Get tickets: ${title}`;
@@ -44,11 +47,12 @@ export default function EventShareBar({
     try {
       await navigator.clipboard.writeText(url);
       setCopied(true);
+      showToast(ORGANIZER_COPY.toasts.linkCopied);
       window.setTimeout(() => setCopied(false), 2000);
     } catch {
       window.prompt("Copy this event link:", url);
     }
-  }, [url]);
+  }, [showToast, url]);
 
   const nativeShare = useCallback(async () => {
     if (typeof navigator !== "undefined" && navigator.share) {
@@ -85,6 +89,8 @@ export default function EventShareBar({
     </a>
   );
 
+  const toast = <CopyToast message={toastMessage} />;
+
   if (compact) {
     return (
       <div className="flex flex-wrap items-center gap-2">
@@ -113,6 +119,7 @@ export default function EventShareBar({
           <FaTiktok className="h-4 w-4" aria-hidden />
           {tiktokReady ? "Copied!" : "TikTok"}
         </button>
+        {toast}
       </div>
     );
   }
@@ -193,6 +200,7 @@ export default function EventShareBar({
           {copied ? "Copied!" : "Copy link"}
         </button>
       </div>
+      {toast}
     </div>
   );
 }
