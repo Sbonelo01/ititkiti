@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Tikiti icon">
+  <title>Tikiti icon</title>
+  <!-- Ticket silhouette with QR finder corners — brand green #22C55E -->
+  <defs>
+    <clipPath id="ticket">
+      <path d="M8 12c0-2.2 1.8-4 4-4h40c2.2 0 4 1.8 4 4v10c-2.4 0-4.4 2-4.4 4.4S53.8 30.8 56 30.8V44c0 2.2-1.8 4-4 4H12c-2.2 0-4-1.8-4-4V30.8c2.4 0 4.4-2 4.4-4.4S10.4 22 8 22V12z"/>
+    </clipPath>
+  </defs>
+  <rect width="64" height="64" rx="14" fill="#22C55E"/>
+  <!-- Ticket body -->
+  <path fill="#FFFFFF" d="M14 16h36c1.1 0 2 .9 2 2v8.2c-2.5.4-4.4 2.6-4.4 5.2s1.9 4.8 4.4 5.2V46c0 1.1-.9 2-2 2H14c-1.1 0-2-.9-2-2v-9.4c2.5-.4 4.4-2.6 4.4-5.2S14.5 26.6 12 26.2V18c0-1.1.9-2 2-2z"/>
+  <!-- QR finder pattern (3 corners) -->
+  <g fill="none" stroke="#22C55E" stroke-width="2.2">
+    <rect x="18" y="20" width="10" height="10" rx="1.5"/>
+    <rect x="20.5" y="22.5" width="5" height="5" rx="0.8" fill="#22C55E" stroke="none"/>
+    <rect x="36" y="20" width="10" height="10" rx="1.5"/>
+    <rect x="38.5" y="22.5" width="5" height="5" rx="0.8" fill="#22C55E" stroke="none"/>
+    <rect x="18" y="34" width="10" height="10" rx="1.5"/>
+    <rect x="20.5" y="36.5" width="5" height="5" rx="0.8" fill="#22C55E" stroke="none"/>
+  </g>
+  <!-- Small data modules -->
+  <g fill="#22C55E">
+    <rect x="32" y="36" width="3" height="3" rx="0.5"/>
+    <rect x="37" y="36" width="3" height="3" rx="0.5"/>
+    <rect x="42" y="36" width="3" height="3" rx="0.5"/>
+    <rect x="32" y="41" width="3" height="3" rx="0.5"/>
+    <rect x="42" y="41" width="3" height="3" rx="0.5"/>
+  </g>
+</svg>
