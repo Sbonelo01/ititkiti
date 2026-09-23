@@ -7,10 +7,14 @@ import { AuthPageSkeleton } from "@/components/AppLoadingSkeleton";
 import { CtaLink } from "@/components/ui/CtaButton";
 import {
   consumeAuthRedirectPath,
+  establishOAuthSession,
+  GOOGLE_SIGN_IN_INCOMPLETE_ERROR,
   oauthErrorFromParams,
   peekAuthRedirectPath,
+  resolvePostAuthPath,
   safeAuthRedirectPath,
 } from "@/utils/authRedirect";
+import { userHasOrganizerEvents } from "@/utils/postAuthLanding";
 import { supabase } from "@/utils/supabaseClient";
 
 function AuthCallbackHandler() {
@@ -35,30 +39,83 @@ function AuthCallbackHandler() {
     }
 
     let cancelled = false;
+    let settled = false;
 
-    consumeAuthRedirectPath(searchParams.get("next"));
+    const timeout = window.setTimeout(() => {
+      if (!cancelled && !settled) {
+        settled = true;
+        setError(GOOGLE_SIGN_IN_INCOMPLETE_ERROR);
+      }
+    }, 12000);
 
-    const go = () => {
-      if (!cancelled) router.replace(next);
+    const succeed = async (userId: string) => {
+      if (cancelled || settled) return;
+      settled = true;
+      window.clearTimeout(timeout);
+      try {
+        const destination = await resolvePostAuthPath(
+          userId,
+          next,
+          userHasOrganizerEvents
+        );
+        if (cancelled) return;
+        consumeAuthRedirectPath(searchParams.get("next"));
+        router.replace(destination);
+      } catch {
+        if (!cancelled) {
+          setError(GOOGLE_SIGN_IN_INCOMPLETE_ERROR);
+        }
+      }
+    };
+
+    const fail = (message: string) => {
+      if (cancelled || settled) return;
+      settled = true;
+      window.clearTimeout(timeout);
+      setError(message);
     };
 
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {
-      if (session && (event === "SIGNED_IN" || event === "INITIAL_SESSION")) {
-        go();
+      if (session?.user && (event === "SIGNED_IN" || event === "INITIAL_SESSION")) {
+        void succeed(session.user.id);
       }
     });
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) go();
-    });
+    const code =
+      searchParams.get("code") ||
+      (typeof window !== "undefined"
+        ? new URLSearchParams(window.location.search).get("code")
+        : null);
 
-    const timeout = window.setTimeout(() => {
-      if (!cancelled) {
-        setError("Could not complete Google sign-in. Please try again.");
+    void establishOAuthSession({
+      code,
+      getSession: async () => {
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+        return session?.user ? { user: { id: session.user.id } } : null;
+      },
+      exchangeCodeForSession: async (authCode) => {
+        const { data, error } = await supabase.auth.exchangeCodeForSession(authCode);
+        return {
+          session: data.session?.user ? { user: { id: data.session.user.id } } : null,
+          errorMessage: error?.message ?? null,
+        };
+      },
+    }).then((result) => {
+      if (cancelled || settled) return;
+      if (result.session) {
+        void succeed(result.session.user.id);
+        return;
       }
-    }, 12000);
+      if (result.errorMessage) {
+        fail(result.errorMessage);
+      }
+    }).catch(() => {
+      fail(GOOGLE_SIGN_IN_INCOMPLETE_ERROR);
+    });
 
     return () => {
       cancelled = true;

@@ -8,7 +8,12 @@ const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "public-ano
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
     flowType: "pkce",
-    detectSessionInUrl: true,
+    // Do not exchange `?code=` during client init. The shared client is created
+    // as soon as the layout loads, which races the one-time PKCE code and can
+    // drop the verifier before `/auth/callback` observes a session. That page
+    // calls `exchangeCodeForSession` itself. Verifier + session stay in
+    // localStorage (where `signInWithOAuth` wrote them); a cookie adapter would miss them.
+    detectSessionInUrl: false,
     persistSession: true,
   },
 });

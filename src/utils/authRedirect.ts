@@ -1,5 +1,9 @@
 export const DEFAULT_AUTH_REDIRECT = "/dashboard";
+/** Public events list — post-auth landing when the user has never listed an event. */
+export const EVENTS_BROWSE_PATH = "/events";
 export const AUTH_REDIRECT_STORAGE_KEY = "tikiti.auth.next";
+export const GOOGLE_SIGN_IN_INCOMPLETE_ERROR =
+  "Could not complete Google sign-in. Please try again.";
 
 const LOCALHOST_HOSTS = new Set(["localhost", "127.0.0.1", "::1"]);
 
@@ -182,4 +186,73 @@ export function oauthErrorFromParams(
     hash.get("error_description") ||
     hash.get("error")
   );
+}
+
+/**
+ * True when post-auth should use the smart landing (events browse vs dashboard)
+ * instead of an explicit deep link such as checkout or create-event.
+ */
+export function isGenericAuthRedirect(next: string | null | undefined): boolean {
+  if (next == null || next.trim() === "") return true;
+  const pathOnly = next.trim().split(/[?#]/)[0].replace(/\/+$/, "") || "/";
+  const generic = DEFAULT_AUTH_REDIRECT.replace(/\/+$/, "") || "/";
+  return pathOnly === generic;
+}
+
+/**
+ * Honor an explicit post-auth path. When `explicitNext` is empty or the
+ * generic default (`/dashboard`), send organizers who have listed an event
+ * to the dashboard and everyone else to the public events list.
+ */
+export async function resolvePostAuthPath(
+  userId: string | null | undefined,
+  explicitNext: string | null | undefined,
+  hasOrganizerEvents: (userId: string) => Promise<boolean>
+): Promise<string> {
+  const next = safeAuthRedirectPath(explicitNext);
+  if (!isGenericAuthRedirect(next)) {
+    return next;
+  }
+  if (!userId) {
+    return EVENTS_BROWSE_PATH;
+  }
+  try {
+    const listed = await hasOrganizerEvents(userId);
+    return listed ? DEFAULT_AUTH_REDIRECT : EVENTS_BROWSE_PATH;
+  } catch {
+    return DEFAULT_AUTH_REDIRECT;
+  }
+}
+
+type OAuthUserSession = { user: { id: string } };
+
+/**
+ * Complete a PKCE return. An existing session wins so a code that was already
+ * exchanged is not sent again. Otherwise exchange `code` once.
+ */
+export async function establishOAuthSession(input: {
+  code: string | null;
+  getSession: () => Promise<OAuthUserSession | null>;
+  exchangeCodeForSession: (code: string) => Promise<{
+    session: OAuthUserSession | null;
+    errorMessage: string | null;
+  }>;
+}): Promise<{ session: OAuthUserSession | null; errorMessage: string | null }> {
+  const code = input.code?.trim() || null;
+  const existing = await input.getSession();
+  if (!code || existing) {
+    return { session: existing, errorMessage: null };
+  }
+
+  const exchanged = await input.exchangeCodeForSession(code);
+  if (exchanged.session) {
+    return { session: exchanged.session, errorMessage: null };
+  }
+
+  const afterExchange = await input.getSession();
+  if (afterExchange) {
+    return { session: afterExchange, errorMessage: null };
+  }
+
+  return { session: null, errorMessage: GOOGLE_SIGN_IN_INCOMPLETE_ERROR };
 }
