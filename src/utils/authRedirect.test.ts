@@ -7,10 +7,15 @@ import {
   isLocalhostOrigin,
   isOAuthReturnOnWrongPath,
   oauthCallbackHref,
+  establishOAuthSession,
+  EVENTS_BROWSE_PATH,
+  GOOGLE_SIGN_IN_INCOMPLETE_ERROR,
+  isGenericAuthRedirect,
   oauthErrorFromParams,
   persistAuthRedirectPath,
   peekAuthRedirectPath,
   resolveAuthOrigin,
+  resolvePostAuthPath,
   safeAuthRedirectPath,
 } from "@/utils/authRedirect";
 
@@ -163,6 +168,125 @@ describe("oauthCallbackHref", () => {
         "#access_token=tok"
       )
     ).toBe("/auth/callback?next=%2Fevents%2F1&code=abc#access_token=tok");
+  });
+});
+
+describe("resolvePostAuthPath", () => {
+  it("honors explicit checkout and sell destinations", async () => {
+    const lookup = vi.fn(async () => false);
+    expect(await resolvePostAuthPath("user-1", "/events/abc-123", lookup)).toBe(
+      "/events/abc-123"
+    );
+    expect(
+      await resolvePostAuthPath("user-1", "/dashboard/create-event", lookup)
+    ).toBe("/dashboard/create-event");
+    expect(lookup).not.toHaveBeenCalled();
+  });
+
+  it("sends users who have never listed an event to the events browse page", async () => {
+    const lookup = vi.fn(async () => false);
+    expect(await resolvePostAuthPath("user-1", "/dashboard", lookup)).toBe(
+      EVENTS_BROWSE_PATH
+    );
+    expect(await resolvePostAuthPath("user-1", null, lookup)).toBe(EVENTS_BROWSE_PATH);
+    expect(await resolvePostAuthPath("user-1", "", lookup)).toBe(EVENTS_BROWSE_PATH);
+    expect(await resolvePostAuthPath(null, "/dashboard", lookup)).toBe(EVENTS_BROWSE_PATH);
+  });
+
+  it("sends organizers who have listed an event to the dashboard", async () => {
+    const lookup = vi.fn(async () => true);
+    expect(await resolvePostAuthPath("user-1", "/dashboard", lookup)).toBe(
+      DEFAULT_AUTH_REDIRECT
+    );
+    expect(await resolvePostAuthPath("user-1", undefined, lookup)).toBe(
+      DEFAULT_AUTH_REDIRECT
+    );
+    expect(lookup).toHaveBeenCalledWith("user-1");
+  });
+
+  it("keeps the dashboard default when the organizer-events lookup fails", async () => {
+    const lookup = vi.fn(async () => {
+      throw new Error("rls");
+    });
+    expect(await resolvePostAuthPath("user-1", null, lookup)).toBe(DEFAULT_AUTH_REDIRECT);
+  });
+
+  it("treats only the generic dashboard path as the smart-landing default", () => {
+    expect(isGenericAuthRedirect(null)).toBe(true);
+    expect(isGenericAuthRedirect("")).toBe(true);
+    expect(isGenericAuthRedirect("/dashboard")).toBe(true);
+    expect(isGenericAuthRedirect("/dashboard/")).toBe(true);
+    expect(isGenericAuthRedirect("/dashboard/create-event")).toBe(false);
+    expect(isGenericAuthRedirect("/events/abc")).toBe(false);
+  });
+});
+
+describe("establishOAuthSession", () => {
+  const session = { user: { id: "user-1" } };
+
+  it("does not exchange when getSession already has a session", async () => {
+    const exchange = vi.fn();
+    const result = await establishOAuthSession({
+      code: "auth-code",
+      getSession: async () => session,
+      exchangeCodeForSession: exchange,
+    });
+    expect(result).toEqual({ session, errorMessage: null });
+    expect(exchange).not.toHaveBeenCalled();
+  });
+
+  it("exchanges a PKCE code when no session exists yet", async () => {
+    const exchange = vi.fn(async () => ({ session, errorMessage: null }));
+    const result = await establishOAuthSession({
+      code: "auth-code",
+      getSession: async () => null,
+      exchangeCodeForSession: exchange,
+    });
+    expect(exchange).toHaveBeenCalledWith("auth-code");
+    expect(result.session).toEqual(session);
+    expect(result.errorMessage).toBeNull();
+  });
+
+  it("uses the session if detectSessionInUrl already consumed the code", async () => {
+    let reads = 0;
+    const result = await establishOAuthSession({
+      code: "auth-code",
+      getSession: async () => {
+        reads += 1;
+        return reads === 1 ? null : session;
+      },
+      exchangeCodeForSession: async () => ({
+        session: null,
+        errorMessage: "invalid request: code verifier should be non-empty",
+      }),
+    });
+    expect(result).toEqual({ session, errorMessage: null });
+  });
+
+  it("returns the friendly error when the code cannot establish a session", async () => {
+    const result = await establishOAuthSession({
+      code: "auth-code",
+      getSession: async () => null,
+      exchangeCodeForSession: async () => ({
+        session: null,
+        errorMessage: "bad code",
+      }),
+    });
+    expect(result).toEqual({
+      session: null,
+      errorMessage: GOOGLE_SIGN_IN_INCOMPLETE_ERROR,
+    });
+  });
+
+  it("waits without an error when there is no code and no session yet", async () => {
+    const exchange = vi.fn();
+    const result = await establishOAuthSession({
+      code: null,
+      getSession: async () => null,
+      exchangeCodeForSession: exchange,
+    });
+    expect(exchange).not.toHaveBeenCalled();
+    expect(result).toEqual({ session: null, errorMessage: null });
   });
 });
 

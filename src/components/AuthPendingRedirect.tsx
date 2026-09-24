@@ -7,8 +7,9 @@ import {
   isOAuthReturnOnWrongPath,
   oauthCallbackHref,
   peekAuthRedirectPath,
-  safeAuthRedirectPath,
+  resolvePostAuthPath,
 } from "@/utils/authRedirect";
+import { userHasOrganizerEvents } from "@/utils/postAuthLanding";
 import { supabase } from "@/utils/supabaseClient";
 
 function isSiteUrlFallbackPath(pathname: string): boolean {
@@ -40,24 +41,31 @@ export function AuthPendingRedirect() {
     }
 
     let handled = false;
-    const goIfPending = (hasSession: boolean) => {
-      if (!hasSession || handled) return;
+    const goIfPending = (session: { user: { id: string } } | null) => {
+      if (!session?.user?.id || handled) return;
       const stored = peekAuthRedirectPath();
       if (!stored) return;
       handled = true;
-      consumeAuthRedirectPath();
-      router.replace(safeAuthRedirectPath(stored));
+      void (async () => {
+        const destination = await resolvePostAuthPath(
+          session.user.id,
+          stored,
+          userHasOrganizerEvents
+        );
+        consumeAuthRedirectPath();
+        router.replace(destination);
+      })();
     };
 
     supabase.auth.getSession().then(({ data: { session } }) => {
-      goIfPending(Boolean(session));
+      goIfPending(session);
     });
 
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === "SIGNED_IN") {
-        goIfPending(Boolean(session));
+        goIfPending(session);
       }
     });
 

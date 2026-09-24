@@ -16,10 +16,13 @@ import {
 import { AuthPageSkeleton } from "@/components/AppLoadingSkeleton";
 import { CtaButton } from "@/components/ui/CtaButton";
 import {
+  consumeAuthRedirectPath,
   getOAuthRedirectTo,
   persistAuthRedirectPath,
+  resolvePostAuthPath,
   safeAuthRedirectPath,
 } from "@/utils/authRedirect";
+import { userHasOrganizerEvents } from "@/utils/postAuthLanding";
 
 function GoogleGlyph() {
   return (
@@ -65,7 +68,8 @@ function LoginForm() {
   const [googleLoading, setGoogleLoading] = useState(false);
   const router = useRouter();
   const searchParams = useSearchParams();
-  const redirectTo = safeAuthRedirectPath(searchParams.get("redirect"));
+  const redirectParam = searchParams.get("redirect");
+  const redirectTo = safeAuthRedirectPath(redirectParam);
   const isCheckoutRedirect = redirectTo.startsWith("/events/");
   const isSellRedirect = redirectTo.includes("create-event");
 
@@ -81,12 +85,18 @@ function LoginForm() {
       const {
         data: { session },
       } = await supabase.auth.getSession();
-      if (session) {
-        router.push(redirectTo);
+      if (session?.user) {
+        const destination = await resolvePostAuthPath(
+          session.user.id,
+          redirectTo,
+          userHasOrganizerEvents
+        );
+        consumeAuthRedirectPath(redirectParam);
+        router.push(destination);
       }
     };
     checkUser();
-  }, [router, redirectTo]);
+  }, [router, redirectTo, redirectParam]);
 
   const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0] || null;
@@ -120,7 +130,7 @@ function LoginForm() {
     if (isLogin) {
       persistAuthRedirectPath(redirectTo);
       // Login
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
@@ -128,7 +138,13 @@ function LoginForm() {
         setError(error.message);
       } else {
         setMessage("Logged in successfully! Redirecting...");
-        setTimeout(() => router.push(redirectTo), 1000);
+        const destination = await resolvePostAuthPath(
+          data.user?.id,
+          redirectTo,
+          userHasOrganizerEvents
+        );
+        consumeAuthRedirectPath(redirectParam);
+        setTimeout(() => router.push(destination), 1000);
       }
     } else {
       // Validate required fields
@@ -150,7 +166,7 @@ function LoginForm() {
         redirectTo || (role === "organizer" ? "/dashboard/create-event" : "/dashboard")
       );
       // Signup with extended metadata (without company_logo)
-      const { error } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
@@ -169,11 +185,15 @@ function LoginForm() {
         setError(error.message);
       } else {
         setMessage("Signup successful! Check your email to confirm your account.");
-        // Redirect based on the redirect parameter or role
-        // If redirect is to create-event and user is organizer, go there
-        // Otherwise use the redirect parameter or default dashboard
-        const finalRedirect = redirectTo || (role === "organizer" ? "/dashboard/create-event" : "/dashboard");
-        setTimeout(() => router.push(finalRedirect), 1500);
+        const destination = await resolvePostAuthPath(
+          data.user?.id ?? data.session?.user?.id,
+          redirectTo,
+          userHasOrganizerEvents
+        );
+        if (data.session) {
+          consumeAuthRedirectPath(redirectParam);
+        }
+        setTimeout(() => router.push(destination), 1500);
       }
     }
     setLoading(false);
