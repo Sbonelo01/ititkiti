@@ -102,6 +102,8 @@ export default function Navbar() {
   const isAccountActive =
     pathname.startsWith("/dashboard") && !pathname.startsWith("/dashboard/create-event");
 
+  if (pathname === "/scan") return null;
+
   return (
     <>
       {/* Mobile Header */}
