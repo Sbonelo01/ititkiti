@@ -3,6 +3,8 @@ import { buildPageMetadata } from "@/lib/seo/metadata";
 import { BRAND } from "@/constants/branding";
 import { fetchPublicEventsList, normalizePublicEventsForClient } from "@/server/events/publicEvents";
 
+export const revalidate = 60;
+
 export const metadata = buildPageMetadata({
   title: `Browse Events | ${BRAND.name}`,
   description:

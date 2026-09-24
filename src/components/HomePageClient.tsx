@@ -52,10 +52,8 @@ export default function HomePageClient({ initialEvents = [] }: { initialEvents?:
   };
 
   useEffect(() => {
-    if (initialEvents.length === 0) {
-      fetchEvents();
-    }
-  }, [initialEvents.length]);
+    fetchEvents();
+  }, []);
 
   // Auto-advance carousel
   useEffect(() => {

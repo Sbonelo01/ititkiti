@@ -5,6 +5,8 @@ import { BRAND } from "@/constants/branding";
 import { buildPageMetadata } from "@/lib/seo/metadata";
 import { fetchPublicEventsList, normalizePublicEventsForClient } from "@/server/events/publicEvents";
 
+export const revalidate = 60;
+
 export const metadata = buildPageMetadata({
   title: `${BRAND.name} — Paperless Event Ticketing in South Africa`,
   description:

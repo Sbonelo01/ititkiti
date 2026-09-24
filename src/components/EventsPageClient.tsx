@@ -47,10 +47,8 @@ function EventsPageContent({ initialEvents = [] }: { initialEvents?: Event[] }) 
   const [currentCarouselIndex, setCurrentCarouselIndex] = useState(0);
 
   useEffect(() => {
-    if (initialEvents.length === 0) {
-      fetchEvents();
-    }
-  }, [initialEvents.length]);
+    fetchEvents();
+  }, []);
 
   useEffect(() => {
     const q = searchParams.get("q");
