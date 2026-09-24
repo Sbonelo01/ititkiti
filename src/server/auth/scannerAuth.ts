@@ -1,12 +1,27 @@
 import { User } from "@supabase/supabase-js";
+import { getPrivilegedRole, getProductRole } from "@/utils/roles";
 import { getSupabaseAdmin } from "@/server/supabaseAdmin";
 
 export function normalizeScannerEmail(email: string): string {
   return email.trim().toLowerCase();
 }
 
-export function isPlatformScannerRole(role: string | undefined): boolean {
-  return role === "admin" || role === "staff";
+export function hasPlatformScannerAccess(user: User): boolean {
+  return getPrivilegedRole(user) !== null;
+}
+
+export function hasOrganizerProductRole(user: User): boolean {
+  return getProductRole(user) === "organizer";
+}
+
+/** Role string returned to the scanner app (privileged role wins over product role). */
+export function getScannerRoleForClient(user: User): string | null {
+  const privileged = getPrivilegedRole(user);
+  if (privileged) {
+    return privileged;
+  }
+  const product = getProductRole(user);
+  return product === "organizer" ? "organizer" : product;
 }
 
 export async function linkPendingScannerMemberships(
@@ -27,15 +42,13 @@ export async function linkPendingScannerMemberships(
 }
 
 export async function canScanEvent(user: User, eventId: string): Promise<boolean> {
-  const role = user.user_metadata?.role as string | undefined;
-
-  if (isPlatformScannerRole(role)) {
+  if (hasPlatformScannerAccess(user)) {
     return true;
   }
 
   const supabase = getSupabaseAdmin();
 
-  if (role === "organizer") {
+  if (hasOrganizerProductRole(user)) {
     const { data: event } = await supabase
       .from("events")
       .select("organizer_id")
@@ -77,9 +90,7 @@ export async function canScanEvent(user: User, eventId: string): Promise<boolean
 }
 
 export async function requireScannerAppAccess(user: User): Promise<boolean> {
-  const role = user.user_metadata?.role as string | undefined;
-
-  if (isPlatformScannerRole(role) || role === "organizer") {
+  if (hasPlatformScannerAccess(user) || hasOrganizerProductRole(user)) {
     return true;
   }
 
@@ -120,10 +131,9 @@ export interface ScannerEventSummary {
 }
 
 export async function listScannerEventsForUser(user: User): Promise<ScannerEventSummary[]> {
-  const role = user.user_metadata?.role as string | undefined;
   const supabase = getSupabaseAdmin();
 
-  if (isPlatformScannerRole(role)) {
+  if (hasPlatformScannerAccess(user)) {
     const { data: events } = await supabase
       .from("events")
       .select("id, title")
@@ -133,7 +143,7 @@ export async function listScannerEventsForUser(user: User): Promise<ScannerEvent
     return events ?? [];
   }
 
-  if (role === "organizer") {
+  if (hasOrganizerProductRole(user)) {
     const { data: events } = await supabase
       .from("events")
       .select("id, title")

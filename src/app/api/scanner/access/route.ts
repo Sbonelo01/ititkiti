@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import {
+  getScannerRoleForClient,
   linkPendingScannerMemberships,
   listScannerEventsForUser,
   requireScannerAppAccess,
@@ -25,12 +26,11 @@ export async function GET(req: NextRequest) {
     });
   }
 
-  const role = session.user.user_metadata?.role as string | undefined;
   const events = await listScannerEventsForUser(session.user);
 
   return NextResponse.json({
     allowed: true,
-    role: role ?? null,
+    role: getScannerRoleForClient(session.user),
     events,
   });
 }
