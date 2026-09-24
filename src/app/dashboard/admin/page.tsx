@@ -208,12 +208,20 @@ export default function AdminDashboard() {
           // Staff view - only scanner
           <div className="text-center">
             <h1 className="text-4xl font-bold mb-8">Staff Ticket Scanner</h1>
-            <button
-              className="mb-8 bg-green-600 text-white px-6 py-3 rounded-xl font-bold text-lg hover:bg-green-700 transition-all duration-200 shadow-lg hover:shadow-xl"
-              onClick={() => { setShowScanner(true); setScanResult(null); }}
-            >
-              Open Ticket Scanner
-            </button>
+            <div className="mb-8 flex flex-col items-center gap-3">
+              <Link
+                href="/scan"
+                className="bg-green-600 text-white px-6 py-3 rounded-xl font-bold text-lg hover:bg-green-700 transition-colors"
+              >
+                Open door scanner
+              </Link>
+              <button
+                className="bg-white text-green-700 px-6 py-3 rounded-xl font-semibold border border-green-200 hover:bg-green-50 transition-colors"
+                onClick={() => { setShowScanner(true); setScanResult(null); }}
+              >
+                Open Ticket Scanner
+              </button>
+            </div>
             {showScanner && (
               <QRScanner
                 onScan={qrValue => { setShowScanner(false); handleScan(qrValue); }}
@@ -265,8 +273,14 @@ export default function AdminDashboard() {
               >
                 Organizer invoices
               </Link>
+              <Link
+                href="/scan"
+                className="bg-green-600 text-white px-6 py-3 rounded-xl font-bold text-lg hover:bg-green-700 transition-colors"
+              >
+                Door scanner
+              </Link>
               <button
-                className="bg-green-600 text-white px-6 py-3 rounded-xl font-bold text-lg hover:bg-green-700 transition-all duration-200 shadow-lg"
+                className="bg-white text-green-700 px-6 py-3 rounded-xl font-semibold border border-green-200 hover:bg-green-50 transition-colors"
                 onClick={() => { setShowScanner(true); setScanResult(null); }}
               >
                 Open Ticket Scanner

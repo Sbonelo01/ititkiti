@@ -2,6 +2,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { FormEvent, useState } from "react";
+import { usePathname } from "next/navigation";
 import { 
   TicketIcon,
   SparklesIcon,
@@ -23,6 +24,7 @@ import {
 } from 'react-icons/fa';
 
 export default function Footer() {
+  const pathname = usePathname();
   const [email, setEmail] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [subscribeMessage, setSubscribeMessage] = useState<string | null>(null);
@@ -66,6 +68,8 @@ export default function Footer() {
       setIsSubmitting(false);
     }
   };
+
+  if (pathname === "/scan") return null;
 
   return (
     <footer className="relative bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-white overflow-hidden">

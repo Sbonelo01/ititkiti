@@ -1,0 +1,18 @@
+{
+  "name": "Tikiti Scanner",
+  "short_name": "Tikiti Scan",
+  "description": "Scan Tikiti ticket QR codes at the door.",
+  "start_url": "/scan",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#000000",
+  "theme_color": "#16A34A",
+  "icons": [
+    {
+      "src": "/tikiti-icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}

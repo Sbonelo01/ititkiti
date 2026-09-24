@@ -13,6 +13,7 @@
   "dependencies": {
     "@heroicons/react": "^2.2.0",
     "@supabase/supabase-js": "^2.50.2",
+    "@zxing/browser": "^0.2.1",
     "html5-qrcode": "^2.3.8",
     "next": "15.3.8",
     "qrcode.react": "^4.2.0",
