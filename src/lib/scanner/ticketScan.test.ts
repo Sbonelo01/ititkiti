@@ -6,6 +6,7 @@ import {
   outcomeFromValidation,
   postValidateTicket,
   selectQrDecoder,
+  supabaseAuthStorageKeys,
   type ValidationResponse,
 } from "./ticketScan";
 
@@ -20,6 +21,23 @@ function jsonResponse(
     json: async () => body,
   } as unknown as Response;
 }
+
+describe("supabaseAuthStorageKeys", () => {
+  it("selects the local auth token and its chunks", () => {
+    expect(
+      supabaseAuthStorageKeys([
+        "sb-placeholder-auth-token",
+        "sb-placeholder-auth-token.0",
+        "sb-placeholder-auth-token-code-verifier",
+        "tikiti.auth.next",
+      ])
+    ).toEqual([
+      "sb-placeholder-auth-token",
+      "sb-placeholder-auth-token.0",
+      "sb-placeholder-auth-token-code-verifier",
+    ]);
+  });
+});
 
 describe("selectQrDecoder", () => {
   it("uses BarcodeDetector when the browser provides it", () => {

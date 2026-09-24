@@ -6,9 +6,17 @@ import type { Session } from "@supabase/supabase-js";
 import { supabase } from "@/utils/supabaseClient";
 import { isStaffOrAdmin } from "@/utils/roles";
 import { persistAuthRedirectPath } from "@/utils/authRedirect";
+import { supabaseAuthStorageKeys } from "@/lib/scanner/ticketScan";
 import StaffTicketScanner from "@/components/StaffTicketScanner";
 
 const LOGIN_HREF = "/login?redirect=%2Fscan";
+
+function clearLocalAuthSession() {
+  if (typeof window === "undefined") return;
+  for (const key of supabaseAuthStorageKeys(Object.keys(localStorage))) {
+    localStorage.removeItem(key);
+  }
+}
 
 type AccessState = "loading" | "anonymous" | "denied" | "ready";
 
@@ -58,9 +66,17 @@ export default function ScanPage() {
   }, [router]);
 
   const signOut = async () => {
-    await supabase.auth.signOut();
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) clearLocalAuthSession();
+    } catch {
+      // Offline revoke can fail. Still drop the browser session below.
+      clearLocalAuthSession();
+    }
     persistAuthRedirectPath("/scan");
-    router.replace(LOGIN_HREF);
+    // Full navigation so a failed revoke cannot leave an in-memory session
+    // that immediately sends the login page back to /scan.
+    window.location.assign(LOGIN_HREF);
   };
 
   if (access === "loading" || access === "anonymous") {

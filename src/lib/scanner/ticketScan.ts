@@ -49,6 +49,11 @@ export function selectQrDecoder(barcodeDetectorAvailable: boolean): QrDecoderKin
   return barcodeDetectorAvailable ? "barcode-detector" : "zxing";
 }
 
+/** Local Supabase auth keys, including chunks and the PKCE code verifier. */
+export function supabaseAuthStorageKeys(keys: readonly string[]): string[] {
+  return keys.filter((key) => key.startsWith("sb-") && key.includes("-auth-token"));
+}
+
 export function isValidationStatus(value: unknown): value is ValidationStatus {
   return (
     typeof value === "string" &&
