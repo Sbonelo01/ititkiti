@@ -87,7 +87,7 @@ export default function Footer() {
               <Link href="/" className="flex items-center gap-3 group mb-6">
                 <div className="h-12 w-12 flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all duration-200 transform group-hover:scale-105">
                   <Image 
-                    src="/tikiti-logo.png" 
+                    src="/tikiti-wordmark.png" 
                     alt="Tikiti Logo" 
                     width={62} 
                     height={62} 

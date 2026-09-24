@@ -109,7 +109,7 @@ export default function Navbar() {
         <Link href="/" className="flex items-center gap-2 shrink-0">
           <div className="h-10 w-10 flex items-center justify-center">
             <Image 
-              src="/tikiti-logo.png" 
+              src="/tikiti-wordmark.png" 
               alt="Tikiti Logo" 
               width={80} 
               height={80} 
@@ -151,7 +151,7 @@ export default function Navbar() {
         <Link href="/" className="flex items-center gap-3 group">
           <div className="h-12 w-12 flex items-center justify-center transition-all duration-200">
             <Image 
-              src="/tikiti-logo.png" 
+              src="/tikiti-wordmark.png" 
               alt="Tikiti Logo" 
               width={80} 
               height={80} 
