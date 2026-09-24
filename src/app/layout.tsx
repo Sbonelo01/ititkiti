@@ -47,8 +47,8 @@ export const metadata: Metadata = {
   publisher: "IZIBONELO TECH PTY LTD",
   category: "technology",
   icons: {
-    icon: "/tikiti-logo.png",
-    apple: "/tikiti-logo.png",
+    icon: "/favicon.svg",
+    apple: "/tikiti-icon.png",
   },
 };
 
