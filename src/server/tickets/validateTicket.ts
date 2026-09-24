@@ -1,6 +1,13 @@
+import { User } from "@supabase/supabase-js";
+import { canScanEvent } from "@/server/auth/scannerAuth";
 import { getSupabaseAdmin } from "@/server/supabaseAdmin";
 
-export type TicketValidationStatus = "valid" | "already_used" | "not_found" | "error";
+export type TicketValidationStatus =
+  | "valid"
+  | "already_used"
+  | "not_found"
+  | "error"
+  | "unauthorized";
 
 export interface ValidatedTicket {
   id: string;
@@ -15,13 +22,10 @@ export type ValidateTicketResult =
   | { success: true; status: "valid"; ticket: ValidatedTicket }
   | { success: false; status: "already_used"; error: string; ticket: ValidatedTicket }
   | { success: false; status: "not_found"; error: string }
-  | { success: false; status: "error"; error: string };
+  | { success: false; status: "error"; error: string }
+  | { success: false; status: "unauthorized"; error: string };
 
-export async function validateAndMarkTicketUsed(qrCodeData: string): Promise<ValidateTicketResult> {
-  if (!qrCodeData?.trim()) {
-    return { success: false, status: "error", error: "Missing QR code data" };
-  }
-
+async function lookupPaidTicket(qrCodeData: string): Promise<ValidatedTicket | null> {
   const supabase = getSupabaseAdmin();
 
   const { data: ticket, error } = await supabase
@@ -32,11 +36,43 @@ export async function validateAndMarkTicketUsed(qrCodeData: string): Promise<Val
     .single();
 
   if (error || !ticket) {
+    return null;
+  }
+
+  return ticket;
+}
+
+export async function validateAndMarkTicketUsed(qrCodeData: string): Promise<ValidateTicketResult> {
+  return validateAndMarkTicketUsedForScanner(qrCodeData, null);
+}
+
+export async function validateAndMarkTicketUsedForScanner(
+  qrCodeData: string,
+  scannerUser: User | null
+): Promise<ValidateTicketResult> {
+  if (!qrCodeData?.trim()) {
+    return { success: false, status: "error", error: "Missing QR code data" };
+  }
+
+  const ticket = await lookupPaidTicket(qrCodeData);
+
+  if (!ticket) {
     return {
       success: false,
       status: "not_found",
       error: "Ticket not found or invalid",
     };
+  }
+
+  if (scannerUser) {
+    const allowed = await canScanEvent(scannerUser, ticket.event_id);
+    if (!allowed) {
+      return {
+        success: false,
+        status: "unauthorized",
+        error: "Not authorized to scan tickets for this event",
+      };
+    }
   }
 
   if (ticket.used) {
@@ -48,6 +84,7 @@ export async function validateAndMarkTicketUsed(qrCodeData: string): Promise<Val
     };
   }
 
+  const supabase = getSupabaseAdmin();
   const { data: updated, error: updateError } = await supabase
     .from("tickets")
     .update({ used: true })

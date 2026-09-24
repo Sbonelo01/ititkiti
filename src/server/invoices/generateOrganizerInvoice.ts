@@ -1,6 +1,5 @@
 import { User } from "@supabase/supabase-js";
 import { TIKITI_BILL_TO } from "@/constants/billing";
-import { SERVICE_FEE_PER_TICKET } from "@/constants/pricing";
 import { getSupabaseAdmin } from "@/server/supabaseAdmin";
 import {
   buildInvoiceLineItems,
@@ -138,7 +137,7 @@ export async function generateOrganizerInvoice(
       currency: "ZAR",
       ticket_count: lineItems.totals.ticketCount,
       ticket_revenue: ticketRevenue,
-      service_fee_per_ticket: SERVICE_FEE_PER_TICKET,
+      service_fee_per_ticket: lineItems.serviceFeePerTicket,
       service_fee_total: serviceFeeTotal,
       net_amount_due: netAmountDue,
       bill_to: TIKITI_BILL_TO,

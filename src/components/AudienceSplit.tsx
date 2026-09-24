@@ -38,7 +38,7 @@ export default function AudienceSplit({ compact = false }: { compact?: boolean }
         </div>
         <h3 className="text-lg font-bold text-gray-900">I&apos;m selling tickets</h3>
         <p className="mt-1 text-sm text-gray-600 leading-relaxed">
-          List your event in minutes. We handle payments, digital tickets, and door scanning.
+          List your event in minutes. You keep 100% of ticket price — buyers pay a small platform fee at checkout.
         </p>
         <CtaLink href="/dashboard/create-event" variant="primary" className="mt-4 w-full">
           Start selling — it&apos;s free to list

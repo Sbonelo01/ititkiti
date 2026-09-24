@@ -1,14 +1,16 @@
 import AppStoreBadges from "@/components/AppStoreBadges";
 import JsonLd from "@/components/seo/JsonLd";
+import PricingPolicy from "@/components/PricingPolicy";
 import { ORGANIZER_APP, BRAND } from "@/constants/branding";
 import { INVOICE_FAQ_ITEMS } from "@/constants/organizerCopy";
+import { ORGANIZER_PAYOUT_COPY } from "@/constants/pricing";
 import { buildFaqPageJsonLd } from "@/lib/seo/jsonLd";
 import { buildPageMetadata } from "@/lib/seo/metadata";
 
 export const metadata = buildPageMetadata({
   title: "FAQ",
   description:
-    "Answers about paperless QR tickets, Paystack checkout, organizer scanner app, ticket tiers, and Tikiti service fees in South Africa.",
+    "Answers about paperless QR tickets, tiered buyer fees, Paystack checkout, and the Tikiti Scanner app for organizers in South Africa.",
   path: "/faq",
 });
 
@@ -24,8 +26,17 @@ const FAQ_ITEMS = [
       "Your ticket appears in your dashboard with a unique QR code once payment is confirmed.",
   },
   {
+    question: "What do ticket buyers pay?",
+    answer:
+      "Buyers pay the ticket price plus a small Tikiti platform fee at checkout: R5 per ticket under R50, R10 per ticket from R50–R200, and 5% per ticket above R200. Card processing is included — no extra payment surcharge.",
+  },
+  {
+    question: "What do organizers pay?",
+    answer: `${ORGANIZER_PAYOUT_COPY} Listing events is free. After your event, generate a settlement invoice to receive your payout.`,
+  },
+  {
     question: "Do organizers get a mobile app?",
-    answer: `${ORGANIZER_APP.description} Download ${ORGANIZER_APP.name} from the App Store or Google Play and sign in with your Tikiti organizer or staff account.`,
+    answer: `${ORGANIZER_APP.description} Download ${ORGANIZER_APP.name} from the App Store or Google Play and sign in with your Tikiti account. Organizers scan their events; door team members use an invite from the organizer on the event edit page.`,
   },
   {
     question: "Can I create different ticket tiers?",
@@ -35,6 +46,11 @@ const FAQ_ITEMS = [
     question: "What is the service fee?",
     answer:
       "Buyers pay a service fee on top of the ticket price: R5 under R50, R10 from R50 to R200, and 5% above R200. Organizers receive 100% of ticket face value.",
+  },
+  {
+    question: "When do organizers get paid?",
+    answer:
+      "Generate a settlement invoice from your dashboard after the event date. Tikiti batches payouts per invoice — you receive 100% of ticket face value sold through the platform.",
   },
   ...INVOICE_FAQ_ITEMS,
 ];
@@ -48,11 +64,12 @@ export default function FaqPage() {
         <p className="text-gray-600 mb-6">
           Common questions about buying tickets and selling events on {BRAND.name}.
         </p>
+        <PricingPolicy className="mb-8" />
         <div className="bg-white rounded-2xl shadow-md p-6 space-y-5 text-gray-700">
           {FAQ_ITEMS.map((item) => (
             <div
               key={item.question}
-                id={item.question.startsWith("How do organizer payouts") ? "invoices" : undefined}
+              id={item.question.startsWith("How do organizer payouts") ? "invoices" : undefined}
             >
               <h2 className="font-semibold text-gray-900">{item.question}</h2>
               <p>{item.answer}</p>

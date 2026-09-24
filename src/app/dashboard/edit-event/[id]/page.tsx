@@ -18,6 +18,7 @@ import {
   DocumentTextIcon,
   MapPinIcon
 } from '@heroicons/react/24/outline';
+import DoorTeamSection from "@/components/DoorTeamSection";
 
 interface EventFormData {
   title: string;
@@ -475,6 +476,10 @@ export default function EditEvent() {
                   </button>
                 </div>
               </form>
+
+              {!eventNotFound && user && (
+                <DoorTeamSection eventId={eventId} />
+              )}
             </div>
           </div>
         </div>
