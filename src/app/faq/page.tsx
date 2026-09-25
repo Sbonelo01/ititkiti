@@ -1,7 +1,7 @@
-import AppStoreBadges from "@/components/AppStoreBadges";
+import ScannerAppLink from "@/components/ScannerAppLink";
 import JsonLd from "@/components/seo/JsonLd";
 import PricingPolicy from "@/components/PricingPolicy";
-import { ORGANIZER_APP, BRAND } from "@/constants/branding";
+import { ORGANIZER_APP, BRAND, SCANNER_APP_URL } from "@/constants/branding";
 import { INVOICE_FAQ_ITEMS } from "@/constants/organizerCopy";
 import { ORGANIZER_PAYOUT_COPY } from "@/constants/pricing";
 import { buildFaqPageJsonLd } from "@/lib/seo/jsonLd";
@@ -10,7 +10,7 @@ import { buildPageMetadata } from "@/lib/seo/metadata";
 export const metadata = buildPageMetadata({
   title: "FAQ",
   description:
-    "Answers about paperless QR tickets, tiered buyer fees, Paystack checkout, and the Tikiti Scanner app for organizers in South Africa.",
+    "Answers about paperless QR tickets, tiered buyer fees, Paystack checkout, and the Tikiti Scanner web app for organizers in South Africa.",
   path: "/faq",
 });
 
@@ -35,8 +35,8 @@ const FAQ_ITEMS = [
     answer: `${ORGANIZER_PAYOUT_COPY} Listing events is free. After your event, generate a settlement invoice to receive your payout.`,
   },
   {
-    question: "Do organizers get a mobile app?",
-    answer: `${ORGANIZER_APP.description} Download ${ORGANIZER_APP.name} from the App Store or Google Play and sign in with your Tikiti account. Organizers scan their events; door team members use an invite from the organizer on the event edit page.`,
+    question: "How do organizers scan tickets at the door?",
+    answer: `${ORGANIZER_APP.description} Open ${ORGANIZER_APP.name} at ${SCANNER_APP_URL.replace(/^https?:\/\//, "")} in your browser and sign in with your Tikiti account. Organizers scan their events; door team members need an invite from the organizer on the event edit page.`,
   },
   {
     question: "Can I create different ticket tiers?",
@@ -73,8 +73,8 @@ export default function FaqPage() {
             >
               <h2 className="font-semibold text-gray-900">{item.question}</h2>
               <p>{item.answer}</p>
-              {item.question === "Do organizers get a mobile app?" && (
-                <AppStoreBadges className="mt-4 justify-start" />
+              {item.question === "How do organizers scan tickets at the door?" && (
+                <ScannerAppLink className="mt-4 justify-start" />
               )}
             </div>
           ))}

@@ -10,7 +10,7 @@ export const revalidate = 60;
 export const metadata = buildPageMetadata({
   title: `${BRAND.name} — Paperless Event Ticketing in South Africa`,
   description:
-    "Discover events, buy digital QR tickets, and sell paperless tickets in South Africa. Secure Paystack checkout and a free scanner app for organizers.",
+    "Discover events, buy digital QR tickets, and sell paperless tickets in South Africa. Secure Paystack checkout and a free web scanner for organizers at scan.tikiti.fun.",
   path: "/",
 });
 

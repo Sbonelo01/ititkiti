@@ -90,7 +90,7 @@ export default function DoorTeamSection({ eventId }: DoorTeamSectionProps) {
       }
 
       setEmail("");
-      setMessage("Scanner access added. They can sign in to the Tikiti Scanner app with their Tikiti account.");
+      setMessage("Scanner access added. They can sign in at scan.tikiti.fun with their Tikiti account.");
       await loadMembers();
     } finally {
       setSubmitting(false);
@@ -128,8 +128,8 @@ export default function DoorTeamSection({ eventId }: DoorTeamSectionProps) {
         Door team (scanner access)
       </h2>
       <p className="text-gray-600 mb-6 text-sm">
-        Invite people to scan tickets for this event in the Tikiti Scanner app. They sign in with their
-        Tikiti account (any role). Access is limited to this event only.
+        Invite people to scan tickets for this event at scan.tikiti.fun. They sign in with their Tikiti
+        account (any role). Access is limited to this event only.
       </p>
 
       <form onSubmit={handleAdd} className="flex flex-col sm:flex-row gap-3 mb-6">

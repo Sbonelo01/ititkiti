@@ -4,7 +4,7 @@ import {
   QrCodeIcon,
   CheckCircleIcon,
 } from "@heroicons/react/24/outline";
-import AppStoreBadges from "@/components/AppStoreBadges";
+import ScannerAppLink from "@/components/ScannerAppLink";
 import { ORGANIZER_APP } from "@/constants/branding";
 
 type OrganizerAppPromoProps = {
@@ -28,7 +28,7 @@ export default function OrganizerAppPromo({ variant = "section" }: OrganizerAppP
               <p className="mt-1 max-w-xl text-sm text-gray-600">{ORGANIZER_APP.description}</p>
             </div>
           </div>
-          <AppStoreBadges layout="column" className="shrink-0" />
+          <ScannerAppLink className="shrink-0" />
         </div>
       </div>
     );
@@ -70,8 +70,9 @@ export default function OrganizerAppPromo({ variant = "section" }: OrganizerAppP
                 href="/dashboard/create-event"
                 className="inline-flex items-center justify-center rounded-xl bg-white px-6 py-3 font-semibold text-green-800 shadow-lg transition hover:bg-green-50"
               >
-                Create an event — get app access
+                Create an event — get scanner access
               </Link>
+              <ScannerAppLink variant="outline" label="Open scanner" />
             </div>
           </div>
 
@@ -82,10 +83,10 @@ export default function OrganizerAppPromo({ variant = "section" }: OrganizerAppP
               </div>
               <h3 className="text-2xl font-bold text-white">{ORGANIZER_APP.name}</h3>
               <p className="mt-2 text-sm text-emerald-100">
-                Download free from the App Store or Google Play. Sign in with your Tikiti
-                organizer account to start scanning.
+                Free at scan.tikiti.fun — open in your phone browser and sign in with your Tikiti
+                account to start scanning.
               </p>
-              <AppStoreBadges className="mt-8" />
+              <ScannerAppLink variant="light" className="mt-8 w-full sm:w-auto" />
               <p className="mt-4 text-xs text-emerald-200/80">
                 Paperless check-in — faster lines, zero ticket stubs.
               </p>

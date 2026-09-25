@@ -4,7 +4,7 @@ import { BRAND } from "@/constants/branding";
 
 export const metadata = buildPageMetadata({
   title: "Help Center",
-  description: `Get help buying tickets, creating events, and validating QR entry with ${BRAND.name} and the Tikiti Scanner app.`,
+  description: `Get help buying tickets, creating events, and validating QR entry with ${BRAND.name} and Tikiti Scanner at scan.tikiti.fun.`,
   path: "/help",
 });
 

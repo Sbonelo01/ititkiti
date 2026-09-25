@@ -65,10 +65,10 @@ export const ORGANIZER_COPY = {
     step2Title: "Door day",
     step2Headline: "Your door team, in your pocket",
     step2Body:
-      "Free on App Store & Google Play. Sign in with your organizer account and you’re ready at the door.",
+      "Open scan.tikiti.fun in your browser, sign in with your Tikiti account, and you’re ready at the door.",
     scannerTestHelper:
-      "Test a scan before doors — Open Scanner and do a quick check so entry night is smooth.",
-    getScannerCta: "Install Tikiti Scanner",
+      "Test a scan before doors — open the scanner and do a quick check so entry night is smooth.",
+    getScannerCta: "Open Tikiti Scanner",
     laterCta: "I’ll do this later",
     step3Title: "Know how payouts work",
     step3Body:
@@ -79,9 +79,9 @@ export const ORGANIZER_COPY = {
     checklistTitle: "Get ready",
     checklistShare: "Share your event link",
     checklistShareHelper: "Copy the link from your event page and send it to your crowd.",
-    checklistScanner: "Install Tikiti Scanner",
+    checklistScanner: "Open Tikiti Scanner",
     checklistScannerHelper:
-      "Free on App Store & Google Play. Sign in with your organizer account and you’re ready at the door.",
+      "Use scan.tikiti.fun in your browser. Sign in with your Tikiti account — no download required.",
     checklistSettle: "Request settlement",
     checklistSettleHelper:
       "After the event starts, generate a settlement invoice from your dashboard.",
@@ -91,14 +91,14 @@ export const ORGANIZER_COPY = {
   toasts: {
     eventCreated: "Event created. You’re ready to sell paperless tickets.",
     linkCopied: "Link copied. Share it with your guests.",
-    scannerTipSaved: "Scanner tip saved. Download the app before doors open.",
+    scannerTipSaved: "Scanner tip saved. Open scan.tikiti.fun before doors open.",
     invoiceDraftCreated: "Invoice draft created. Review and submit when you’re ready.",
   },
   empty: {
     noEvents: "List your first event — it’s free. Attendees get QR tickets; you scan at the door.",
     noTicketSales: "Share your event link. Sales and check-ins will show up here.",
     scannerNotConnected:
-      "Install Tikiti Scanner and sign in with this account to validate tickets at the door.",
+      "Open Tikiti Scanner at scan.tikiti.fun and sign in with this account to validate tickets at the door.",
     noInvoices:
       "After your event starts, you can generate a settlement invoice from the dashboard to request payout.",
   },
@@ -107,10 +107,10 @@ export const ORGANIZER_COPY = {
   email: {
     subject: "Your event’s live on Tikiti — nice one",
     attendees:
-      "Your attendees get secure digital QR tickets on their phones — no printing, less fraud, faster entry. At the door, check them in with the free Tikiti Scanner app (iPhone or Android). Sign in with the same organizer account you use on tikiti.fun.",
+      "Your attendees get secure digital QR tickets on their phones — no printing, less fraud, faster entry. At the door, check them in with the free Tikiti Scanner at scan.tikiti.fun. Sign in with the same Tikiti account you use on tikiti.fun.",
     nextStepsTitle: "Quick next steps",
     nextStepShare: "Share your event link so people can buy.",
-    nextStepScanner: "Install Tikiti Scanner before doors open.",
+    nextStepScanner: "Open Tikiti Scanner at scan.tikiti.fun before doors open.",
     nextStepInvoice:
       "After your event starts, generate a settlement invoice from your dashboard when you’re ready to request payout.",
     greeting: "Hi {organizer_first_name},",

@@ -257,9 +257,9 @@ export default function HomePageClient({ initialEvents = [] }: { initialEvents?:
               <div className="bg-green-600 w-16 h-16 rounded-2xl flex items-center justify-center mb-6">
                 <DevicePhoneMobileIcon className="h-8 w-8 text-white" />
               </div>
-              <h3 className="text-xl font-bold text-gray-800 mb-4">Organizer scanner app</h3>
+              <h3 className="text-xl font-bold text-gray-800 mb-4">Organizer ticket scanner</h3>
               <p className="text-gray-600">
-                Event organizers get the Tikiti Scanner app free — validate tickets at the door from iPhone or Android. Available on the App Store and Google Play.
+                Event organizers get Tikiti Scanner free at scan.tikiti.fun — validate QR tickets at the door from any phone or tablet browser. No download required.
               </p>
             </div>
 
@@ -506,7 +506,7 @@ export default function HomePageClient({ initialEvents = [] }: { initialEvents?:
             Ready to run a greener event?
           </h2>
           <p className="text-xl text-white/90 mb-8 max-w-2xl mx-auto">
-            Create your event on Tikiti, download the scanner app, and go fully paperless from ticket sale to front door.
+            Create your event on Tikiti, open the scanner at scan.tikiti.fun, and go fully paperless from ticket sale to front door.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <CtaLink href="/events" variant="secondary" className="px-8 py-4">

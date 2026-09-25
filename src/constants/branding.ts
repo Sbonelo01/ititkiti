@@ -9,14 +9,18 @@ export const BRAND = {
 export const APP_STORE_URL = process.env.NEXT_PUBLIC_APP_STORE_URL ?? "";
 export const PLAY_STORE_URL = process.env.NEXT_PUBLIC_PLAY_STORE_URL ?? "";
 
+/** Web scanner (Expo web) — no app store download required */
+export const SCANNER_APP_URL =
+  process.env.NEXT_PUBLIC_SCANNER_APP_URL ?? "https://scan.tikiti.fun";
+
 export const ORGANIZER_APP = {
   name: "Tikiti Scanner",
   description:
-    "Every Tikiti event organizer gets access to our mobile scanner app. Check in guests at the door with your phone — no printed lists, no hassle.",
+    "Every Tikiti event organizer gets free access to our web scanner. Check in guests at the door from any phone or tablet — no install, no printed lists.",
   features: [
     "Included with every organizer account",
     "Scan QR tickets in seconds",
-    "Works on iPhone and Android",
+    "Works in the browser on phone or tablet",
     "Real-time validation at the door",
   ],
 } as const;

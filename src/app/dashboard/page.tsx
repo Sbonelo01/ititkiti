@@ -15,7 +15,7 @@ import EventShareBar from "@/components/EventShareBar";
 import EventInvoiceActions from "@/components/EventInvoiceActions";
 import EventOnboardingChecklist from "@/components/EventOnboardingChecklist";
 import InvoiceStatusPill from "@/components/InvoiceStatusPill";
-import AppStoreBadges from "@/components/AppStoreBadges";
+import ScannerAppLink from "@/components/ScannerAppLink";
 import { getEventInvoiceUi } from "@/server/invoices/invoiceEligibility";
 import {
   ORGANIZER_COPY,
@@ -515,7 +515,7 @@ function OrganizerDashboard({
         {!loading && events.length > 0 && (
           <div className="bg-white rounded-2xl shadow-md border border-gray-100 p-5 mb-8">
             <p className="text-sm text-gray-700">{ORGANIZER_COPY.empty.scannerNotConnected}</p>
-            <AppStoreBadges className="mt-3 justify-start" />
+            <ScannerAppLink className="mt-3 justify-start" />
           </div>
         )}
 

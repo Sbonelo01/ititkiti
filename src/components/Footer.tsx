@@ -13,7 +13,7 @@ import {
   HeartIcon,
   ArrowUpIcon
 } from '@heroicons/react/24/outline';
-import AppStoreBadges from "@/components/AppStoreBadges";
+import ScannerAppLink from "@/components/ScannerAppLink";
 import { BRAND } from "@/constants/branding";
 import { 
   FaFacebook, 
@@ -104,7 +104,7 @@ export default function Footer() {
               </p>
               <div className="mb-6">
                 <p className="text-sm font-semibold text-green-400 mb-3">Tikiti Scanner — for organizers</p>
-                <AppStoreBadges layout="column" className="items-start" />
+                <ScannerAppLink variant="outline" className="items-start" />
               </div>
               <div className="flex items-center gap-2 text-gray-400">
                 <SparklesIcon className="h-5 w-5 text-yellow-400" />

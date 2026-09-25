@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { CheckIcon, LinkIcon, ShareIcon, XMarkIcon } from "@heroicons/react/24/outline";
-import AppStoreBadges from "@/components/AppStoreBadges";
+import ScannerAppLink from "@/components/ScannerAppLink";
 import CopyToast, { useCopyToast } from "@/components/CopyToast";
 import TikitiWordmark from "@/components/TikitiWordmark";
 import { ORGANIZER_COPY } from "@/constants/organizerCopy";
@@ -137,13 +137,10 @@ export default function EventOnboardingModal({
               <p className="text-gray-600">{ORGANIZER_COPY.empty.scannerNotConnected}</p>
               <p className="text-sm text-gray-600">{copy.step2Body}</p>
               <p className="text-sm text-gray-500">{copy.scannerTestHelper}</p>
-              <div
+              <ScannerAppLink
+                className="w-full"
                 onClick={() => patchEventChecklist(eventId, { scannerDone: true })}
-                onKeyDown={() => undefined}
-                role="presentation"
-              >
-                <AppStoreBadges layout="column" className="sm:flex-row" />
-              </div>
+              />
               <button
                 type="button"
                 onClick={markScannerDone}

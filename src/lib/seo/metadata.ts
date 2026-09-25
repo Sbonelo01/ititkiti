@@ -3,7 +3,7 @@ import { BRAND } from "@/constants/branding";
 import { getSiteOrigin } from "@/utils/eventShare";
 
 export const DEFAULT_SITE_DESCRIPTION =
-  "Green, innovative, paperless ticketing for South Africa. Digital QR tickets, secure Paystack payments, and a free scanner app for event organizers.";
+  "Green, innovative, paperless ticketing for South Africa. Digital QR tickets, secure Paystack payments, and a free web scanner for event organizers at scan.tikiti.fun.";
 
 export function getMetadataBase(): URL {
   return new URL(getSiteOrigin());
