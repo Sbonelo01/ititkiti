@@ -2,6 +2,8 @@
 
 Event ticketing platform (Next.js + Supabase + Paystack).
 
+**Organizer guide:** [docs/ORGANIZER_ONBOARDING.md](./docs/ORGANIZER_ONBOARDING.md) — account setup, selling, door scanner, door team, and settlement invoices.
+
 ## Setup
 
 1. Copy `.env.example` to `.env.local` and fill in values.
@@ -63,9 +65,9 @@ Public tables have RLS enabled. Apply `supabase/migrations/20260915_public_rls_p
 
 Merging the PR does **not** change production. Policy intent, apply order, and verification queries: [supabase/RLS.md](./supabase/RLS.md).
 
-## Mobile scanner
+## Scanner web app
 
-Staff QR scanning lives in the sibling [`../mobile-app`](../mobile-app) Expo project. It uses `/api/validate-ticket` with staff Bearer auth.
+Organizers and door team use [scan.tikiti.fun](https://scan.tikiti.fun) (Expo web in the sibling `itikiti-scanner` repo). It calls Tikiti `/api/scanner/access` and `/api/validate-ticket` with the user’s Supabase session. In-site staff scanning is also available at `/scan` on the main app for platform admin/staff.
 
 ## Tests & CI
 

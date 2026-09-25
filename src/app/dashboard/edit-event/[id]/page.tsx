@@ -19,6 +19,12 @@ import {
   MapPinIcon
 } from '@heroicons/react/24/outline';
 import DoorTeamSection from "@/components/DoorTeamSection";
+import {
+  parseNumericFieldValue,
+  parsePositiveIntFieldValue,
+  sanitizeDecimalInput,
+  sanitizeIntegerInput,
+} from "@/utils/numericFieldInput";
 
 interface EventFormData {
   title: string;
@@ -26,8 +32,8 @@ interface EventFormData {
   date: string;
   time: string;
   location: string;
-  price: number;
-  total_tickets: number;
+  priceInput: string;
+  totalTicketsInput: string;
 }
 
 export default function EditEvent() {
@@ -47,8 +53,8 @@ export default function EditEvent() {
     date: "",
     time: "",
     location: "",
-    price: 0,
-    total_tickets: 0,
+    priceInput: "",
+    totalTicketsInput: "",
   });
 
   const loadEventData = useCallback(async (userId: string) => {
@@ -88,8 +94,8 @@ export default function EditEvent() {
         date: dateString,
         time: timeString,
         location: event.location,
-        price: event.price,
-        total_tickets: event.total_tickets,
+        priceInput: String(event.price ?? 0),
+        totalTicketsInput: String(event.total_tickets ?? 0),
       });
 
     } catch (error) {
@@ -122,9 +128,23 @@ export default function EditEvent() {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: name === 'price' || name === 'total_tickets' ? parseFloat(value) || 0 : value
+      [name]: value,
+    }));
+  };
+
+  const handlePriceInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFormData((prev) => ({
+      ...prev,
+      priceInput: sanitizeDecimalInput(e.target.value),
+    }));
+  };
+
+  const handleTotalTicketsInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFormData((prev) => ({
+      ...prev,
+      totalTicketsInput: sanitizeIntegerInput(e.target.value),
     }));
   };
 
@@ -139,7 +159,9 @@ export default function EditEvent() {
       return;
     }
 
-    if (formData.price < 0 || formData.total_tickets <= 0) {
+    const price = parseNumericFieldValue(formData.priceInput);
+    const totalTickets = parsePositiveIntFieldValue(formData.totalTicketsInput);
+    if (price < 0 || totalTickets <= 0) {
       setError("Please enter valid ticket price and quantity");
       setSubmitting(false);
       return;
@@ -153,8 +175,8 @@ export default function EditEvent() {
         description: formData.description,
         date: eventDateTime,
         location: formData.location,
-        price: formData.price,
-        total_tickets: formData.total_tickets,
+        price,
+        total_tickets: totalTickets,
       };
 
       console.log('Updating event with data:', eventData);
@@ -406,15 +428,15 @@ export default function EditEvent() {
                       Ticket Price (R) *
                     </label>
                     <input
-                      type="number"
+                      type="text"
+                      inputMode="decimal"
+                      autoComplete="off"
                       id="price"
                       name="price"
-                      value={formData.price}
-                      onChange={handleInputChange}
-                      min="0"
-                      step="0.01"
+                      value={formData.priceInput}
+                      onChange={handlePriceInputChange}
                       className="w-full px-4 py-4 bg-gray-50 text-gray-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:shadow-lg border border-gray-200 hover:border-green-300 transition-all duration-200"
-                      placeholder="0.00"
+                      placeholder="0 for free"
                       required
                     />
                   </div>
@@ -424,12 +446,13 @@ export default function EditEvent() {
                       Total Tickets *
                     </label>
                     <input
-                      type="number"
+                      type="text"
+                      inputMode="numeric"
+                      autoComplete="off"
                       id="total_tickets"
                       name="total_tickets"
-                      value={formData.total_tickets}
-                      onChange={handleInputChange}
-                      min="1"
+                      value={formData.totalTicketsInput}
+                      onChange={handleTotalTicketsInputChange}
                       className="w-full px-4 py-4 bg-gray-50 text-gray-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:shadow-lg border border-gray-200 hover:border-green-300 transition-all duration-200"
                       placeholder="100"
                       required

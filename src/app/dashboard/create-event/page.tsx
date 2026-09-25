@@ -3,6 +3,12 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/utils/supabaseClient";
 import { getProductRole } from "@/utils/roles";
+import {
+  parseNumericFieldValue,
+  parsePositiveIntFieldValue,
+  sanitizeDecimalInput,
+  sanitizeIntegerInput,
+} from "@/utils/numericFieldInput";
 import { User } from "@supabase/supabase-js";
 import Image from "next/image";
 import OrganizerAppPromo from "@/components/OrganizerAppPromo";
@@ -23,8 +29,8 @@ import {
 interface TicketType {
   id: string;
   name: string;
-  price: number;
-  quantity: number;
+  priceInput: string;
+  quantityInput: string;
   description?: string;
 }
 
@@ -58,8 +64,8 @@ export default function CreateEvent() {
       {
         id: `ticket-${Date.now()}`,
         name: "General",
-        price: 0,
-        quantity: 0,
+        priceInput: "",
+        quantityInput: "",
         description: "",
       },
     ],
@@ -131,8 +137,8 @@ export default function CreateEvent() {
         {
           id: `ticket-${Date.now()}-${Math.random()}`,
           name: "",
-          price: 0,
-          quantity: 0,
+          priceInput: "",
+          quantityInput: "",
           description: "",
         },
       ],
@@ -207,12 +213,14 @@ export default function CreateEvent() {
         setSubmitting(false);
         return;
       }
-      if (ticketType.price < 0) {
+      const price = parseNumericFieldValue(ticketType.priceInput);
+      const quantity = parsePositiveIntFieldValue(ticketType.quantityInput);
+      if (price < 0) {
         setError("Ticket prices cannot be negative");
         setSubmitting(false);
         return;
       }
-      if (ticketType.quantity <= 0) {
+      if (quantity <= 0) {
         setError("Each ticket type must have at least 1 ticket available");
         setSubmitting(false);
         return;
@@ -241,11 +249,11 @@ export default function CreateEvent() {
       }
       // Calculate total tickets and base price (for backward compatibility)
       const totalTickets = formData.ticket_types.reduce(
-        (sum, ticket) => sum + ticket.quantity,
+        (sum, ticket) => sum + parsePositiveIntFieldValue(ticket.quantityInput),
         0
       );
       const basePrice = formData.ticket_types.length > 0 
-        ? Math.min(...formData.ticket_types.map(t => t.price))
+        ? Math.min(...formData.ticket_types.map((t) => parseNumericFieldValue(t.priceInput)))
         : 0;
 
       const eventData = {
@@ -273,14 +281,18 @@ export default function CreateEvent() {
       }
 
       // Create ticket types
-      const ticketTypesData = formData.ticket_types.map((ticketType) => ({
-        event_id: eventResult.id,
-        name: ticketType.name,
-        price: ticketType.price,
-        quantity: ticketType.quantity,
-        available_quantity: ticketType.quantity,
-        description: ticketType.description || null,
-      }));
+      const ticketTypesData = formData.ticket_types.map((ticketType) => {
+        const price = parseNumericFieldValue(ticketType.priceInput);
+        const quantity = parsePositiveIntFieldValue(ticketType.quantityInput);
+        return {
+          event_id: eventResult.id,
+          name: ticketType.name,
+          price,
+          quantity,
+          available_quantity: quantity,
+          description: ticketType.description || null,
+        };
+      });
 
       const { error: ticketTypesError } = await supabase
         .from("ticket_types")
@@ -568,17 +580,17 @@ export default function CreateEvent() {
                           <div className="space-y-1.5">
                             <label className="block text-xs font-medium text-gray-600">Price (R) *</label>
                             <input
-                              type="number"
-                              value={ticketType.price}
+                              type="text"
+                              inputMode="decimal"
+                              autoComplete="off"
+                              value={ticketType.priceInput}
                               onChange={(e) =>
                                 handleTicketTypeChange(
                                   ticketType.id,
-                                  "price",
-                                  parseFloat(e.target.value) || 0
+                                  "priceInput",
+                                  sanitizeDecimalInput(e.target.value)
                                 )
                               }
-                              min="0"
-                              step="0.01"
                               className="w-full px-3 py-3 text-base bg-white text-gray-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 border border-gray-300"
                               placeholder="0 for free"
                               required
@@ -587,16 +599,17 @@ export default function CreateEvent() {
                           <div className="space-y-1.5">
                             <label className="block text-xs font-medium text-gray-600">Quantity *</label>
                             <input
-                              type="number"
-                              value={ticketType.quantity}
+                              type="text"
+                              inputMode="numeric"
+                              autoComplete="off"
+                              value={ticketType.quantityInput}
                               onChange={(e) =>
                                 handleTicketTypeChange(
                                   ticketType.id,
-                                  "quantity",
-                                  parseInt(e.target.value) || 0
+                                  "quantityInput",
+                                  sanitizeIntegerInput(e.target.value)
                                 )
                               }
-                              min="1"
                               className="w-full px-3 py-3 text-base bg-white text-gray-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 border border-gray-300"
                               placeholder="100"
                               required
