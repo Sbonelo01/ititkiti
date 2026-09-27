@@ -1,8 +1,32 @@
 import { ORGANIZER_COPY, interpolateOrganizerCopy, organizerFirstName } from "@/constants/organizerCopy";
 import { getEventShareUrl } from "@/utils/eventShare";
 
+const BREVO_SMTP_URL = "https://api.brevo.com/v3/smtp/email";
+const DEFAULT_FROM_NAME = "Tikiti";
+const DEFAULT_FROM_EMAIL = "hello@tikiti.fun";
+
 export function isTransactionalEmailConfigured(): boolean {
-  return Boolean(process.env.RESEND_API_KEY?.trim());
+  return Boolean(process.env.BREVO_API_KEY?.trim());
+}
+
+/** Brevo sender object. `BREVO_FROM_EMAIL` may be an address or `Name <email>`. */
+export function resolveBrevoSender(): { name: string; email: string } {
+  const nameOverride = process.env.BREVO_FROM_NAME?.trim();
+  const from = process.env.BREVO_FROM_EMAIL?.trim();
+  if (!from) {
+    return { name: nameOverride || DEFAULT_FROM_NAME, email: DEFAULT_FROM_EMAIL };
+  }
+
+  const named = from.match(/^(.*)<([^>]+)>$/);
+  if (named) {
+    const parsedName = named[1]?.trim();
+    const email = named[2]?.trim();
+    if (email) {
+      return { name: nameOverride || parsedName || DEFAULT_FROM_NAME, email };
+    }
+  }
+
+  return { name: nameOverride || DEFAULT_FROM_NAME, email: from };
 }
 
 function escapeHtml(value: string): string {
@@ -82,7 +106,10 @@ export type SendOrganizerWelcomeEmailInput = {
   eventTitle: string;
   eventId: string;
   organizerName?: string;
-  /** Resend dedupes retries that share this key for 24 hours. */
+  /**
+   * Passed by the delivery layer for correlation. Brevo's SMTP API has no
+   * idempotency-key header; `organizer_welcome_emails` is the dedupe.
+   */
   idempotencyKey?: string;
 };
 
@@ -102,43 +129,39 @@ export async function sendOrganizerWelcomeEmail(
     return { ok: false, skipped: true, reason: "no_recipient" };
   }
 
-  const apiKey = process.env.RESEND_API_KEY?.trim();
+  const apiKey = process.env.BREVO_API_KEY?.trim();
   if (!apiKey) {
     return { ok: false, skipped: true, reason: "not_configured" };
   }
 
-  const from = process.env.RESEND_FROM_EMAIL?.trim() || "Tikiti <hello@tikiti.fun>";
+  const sender = resolveBrevoSender();
   const payload = buildOrganizerWelcomeEmail(input);
   const fetchImpl = deps.fetchImpl ?? fetch;
-  const headers: Record<string, string> = {
-    Authorization: `Bearer ${apiKey}`,
-    "Content-Type": "application/json",
-  };
-  const idempotencyKey = input.idempotencyKey?.trim();
-  if (idempotencyKey) {
-    headers["Idempotency-Key"] = idempotencyKey;
-  }
 
   try {
-    const res = await fetchImpl("https://api.resend.com/emails", {
+    const res = await fetchImpl(BREVO_SMTP_URL, {
       method: "POST",
-      headers,
+      headers: {
+        "api-key": apiKey,
+        accept: "application/json",
+        "Content-Type": "application/json",
+      },
       body: JSON.stringify({
-        from,
-        to: [to],
+        sender,
+        to: [{ email: to }],
         subject: payload.subject,
-        html: payload.html,
-        text: payload.text,
+        htmlContent: payload.html,
+        textContent: payload.text,
       }),
     });
 
     if (!res.ok) {
       const detail = await readErrorDetail(res);
-      return { ok: false, skipped: false, reason: `resend_http_${res.status}`, detail };
+      return { ok: false, skipped: false, reason: `brevo_http_${res.status}`, detail };
     }
 
-    const body = (await res.json()) as { id?: string };
-    return { ok: true, id: body.id || "sent" };
+    const body = (await res.json()) as { messageId?: string };
+    return { ok: true, id: body.messageId || "sent" };
   } catch (err) {
     const detail = err instanceof Error ? err.message : "network_error";
     return { ok: false, skipped: false, reason: "network_error", detail };

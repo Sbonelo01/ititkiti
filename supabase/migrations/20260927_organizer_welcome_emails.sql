@@ -1,6 +1,6 @@
 -- Idempotency log for the organizer onboarding email.
--- One row per listed event. The API claims the row before calling Resend
--- and sets sent_at only after Resend accepts the message.
+-- One row per listed event. The API claims the row before calling Brevo
+-- and sets sent_at only after Brevo accepts the message.
 -- Service role only. Clients cannot read or write this table.
 
 create table if not exists public.organizer_welcome_emails (

@@ -98,8 +98,8 @@ function isRetryableFailure(result: SendOrganizerWelcomeEmailResult): boolean {
   if (result.ok || result.skipped) return false;
   return (
     result.reason === "network_error" ||
-    result.reason === "resend_http_429" ||
-    result.reason.startsWith("resend_http_5")
+    result.reason === "brevo_http_429" ||
+    result.reason.startsWith("brevo_http_5")
   );
 }
 
@@ -265,12 +265,12 @@ export async function deliverOrganizerWelcomeEmail(
   if (claim === "in_flight") return { outcome: "skipped", reason: "in_flight" };
   if (claim === "missing_table") {
     log(
-      "[organizer-welcome-email] public.organizer_welcome_emails is missing. Apply supabase/migrations/20260927_organizer_welcome_emails.sql. Sending with a Resend idempotency key only.",
+      "[organizer-welcome-email] public.organizer_welcome_emails is missing. Apply supabase/migrations/20260927_organizer_welcome_emails.sql. Brevo does not dedupe this send.",
       { eventId, organizerId: user.id, reason: "missing_idempotency_table" }
     );
   } else if (claim === "error") {
     log(
-      "[organizer-welcome-email] could not record an idempotency claim; sending with a Resend idempotency key",
+      "[organizer-welcome-email] could not record an idempotency claim; Brevo does not dedupe this send",
       { eventId, organizerId: user.id, reason: "claim_failed" }
     );
   }
@@ -292,7 +292,7 @@ export async function deliverOrganizerWelcomeEmail(
       const marked = await db.markSent(eventId, new Date(nowMs).toISOString(), result.id);
       if (marked.error) {
         log(
-          "[organizer-welcome-email] Resend accepted the email but the idempotency row was not updated",
+          "[organizer-welcome-email] Brevo accepted the email but the idempotency row was not updated",
           { eventId, organizerId: user.id, reason: "mark_sent_failed" }
         );
       }
@@ -308,7 +308,7 @@ export async function deliverOrganizerWelcomeEmail(
     switch (result.reason) {
       case "not_configured":
         log(
-          "[organizer-welcome-email] RESEND_API_KEY is not set; organizer onboarding email was not sent. Set RESEND_API_KEY and RESEND_FROM_EMAIL on Vercel.",
+          "[organizer-welcome-email] BREVO_API_KEY is not set; organizer onboarding email was not sent. Set BREVO_API_KEY and BREVO_FROM_EMAIL on Vercel.",
           { eventId, organizerId: user.id, reason: "not_configured" }
         );
         return { outcome: "skipped", reason: "not_configured" };

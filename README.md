@@ -25,10 +25,11 @@ Listing an event (`POST /api/events`) sends the organizer welcome email from the
 
 Vercel production (and preview, if you want preview sends) must set:
 
-- `RESEND_API_KEY` — Resend API key. **Required for delivery.** If it is missing, the event still lists and the server logs `[organizer-welcome-email] RESEND_API_KEY is not set`.
-- `RESEND_FROM_EMAIL` — verified sender, for example `Tikiti <hello@tikiti.fun>`. When unset, the code uses that default address.
+- `BREVO_API_KEY` — Brevo API key (`api-key` on `POST https://api.brevo.com/v3/smtp/email`). **Required for delivery.** If it is missing, the event still lists and the server logs `[organizer-welcome-email] BREVO_API_KEY is not set`.
+- `BREVO_FROM_EMAIL` — verified sender address, for example `hello@tikiti.fun`, or `Tikiti <hello@tikiti.fun>`. When unset, the code uses `Tikiti <hello@tikiti.fun>`.
+- `BREVO_FROM_NAME` — optional display name. When unset, the name is `Tikiti` (or the name parsed from `BREVO_FROM_EMAIL`).
 
-Apply `supabase/migrations/20260927_organizer_welcome_emails.sql` so the idempotency row survives longer than Resend’s 24-hour idempotency window.
+Apply `supabase/migrations/20260927_organizer_welcome_emails.sql`. Brevo does not dedupe sends, so that table is what stops a second welcome email for the same event.
 
 ## Auth / OAuth URL configuration
 

@@ -33,7 +33,7 @@ function shouldRetryWelcomeEmail(welcome: WelcomeEmailStatus | null | undefined)
   if (welcome.sent) return false;
   if (!welcome.reason) return true;
   if (DO_NOT_RETRY.has(welcome.reason)) return false;
-  if (welcome.reason.startsWith("resend_http_4")) return false;
+  if (welcome.reason.startsWith("brevo_http_4")) return false;
   return true;
 }
 

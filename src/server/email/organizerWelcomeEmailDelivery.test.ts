@@ -142,7 +142,7 @@ describe("deliverOrganizerWelcomeEmail", () => {
     expect(db.row).toBeNull();
   });
 
-  it("logs and does not record a send when Resend is not configured", async () => {
+  it("logs and does not record a send when Brevo is not configured", async () => {
     const db = new MemoryWelcomeEmailDb();
     const log = vi.fn();
     const send = vi.fn().mockResolvedValue({
@@ -154,21 +154,21 @@ describe("deliverOrganizerWelcomeEmail", () => {
     expect(result).toEqual({ outcome: "skipped", reason: "not_configured" });
     expect(db.row).toBeNull();
     expect(log).toHaveBeenCalledWith(
-      expect.stringContaining("RESEND_API_KEY"),
+      expect.stringContaining("BREVO_API_KEY"),
       expect.objectContaining({ eventId: EVENT_ID, reason: "not_configured" })
     );
   });
 
-  it("retries a transient Resend failure and releases the claim if it still fails", async () => {
+  it("retries a transient Brevo failure and releases the claim if it still fails", async () => {
     const db = new MemoryWelcomeEmailDb();
     const send = vi
       .fn()
-      .mockResolvedValueOnce({ ok: false, skipped: false, reason: "resend_http_500" })
+      .mockResolvedValueOnce({ ok: false, skipped: false, reason: "brevo_http_500" })
       .mockResolvedValueOnce({ ok: false, skipped: false, reason: "network_error" })
-      .mockResolvedValueOnce({ ok: false, skipped: false, reason: "resend_http_429" });
+      .mockResolvedValueOnce({ ok: false, skipped: false, reason: "brevo_http_429" });
     const log = vi.fn();
     const failed = await run(db, send, { log });
-    expect(failed).toEqual({ outcome: "failed", reason: "resend_http_429" });
+    expect(failed).toEqual({ outcome: "failed", reason: "brevo_http_429" });
     expect(send).toHaveBeenCalledTimes(3);
     expect(db.row).toBeNull();
 
@@ -178,16 +178,16 @@ describe("deliverOrganizerWelcomeEmail", () => {
     expect(db.row?.provider_id).toBe("email_2");
   });
 
-  it("does not retry a rejected Resend request", async () => {
+  it("does not retry a rejected Brevo request", async () => {
     const db = new MemoryWelcomeEmailDb();
     const send = vi.fn().mockResolvedValue({
       ok: false,
       skipped: false,
-      reason: "resend_http_422",
-      detail: "domain not verified",
+      reason: "brevo_http_400",
+      detail: "sender not verified",
     });
     const result = await run(db, send);
-    expect(result).toEqual({ outcome: "failed", reason: "resend_http_422" });
+    expect(result).toEqual({ outcome: "failed", reason: "brevo_http_400" });
     expect(send).toHaveBeenCalledTimes(1);
     expect(db.row).toBeNull();
   });
