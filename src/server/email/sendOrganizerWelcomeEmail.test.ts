@@ -3,6 +3,7 @@ import { ORGANIZER_COPY } from "@/constants/organizerCopy";
 import {
   buildOrganizerWelcomeEmail,
   isTransactionalEmailConfigured,
+  resolveBrevoSender,
   sendOrganizerWelcomeEmail,
 } from "./sendOrganizerWelcomeEmail";
 
@@ -30,8 +31,9 @@ describe("sendOrganizerWelcomeEmail", () => {
     expect(email.html).toContain("<strong>settlement invoice</strong>");
   });
 
-  it("skips sending when RESEND_API_KEY is unset", async () => {
-    vi.stubEnv("RESEND_API_KEY", "");
+  it("skips sending when BREVO_API_KEY is unset", async () => {
+    vi.stubEnv("BREVO_API_KEY", "");
+    vi.stubEnv("RESEND_API_KEY", "re_ignored");
     expect(isTransactionalEmailConfigured()).toBe(false);
     const fetchImpl = vi.fn();
     const result = await sendOrganizerWelcomeEmail(
@@ -42,25 +44,49 @@ describe("sendOrganizerWelcomeEmail", () => {
     expect(fetchImpl).not.toHaveBeenCalled();
   });
 
-  it("posts to Resend when configured", async () => {
-    vi.stubEnv("RESEND_API_KEY", "re_test");
-    vi.stubEnv("RESEND_FROM_EMAIL", "Tikiti <hello@tikiti.fun>");
+  it("posts to Brevo and falls back to Tikiti <hello@tikiti.fun>", async () => {
+    vi.stubEnv("BREVO_API_KEY", "xkeysib-test");
+    vi.stubEnv("BREVO_FROM_EMAIL", "");
+    vi.stubEnv("BREVO_FROM_NAME", "");
+    expect(resolveBrevoSender()).toEqual({ name: "Tikiti", email: "hello@tikiti.fun" });
     const fetchImpl = vi.fn().mockResolvedValue({
       ok: true,
-      json: async () => ({ id: "email_1" }),
+      json: async () => ({ messageId: "<msg-1@brevo>" }),
     });
     const result = await sendOrganizerWelcomeEmail(
-      { to: "org@test.com", eventTitle: "Jazz Night", eventId: "evt-1" },
+      {
+        to: "org@test.com",
+        eventTitle: "Jazz Night",
+        eventId: "evt-1",
+        idempotencyKey: "organizer-welcome:evt-1",
+      },
       { fetchImpl: fetchImpl as unknown as typeof fetch }
     );
-    expect(result).toEqual({ ok: true, id: "email_1" });
+    expect(result).toEqual({ ok: true, id: "<msg-1@brevo>" });
     expect(fetchImpl).toHaveBeenCalledTimes(1);
     const [url, init] = fetchImpl.mock.calls[0] as [string, RequestInit];
-    expect(url).toBe("https://api.resend.com/emails");
+    expect(url).toBe("https://api.brevo.com/v3/smtp/email");
     const headers = init.headers as Record<string, string>;
-    expect(headers.Authorization).toBe("Bearer re_test");
-    const body = JSON.parse(String(init.body)) as { to: string[]; subject: string };
-    expect(body.to).toEqual(["org@test.com"]);
+    expect(headers["api-key"]).toBe("xkeysib-test");
+    expect(headers.Authorization).toBeUndefined();
+    expect(headers["Idempotency-Key"]).toBeUndefined();
+    const body = JSON.parse(String(init.body)) as {
+      sender: { name: string; email: string };
+      to: { email: string }[];
+      subject: string;
+      htmlContent: string;
+      textContent: string;
+    };
+    expect(body.sender).toEqual({ name: "Tikiti", email: "hello@tikiti.fun" });
+    expect(body.to).toEqual([{ email: "org@test.com" }]);
     expect(body.subject).toBe(ORGANIZER_COPY.email.subject);
+    expect(body.htmlContent).toContain("Jazz Night");
+    expect(body.textContent).toContain("Jazz Night");
+  });
+
+  it("uses BREVO_FROM_EMAIL and BREVO_FROM_NAME when set", () => {
+    vi.stubEnv("BREVO_FROM_EMAIL", "Tikiti <hello@tikiti.fun>");
+    vi.stubEnv("BREVO_FROM_NAME", "Tikiti Events");
+    expect(resolveBrevoSender()).toEqual({ name: "Tikiti Events", email: "hello@tikiti.fun" });
   });
 });

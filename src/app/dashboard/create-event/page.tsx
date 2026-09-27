@@ -52,6 +52,9 @@ export default function CreateEvent() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [createdEventId, setCreatedEventId] = useState<string | null>(null);
+  const [welcomeEmail, setWelcomeEmail] = useState<{ sent: boolean; reason?: string } | null>(
+    null
+  );
   const router = useRouter();
 
   const [formData, setFormData] = useState<EventFormData>({
@@ -247,66 +250,52 @@ export default function CreateEvent() {
           return;
         }
       }
-      // Calculate total tickets and base price (for backward compatibility)
-      const totalTickets = formData.ticket_types.reduce(
-        (sum, ticket) => sum + parsePositiveIntFieldValue(ticket.quantityInput),
-        0
-      );
-      const basePrice = formData.ticket_types.length > 0 
-        ? Math.min(...formData.ticket_types.map((t) => parseNumericFieldValue(t.priceInput)))
-        : 0;
-
-      const eventData = {
-        title: formData.title,
-        description: formData.description,
-        date: eventDateTime,
-        location: formData.location,
-        price: basePrice, // Keep for backward compatibility
-        total_tickets: totalTickets, // Keep for backward compatibility
-        organizer_id: user?.id,
-        poster_url: posterUrl,
-      };
-
-      console.log("Creating event with data:", eventData);
-
-      const { data: eventResult, error: insertError } = await supabase
-        .from("events")
-        .insert([eventData])
-        .select()
-        .single();
-
-      if (insertError || !eventResult) {
-        console.error("Event insert error:", insertError);
-        throw insertError || new Error("Failed to create event");
+      if (!posterUrl) {
+        setError("Please upload an event poster");
+        setSubmitting(false);
+        return;
       }
 
-      // Create ticket types
-      const ticketTypesData = formData.ticket_types.map((ticketType) => {
-        const price = parseNumericFieldValue(ticketType.priceInput);
-        const quantity = parsePositiveIntFieldValue(ticketType.quantityInput);
-        return {
-          event_id: eventResult.id,
-          name: ticketType.name,
-          price,
-          quantity,
-          available_quantity: quantity,
-          description: ticketType.description || null,
-        };
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        throw new Error("You need to be signed in to list an event");
+      }
+
+      const response = await fetch("/api/events", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          title: formData.title.trim(),
+          description: formData.description.trim(),
+          date: eventDateTime,
+          location: formData.location.trim(),
+          poster_url: posterUrl,
+          ticket_types: formData.ticket_types.map((ticketType) => ({
+            name: ticketType.name.trim(),
+            price: parseNumericFieldValue(ticketType.priceInput),
+            quantity: parsePositiveIntFieldValue(ticketType.quantityInput),
+            description: ticketType.description?.trim() || null,
+          })),
+        }),
       });
 
-      const { error: ticketTypesError } = await supabase
-        .from("ticket_types")
-        .insert(ticketTypesData);
+      const payload = (await response.json().catch(() => null)) as {
+        error?: string;
+        event?: { id?: string };
+        welcomeEmail?: { sent: boolean; reason?: string };
+      } | null;
 
-      if (ticketTypesError) {
-        console.error("Ticket types insert error:", ticketTypesError);
-        // Rollback event creation
-        await supabase.from("events").delete().eq("id", eventResult.id);
-        throw ticketTypesError;
+      if (!response.ok || !payload?.event?.id) {
+        throw new Error(payload?.error || "Failed to create event");
       }
 
-      console.log("Event created successfully!");
-      setCreatedEventId(eventResult.id);
+      setCreatedEventId(payload.event.id);
+      setWelcomeEmail(payload.welcomeEmail ?? null);
       setSuccess(true);
     } catch (err: unknown) {
       console.error("Error creating event:", err);
@@ -340,6 +329,7 @@ export default function CreateEvent() {
       <EventCreatedOnboarding
         eventId={createdEventId}
         eventTitle={formData.title}
+        welcomeEmail={welcomeEmail}
         onGoToDashboard={() => router.push("/dashboard")}
       />
     );

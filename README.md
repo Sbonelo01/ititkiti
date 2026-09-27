@@ -19,6 +19,18 @@ See `.env.example` for the full list. Critical vars:
 - `NEXT_PUBLIC_PAYSTACK_KEY`, `PAYSTACK_SECRET_KEY`, `PAYSTACK_WEBHOOK_SECRET`
 - `NEXT_PUBLIC_SITE_URL` — production origin, e.g. `https://www.tikiti.fun` (never `http://localhost:3000` in production)
 
+## Organizer onboarding email
+
+Listing an event (`POST /api/events`) sends the organizer welcome email from the server after the event and ticket types are saved. The same event is not emailed twice. A failed or unconfigured send is not recorded, so a later retry can still deliver it. The in-app checklist does not depend on the email.
+
+Vercel production (and preview, if you want preview sends) must set:
+
+- `BREVO_API_KEY` — Brevo API key (`api-key` on `POST https://api.brevo.com/v3/smtp/email`). **Required for delivery.** If it is missing, the event still lists and the server logs `[organizer-welcome-email] BREVO_API_KEY is not set`.
+- `BREVO_FROM_EMAIL` — verified sender address, for example `hello@tikiti.fun`, or `Tikiti <hello@tikiti.fun>`. When unset, the code uses `Tikiti <hello@tikiti.fun>`.
+- `BREVO_FROM_NAME` — optional display name. When unset, the name is `Tikiti` (or the name parsed from `BREVO_FROM_EMAIL`).
+
+Apply `supabase/migrations/20260927_organizer_welcome_emails.sql`. Brevo does not dedupe sends, so that table is what stops a second welcome email for the same event.
+
 ## Auth / OAuth URL configuration
 
 Google and email-confirm links use `{origin}/auth/callback` as `redirectTo`. If this URL is missing from the Supabase allowlist, Auth falls back to **Site URL** — which is `http://localhost:3000/#` when that field is still the local default.
