@@ -74,8 +74,13 @@ Organizers and door team use [scan.tikiti.fun](https://scan.tikiti.fun) (Expo we
 ```bash
 npm test
 npm run lint
+npm run build
 ```
 
-## Deployment note
+GitHub Actions runs lint and tests (`.github/workflows/test.yml`) and `npm ci`, `npm test`, and `npm run build` (`.github/workflows/nextjs.yml`) on pull requests and pushes to `main`. CI does not publish the site.
 
-API routes (`/api/purchase-tickets`, Paystack webhook, etc.) require a Node hosting target (e.g. Vercel). Static export (GitHub Pages) cannot run server routes.
+## Deployment
+
+Production is serverful Next.js on Vercel ([tikiti.fun](https://www.tikiti.fun)). API routes (`/api/purchase-tickets`, Paystack webhooks, `/api/validate-ticket`, `/api/admin/users`, and the rest) need that Node runtime, including auth headers, rate limits, and Supabase.
+
+GitHub Actions does not deploy this app. GitHub Pages static export cannot run those routes: `actions/configure-pages` with `static_site_generator: next` injects `output: 'export'` at build time, which fails page-data collection for dynamic API routes. Do not mark those routes `force-static` to satisfy a Pages export.
