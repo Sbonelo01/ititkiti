@@ -50,7 +50,12 @@ describe("sendOrganizerWelcomeEmail", () => {
       json: async () => ({ id: "email_1" }),
     });
     const result = await sendOrganizerWelcomeEmail(
-      { to: "org@test.com", eventTitle: "Jazz Night", eventId: "evt-1" },
+      {
+        to: "org@test.com",
+        eventTitle: "Jazz Night",
+        eventId: "evt-1",
+        idempotencyKey: "organizer-welcome:evt-1",
+      },
       { fetchImpl: fetchImpl as unknown as typeof fetch }
     );
     expect(result).toEqual({ ok: true, id: "email_1" });
@@ -59,6 +64,7 @@ describe("sendOrganizerWelcomeEmail", () => {
     expect(url).toBe("https://api.resend.com/emails");
     const headers = init.headers as Record<string, string>;
     expect(headers.Authorization).toBe("Bearer re_test");
+    expect(headers["Idempotency-Key"]).toBe("organizer-welcome:evt-1");
     const body = JSON.parse(String(init.body)) as { to: string[]; subject: string };
     expect(body.to).toEqual(["org@test.com"]);
     expect(body.subject).toBe(ORGANIZER_COPY.email.subject);

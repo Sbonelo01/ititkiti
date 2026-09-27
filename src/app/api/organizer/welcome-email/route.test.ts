@@ -2,20 +2,15 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { NextRequest } from "next/server";
 import { POST } from "./route";
 import { requireOrganizerAuth } from "@/server/auth/sessionAuth";
-import { getSupabaseAdmin } from "@/server/supabaseAdmin";
-import { sendOrganizerWelcomeEmail } from "@/server/email/sendOrganizerWelcomeEmail";
+import { deliverOrganizerWelcomeEmail } from "@/server/email/organizerWelcomeEmailDelivery";
 import { resetRateLimitBucketsForTests } from "@/utils/rateLimit";
 
 vi.mock("@/server/auth/sessionAuth", () => ({
   requireOrganizerAuth: vi.fn(),
 }));
 
-vi.mock("@/server/supabaseAdmin", () => ({
-  getSupabaseAdmin: vi.fn(),
-}));
-
-vi.mock("@/server/email/sendOrganizerWelcomeEmail", () => ({
-  sendOrganizerWelcomeEmail: vi.fn(),
+vi.mock("@/server/email/organizerWelcomeEmailDelivery", () => ({
+  deliverOrganizerWelcomeEmail: vi.fn(),
 }));
 
 const EVENT_ID = "550e8400-e29b-41d4-a716-446655440000";
@@ -29,8 +24,7 @@ describe("POST /api/organizer/welcome-email", () => {
   beforeEach(() => {
     resetRateLimitBucketsForTests();
     vi.mocked(requireOrganizerAuth).mockReset();
-    vi.mocked(getSupabaseAdmin).mockReset();
-    vi.mocked(sendOrganizerWelcomeEmail).mockReset();
+    vi.mocked(deliverOrganizerWelcomeEmail).mockReset();
     vi.mocked(requireOrganizerAuth).mockResolvedValue({
       ok: true,
       user: organizer,
@@ -48,15 +42,6 @@ describe("POST /api/organizer/welcome-email", () => {
     });
   }
 
-  function mockEvent(row: { id: string; title: string; organizer_id: string } | null) {
-    const chain: Record<string, unknown> = {};
-    const self = () => chain;
-    chain.select = vi.fn(self);
-    chain.eq = vi.fn(self);
-    chain.maybeSingle = vi.fn(async () => ({ data: row, error: null }));
-    vi.mocked(getSupabaseAdmin).mockReturnValue({ from: vi.fn(() => chain) } as never);
-  }
-
   it("does not grant staff and rejects non-organizers", async () => {
     vi.mocked(requireOrganizerAuth).mockResolvedValue({
       ok: false,
@@ -65,26 +50,39 @@ describe("POST /api/organizer/welcome-email", () => {
     });
     const res = await POST(jsonPost({ eventId: EVENT_ID }));
     expect(res.status).toBe(403);
-    expect(sendOrganizerWelcomeEmail).not.toHaveBeenCalled();
+    expect(deliverOrganizerWelcomeEmail).not.toHaveBeenCalled();
   });
 
   it("rejects sending for an event the user does not own", async () => {
-    mockEvent({ id: EVENT_ID, title: "Jazz", organizer_id: "other" });
+    vi.mocked(deliverOrganizerWelcomeEmail).mockResolvedValue({ outcome: "forbidden" });
     const res = await POST(jsonPost({ eventId: EVENT_ID }));
     expect(res.status).toBe(403);
-    expect(sendOrganizerWelcomeEmail).not.toHaveBeenCalled();
+    const body = await res.json();
+    expect(body).toEqual({ error: "Forbidden" });
+    expect(deliverOrganizerWelcomeEmail).toHaveBeenCalledWith({
+      eventId: EVENT_ID,
+      user: organizer,
+    });
   });
 
   it("returns sent:false when email is not configured, without failing the request", async () => {
-    mockEvent({ id: EVENT_ID, title: "Jazz", organizer_id: organizer.id });
-    vi.mocked(sendOrganizerWelcomeEmail).mockResolvedValue({
-      ok: false,
-      skipped: true,
+    vi.mocked(deliverOrganizerWelcomeEmail).mockResolvedValue({
+      outcome: "skipped",
       reason: "not_configured",
     });
     const res = await POST(jsonPost({ eventId: EVENT_ID }));
     expect(res.status).toBe(200);
     const body = await res.json();
     expect(body).toEqual({ success: true, sent: false, reason: "not_configured" });
+  });
+
+  it("returns sent:true after a successful delivery", async () => {
+    vi.mocked(deliverOrganizerWelcomeEmail).mockResolvedValue({
+      outcome: "sent",
+      id: "email_1",
+    });
+    const res = await POST(jsonPost({ eventId: EVENT_ID }));
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ success: true, sent: true });
   });
 });

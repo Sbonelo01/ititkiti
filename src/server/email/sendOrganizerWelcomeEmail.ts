@@ -82,12 +82,14 @@ export type SendOrganizerWelcomeEmailInput = {
   eventTitle: string;
   eventId: string;
   organizerName?: string;
+  /** Resend dedupes retries that share this key for 24 hours. */
+  idempotencyKey?: string;
 };
 
 export type SendOrganizerWelcomeEmailResult =
   | { ok: true; id: string }
   | { ok: false; skipped: true; reason: "not_configured" | "no_recipient" }
-  | { ok: false; skipped: false; reason: string };
+  | { ok: false; skipped: false; reason: string; detail?: string };
 
 type FetchLike = typeof fetch;
 
@@ -108,14 +110,19 @@ export async function sendOrganizerWelcomeEmail(
   const from = process.env.RESEND_FROM_EMAIL?.trim() || "Tikiti <hello@tikiti.fun>";
   const payload = buildOrganizerWelcomeEmail(input);
   const fetchImpl = deps.fetchImpl ?? fetch;
+  const headers: Record<string, string> = {
+    Authorization: `Bearer ${apiKey}`,
+    "Content-Type": "application/json",
+  };
+  const idempotencyKey = input.idempotencyKey?.trim();
+  if (idempotencyKey) {
+    headers["Idempotency-Key"] = idempotencyKey;
+  }
 
   try {
     const res = await fetchImpl("https://api.resend.com/emails", {
       method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
+      headers,
       body: JSON.stringify({
         from,
         to: [to],
@@ -126,12 +133,23 @@ export async function sendOrganizerWelcomeEmail(
     });
 
     if (!res.ok) {
-      return { ok: false, skipped: false, reason: `resend_http_${res.status}` };
+      const detail = await readErrorDetail(res);
+      return { ok: false, skipped: false, reason: `resend_http_${res.status}`, detail };
     }
 
     const body = (await res.json()) as { id?: string };
     return { ok: true, id: body.id || "sent" };
+  } catch (err) {
+    const detail = err instanceof Error ? err.message : "network_error";
+    return { ok: false, skipped: false, reason: "network_error", detail };
+  }
+}
+
+async function readErrorDetail(res: Response): Promise<string | undefined> {
+  try {
+    const text = (await res.text()).trim();
+    return text ? text.slice(0, 300) : undefined;
   } catch {
-    return { ok: false, skipped: false, reason: "network_error" };
+    return undefined;
   }
 }

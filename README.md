@@ -19,6 +19,17 @@ See `.env.example` for the full list. Critical vars:
 - `NEXT_PUBLIC_PAYSTACK_KEY`, `PAYSTACK_SECRET_KEY`, `PAYSTACK_WEBHOOK_SECRET`
 - `NEXT_PUBLIC_SITE_URL` — production origin, e.g. `https://www.tikiti.fun` (never `http://localhost:3000` in production)
 
+## Organizer onboarding email
+
+Listing an event (`POST /api/events`) sends the organizer welcome email from the server after the event and ticket types are saved. The same event is not emailed twice. A failed or unconfigured send is not recorded, so a later retry can still deliver it. The in-app checklist does not depend on the email.
+
+Vercel production (and preview, if you want preview sends) must set:
+
+- `RESEND_API_KEY` — Resend API key. **Required for delivery.** If it is missing, the event still lists and the server logs `[organizer-welcome-email] RESEND_API_KEY is not set`.
+- `RESEND_FROM_EMAIL` — verified sender, for example `Tikiti <hello@tikiti.fun>`. When unset, the code uses that default address.
+
+Apply `supabase/migrations/20260927_organizer_welcome_emails.sql` so the idempotency row survives longer than Resend’s 24-hour idempotency window.
+
 ## Auth / OAuth URL configuration
 
 Google and email-confirm links use `{origin}/auth/callback` as `redirectTo`. If this URL is missing from the Supabase allowlist, Auth falls back to **Site URL** — which is `http://localhost:3000/#` when that field is still the local default.
