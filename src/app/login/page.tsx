@@ -18,6 +18,9 @@ import { CtaButton } from "@/components/ui/CtaButton";
 import {
   consumeAuthRedirectPath,
   getOAuthRedirectTo,
+  initialAuthScreenMode,
+  initialSignupRole,
+  isSellAuthRedirect,
   persistAuthRedirectPath,
   resolvePostAuthPath,
   safeAuthRedirectPath,
@@ -48,10 +51,20 @@ function GoogleGlyph() {
 }
 
 function LoginForm() {
-  const [isLogin, setIsLogin] = useState(true);
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirectParam = searchParams.get("redirect");
+  const redirectTo = safeAuthRedirectPath(redirectParam);
+  const isCheckoutRedirect = redirectTo.startsWith("/events/");
+  const isSellRedirect = isSellAuthRedirect(redirectParam);
+  const [isLogin, setIsLogin] = useState(
+    () => initialAuthScreenMode(redirectParam) === "signin"
+  );
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [role, setRole] = useState<"organizer" | "attendee">("attendee");
+  const [role, setRole] = useState<"organizer" | "attendee">(() =>
+    initialSignupRole(redirectParam)
+  );
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
@@ -66,12 +79,14 @@ function LoginForm() {
   const [showLogoPrompt, setShowLogoPrompt] = useState(false);
   const [logoUploadLoading, setLogoUploadLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const redirectParam = searchParams.get("redirect");
-  const redirectTo = safeAuthRedirectPath(redirectParam);
-  const isCheckoutRedirect = redirectTo.startsWith("/events/");
-  const isSellRedirect = redirectTo.includes("create-event");
+
+  // Arrive on organizer signup for sell CTAs. Re-apply only when the redirect
+  // target changes so an existing user can stay on Sign in after toggling.
+  useEffect(() => {
+    if (!isSellRedirect) return;
+    setIsLogin(false);
+    setRole("organizer");
+  }, [isSellRedirect]);
 
   useEffect(() => {
     if (!isLogin && isSellRedirect) {
@@ -325,7 +340,7 @@ function LoginForm() {
                 : isSellRedirect
                   ? isLogin
                     ? "Sign in, then we'll help you enable organizer tools on your account."
-                    : "Choose Event Organizer at signup — list events and sell paperless tickets."
+                    : "Create an organizer account, then continue into listing your event."
                   : isLogin
                     ? "Sign in to access your events and manage your tickets"
                     : "Create your account and start discovering amazing events or organizing your own"}
@@ -362,8 +377,10 @@ function LoginForm() {
                 <p className="text-gray-600">
                   {isCheckoutRedirect
                     ? "Takes under a minute — then you're back to checkout."
-                    : isSellRedirect && isLogin
-                      ? "Already a buyer? You'll enable selling on the next screen."
+                    : isSellRedirect
+                      ? isLogin
+                        ? "Already a buyer? You'll enable selling on the next screen."
+                        : "Organizer signup — you'll list your event right after this."
                       : isLogin
                         ? "Welcome back to Tikiti"
                         : "Join thousands of event organizers and attendees"}
@@ -426,7 +443,11 @@ function LoginForm() {
                       I am a:
                     </h3>
                     <div className="grid grid-cols-2 gap-4">
-                      <label className="flex items-center p-4 bg-white rounded-xl border-2 border-gray-200 hover:border-green-500 cursor-pointer transition-all duration-200">
+                      <label className={`flex items-center p-4 bg-white rounded-xl border-2 cursor-pointer transition-all duration-200 ${
+                        role === "attendee"
+                          ? "border-green-500"
+                          : "border-gray-200 hover:border-green-500"
+                      } ${isSellRedirect ? "order-2" : ""}`}>
                         <input
                           type="radio"
                           name="role"
@@ -445,7 +466,11 @@ function LoginForm() {
                           <p className="text-sm text-gray-600 mt-1">I want to buy tickets</p>
                         </div>
                       </label>
-                      <label className="flex items-center p-4 bg-white rounded-xl border-2 border-gray-200 hover:border-green-500 cursor-pointer transition-all duration-200">
+                      <label className={`flex items-center p-4 bg-white rounded-xl border-2 cursor-pointer transition-all duration-200 ${
+                        role === "organizer"
+                          ? "border-green-500"
+                          : "border-gray-200 hover:border-green-500"
+                      } ${isSellRedirect ? "order-1" : ""}`}>
                         <input
                           type="radio"
                           name="role"
@@ -615,6 +640,8 @@ function LoginForm() {
                     </span>
                   ) : isCheckoutRedirect ? (
                     isLogin ? "Sign in & continue to checkout" : "Create account & continue"
+                  ) : isSellRedirect && !isLogin ? (
+                    "Create organizer account"
                   ) : (
                     isLogin ? "Sign in" : "Create account"
                   )}
@@ -623,7 +650,7 @@ function LoginForm() {
                 {/* Toggle between login/signup */}
                 <div className="text-center">
                   <p className="text-gray-600">
-                    {isLogin ? "Don&apos;t have an account? " : "Already have an account? "}
+                    {isLogin ? "Don't have an account? " : "Already have an account? "}
                     <button
                       type="button"
                       onClick={handleToggle}
