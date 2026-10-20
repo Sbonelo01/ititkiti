@@ -11,6 +11,9 @@ import {
   EVENTS_BROWSE_PATH,
   GOOGLE_SIGN_IN_INCOMPLETE_ERROR,
   isGenericAuthRedirect,
+  initialAuthScreenMode,
+  initialSignupRole,
+  isSellAuthRedirect,
   oauthErrorFromParams,
   persistAuthRedirectPath,
   peekAuthRedirectPath,
@@ -52,6 +55,27 @@ describe("safeAuthRedirectPath", () => {
     expect(safeAuthRedirectPath("//evil.example")).toBe(DEFAULT_AUTH_REDIRECT);
     expect(safeAuthRedirectPath("/\\evil.example")).toBe(DEFAULT_AUTH_REDIRECT);
     expect(safeAuthRedirectPath("events/no-slash")).toBe(DEFAULT_AUTH_REDIRECT);
+  });
+});
+
+describe("sell auth wall", () => {
+  it("opens organizer signup for create-event and sign-in for everything else", () => {
+    expect(isSellAuthRedirect("/dashboard/create-event")).toBe(true);
+    expect(isSellAuthRedirect("/dashboard/create-event?step=1")).toBe(true);
+    expect(isSellAuthRedirect("/login?redirect=/dashboard/create-event")).toBe(false);
+    expect(initialAuthScreenMode("/dashboard/create-event")).toBe("signup");
+    expect(initialSignupRole("/dashboard/create-event")).toBe("organizer");
+
+    expect(initialAuthScreenMode(null)).toBe("signin");
+    expect(initialAuthScreenMode("/dashboard")).toBe("signin");
+    expect(initialAuthScreenMode("/events/abc-123")).toBe("signin");
+    expect(initialSignupRole("/events/abc-123")).toBe("attendee");
+    expect(initialSignupRole(null)).toBe("attendee");
+  });
+
+  it("does not treat an open redirect as a sell flow", () => {
+    expect(isSellAuthRedirect("https://evil.example/create-event")).toBe(false);
+    expect(initialAuthScreenMode("//evil.example/dashboard/create-event")).toBe("signin");
   });
 });
 
