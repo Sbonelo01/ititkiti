@@ -1,6 +1,7 @@
 import crypto from "crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { applyRateLimit } from "@/utils/rateLimit";
+import { schedulePurchaseConfirmationEmail } from "@/server/email/purchaseConfirmationEmailDelivery";
 import { finalizePurchaseAtomic } from "@/server/payments/finalizePurchase";
 import { computeExpectedAmountKobo } from "@/server/payments/computeExpectedAmountKobo";
 import {
@@ -84,6 +85,8 @@ export async function POST(req: NextRequest) {
       { status: finalized.status || 500 }
     );
   }
+
+  schedulePurchaseConfirmationEmail(resolved.reference);
 
   return NextResponse.json({
     success: true,

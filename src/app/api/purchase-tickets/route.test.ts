@@ -1,9 +1,14 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { NextRequest } from "next/server";
 import { POST } from "./route";
+import { schedulePurchaseConfirmationEmail } from "@/server/email/purchaseConfirmationEmailDelivery";
 import { finalizePurchaseAtomic } from "@/server/payments/finalizePurchase";
 import { resolveAndVerifyPurchase } from "@/server/payments/verifyPaystackCharge";
 import { resetRateLimitBucketsForTests } from "@/utils/rateLimit";
+
+vi.mock("@/server/email/purchaseConfirmationEmailDelivery", () => ({
+  schedulePurchaseConfirmationEmail: vi.fn(),
+}));
 
 vi.mock("@/server/payments/finalizePurchase", () => ({
   finalizePurchaseAtomic: vi.fn(),
@@ -20,6 +25,7 @@ describe("POST /api/purchase-tickets", () => {
     resetRateLimitBucketsForTests();
     vi.mocked(finalizePurchaseAtomic).mockReset();
     vi.mocked(resolveAndVerifyPurchase).mockReset();
+    vi.mocked(schedulePurchaseConfirmationEmail).mockReset();
   });
 
   function jsonPost(body: unknown, ip = "198.51.100.1") {
@@ -84,6 +90,7 @@ describe("POST /api/purchase-tickets", () => {
     );
     expect(res.status).toBe(400);
     expect(finalizePurchaseAtomic).not.toHaveBeenCalled();
+    expect(schedulePurchaseConfirmationEmail).not.toHaveBeenCalled();
   });
 
   it("calls finalizePurchaseAtomic after successful verification", async () => {
@@ -118,6 +125,36 @@ describe("POST /api/purchase-tickets", () => {
         ticketUser: { email: "a@b.com", name: "Ann" },
       })
     );
+    expect(schedulePurchaseConfirmationEmail).toHaveBeenCalledTimes(1);
+    expect(schedulePurchaseConfirmationEmail).toHaveBeenCalledWith("R1");
+  });
+
+  it("still schedules the confirmation when the payment was already finalized", async () => {
+    vi.mocked(resolveAndVerifyPurchase).mockResolvedValue({
+      ok: true,
+      charge: {},
+      purchase: {
+        reference: "R1",
+        eventId: EVENT_ID,
+        quantity: 1,
+        ticketUser: { email: "guest@example.com" },
+      },
+    });
+    vi.mocked(finalizePurchaseAtomic).mockResolvedValue({
+      success: true,
+      alreadyProcessed: true,
+      createdTickets: 0,
+    });
+    const res = await POST(
+      jsonPost({
+        reference: "R1",
+        eventId: EVENT_ID,
+        quantity: 1,
+        user: { email: "guest@example.com" },
+      })
+    );
+    expect(res.status).toBe(200);
+    expect(schedulePurchaseConfirmationEmail).toHaveBeenCalledWith("R1");
   });
 
   it("does not leak postgres details when finalize fails", async () => {
@@ -150,6 +187,7 @@ describe("POST /api/purchase-tickets", () => {
     expect(json.error).toBe("Failed to finalize purchase");
     expect(json.details).toBeUndefined();
     expect(JSON.stringify(json)).not.toContain("payment_receipts");
+    expect(schedulePurchaseConfirmationEmail).not.toHaveBeenCalled();
   });
 
   it("rejects underpaid charges from verifier", async () => {
