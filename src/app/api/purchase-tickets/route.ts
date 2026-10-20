@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { applyRateLimit } from "@/utils/rateLimit";
+import { schedulePurchaseConfirmationEmail } from "@/server/email/purchaseConfirmationEmailDelivery";
 import { finalizePurchaseAtomic } from "@/server/payments/finalizePurchase";
 import { resolveAndVerifyPurchase } from "@/server/payments/verifyPaystackCharge";
 
@@ -64,6 +65,8 @@ export async function POST(req: NextRequest) {
         { status: finalized.status || 500 }
       );
     }
+
+    schedulePurchaseConfirmationEmail(verified.purchase.reference);
 
     return NextResponse.json({
       success: true,

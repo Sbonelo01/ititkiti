@@ -31,6 +31,14 @@ Vercel production (and preview, if you want preview sends) must set:
 
 Apply `supabase/migrations/20260927_organizer_welcome_emails.sql`. Brevo does not dedupe sends, so that table is what stops a second welcome email for the same event.
 
+## Purchase confirmation email
+
+After `finalize_ticket_purchase` succeeds, `POST /api/purchase-tickets` and the Paystack `charge.success` webhook each schedule one buyer confirmation. The send runs after the HTTP response (`after`), so a Brevo problem does not fail or delay the purchase. The message goes to the purchaser email on the payment (guest checkout included).
+
+The same `BREVO_API_KEY`, `BREVO_FROM_EMAIL`, and optional `BREVO_FROM_NAME` are used. If the key is missing, the purchase still succeeds and the server logs a warning (`[purchase-confirmation-email] BREVO_API_KEY is not set`).
+
+Apply `supabase/migrations/20261020_purchase_confirmation_emails.sql` before relying on this in production. One row per Paystack reference is claimed before the send and marked only after Brevo accepts it. A failed send deletes that claim so a later attempt can retry. QR codes are PNG attachments (not inline images). The email also links to My Tickets at `{NEXT_PUBLIC_SITE_URL}/dashboard`.
+
 ## Auth / OAuth URL configuration
 
 Google and email-confirm links use `{origin}/auth/callback` as `redirectTo`. If this URL is missing from the Supabase allowlist, Auth falls back to **Site URL** — which is `http://localhost:3000/#` when that field is still the local default.

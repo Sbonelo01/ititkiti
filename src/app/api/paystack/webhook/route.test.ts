@@ -2,9 +2,14 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { NextRequest } from "next/server";
 import crypto from "crypto";
 import { POST } from "./route";
+import { schedulePurchaseConfirmationEmail } from "@/server/email/purchaseConfirmationEmailDelivery";
 import { finalizePurchaseAtomic } from "@/server/payments/finalizePurchase";
 import { computeExpectedAmountKobo } from "@/server/payments/computeExpectedAmountKobo";
 import { resetRateLimitBucketsForTests } from "@/utils/rateLimit";
+
+vi.mock("@/server/email/purchaseConfirmationEmailDelivery", () => ({
+  schedulePurchaseConfirmationEmail: vi.fn(),
+}));
 
 vi.mock("@/server/payments/finalizePurchase", () => ({
   finalizePurchaseAtomic: vi.fn(),
@@ -27,6 +32,7 @@ describe("POST /api/paystack/webhook", () => {
     process.env.PAYSTACK_WEBHOOK_SECRET = secret;
     delete process.env.PAYSTACK_SECRET_KEY;
     vi.mocked(finalizePurchaseAtomic).mockReset();
+    vi.mocked(schedulePurchaseConfirmationEmail).mockReset();
     vi.mocked(computeExpectedAmountKobo).mockResolvedValue({ amountKobo: 10000, currency: "ZAR" });
   });
 
@@ -127,6 +133,7 @@ describe("POST /api/paystack/webhook", () => {
         ticketUser: expect.objectContaining({ email: "buyer@example.com" }),
       })
     );
+    expect(schedulePurchaseConfirmationEmail).toHaveBeenCalledWith("EVT-event-123-u-1");
   });
 
   it("rejects underpaid webhook charges", async () => {
@@ -145,6 +152,7 @@ describe("POST /api/paystack/webhook", () => {
     const res = await POST(webhookRequest(raw, "203.0.113.16", sign(raw, secret)));
     expect(res.status).toBe(400);
     expect(finalizePurchaseAtomic).not.toHaveBeenCalled();
+    expect(schedulePurchaseConfirmationEmail).not.toHaveBeenCalled();
   });
 
   it("rejects overpaid webhook charges", async () => {
