@@ -53,6 +53,23 @@ describe("safeAuthRedirectPath", () => {
     expect(safeAuthRedirectPath("/\\evil.example")).toBe(DEFAULT_AUTH_REDIRECT);
     expect(safeAuthRedirectPath("events/no-slash")).toBe(DEFAULT_AUTH_REDIRECT);
   });
+
+  it("rejects controls, backslashes, and encodings that resolve off-origin", () => {
+    expect(safeAuthRedirectPath("/\tevil")).toBe(DEFAULT_AUTH_REDIRECT);
+    expect(safeAuthRedirectPath("/evil\n")).toBe(DEFAULT_AUTH_REDIRECT);
+    expect(safeAuthRedirectPath("/%5C%5Cevil.example")).toBe(DEFAULT_AUTH_REDIRECT);
+    expect(safeAuthRedirectPath("/%5cevil.example")).toBe(DEFAULT_AUTH_REDIRECT);
+    expect(safeAuthRedirectPath("/events/1?next=%5C")).toBe(DEFAULT_AUTH_REDIRECT);
+    expect(safeAuthRedirectPath("/%2F%2Fevil.example")).toBe(DEFAULT_AUTH_REDIRECT);
+    expect(safeAuthRedirectPath("/%252F%252Fevil.example")).toBe(DEFAULT_AUTH_REDIRECT);
+    expect(safeAuthRedirectPath("/%00/dashboard")).toBe(DEFAULT_AUTH_REDIRECT);
+    expect(safeAuthRedirectPath("/dashboard?x=%0aSet-Cookie")).toBe(DEFAULT_AUTH_REDIRECT);
+  });
+
+  it("normalizes a same-origin path and keeps a safe query", () => {
+    expect(safeAuthRedirectPath("/foo/../dashboard")).toBe("/dashboard");
+    expect(safeAuthRedirectPath("/events/abc-123?ref=email")).toBe("/events/abc-123?ref=email");
+  });
 });
 
 describe("resolveAuthOrigin", () => {
@@ -110,6 +127,23 @@ describe("getOAuthRedirectTo", () => {
     expect(getOAuthRedirectTo("http://localhost:3000")).toBe(
       "https://www.tikiti.fun/auth/callback"
     );
+  });
+
+  it("drops credentials, controls, and backslashes before building the callback", () => {
+    vi.stubEnv("NEXT_PUBLIC_SITE_URL", "https://www.tikiti.fun");
+    expect(getOAuthRedirectTo("https://user:pass@evil.example")).toBe(
+      "https://www.tikiti.fun/auth/callback"
+    );
+    expect(getOAuthRedirectTo("https://tikiti.fun\\@evil.example")).toBe(
+      "https://www.tikiti.fun/auth/callback"
+    );
+    expect(getOAuthRedirectTo("https://evil.example/%0d%0a")).toBe(
+      "https://www.tikiti.fun/auth/callback"
+    );
+    const callback = new URL(getOAuthRedirectTo("https://preview.example.vercel.app"));
+    expect(callback.origin).toBe("https://preview.example.vercel.app");
+    expect(callback.pathname).toBe("/auth/callback");
+    expect(callback.search).toBe("");
   });
 });
 

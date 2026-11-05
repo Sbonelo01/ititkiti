@@ -6,7 +6,7 @@ import { getInvoiceById } from "@/server/invoices/generateOrganizerInvoice";
 type RouteContext = { params: Promise<{ id: string }> };
 
 export async function GET(req: NextRequest, context: RouteContext) {
-  const rateLimited = applyRateLimit(req, {
+  const rateLimited = await applyRateLimit(req, {
     keyPrefix: "invoices-get",
     windowMs: 60_000,
     maxRequests: 60,

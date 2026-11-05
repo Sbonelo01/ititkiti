@@ -6,7 +6,7 @@ import { listInvoicesForUser } from "@/server/invoices/generateOrganizerInvoice"
 import { getProductRole } from "@/utils/roles";
 
 export async function GET(req: NextRequest) {
-  const rateLimited = applyRateLimit(req, {
+  const rateLimited = await applyRateLimit(req, {
     keyPrefix: "invoices-list",
     windowMs: 60_000,
     maxRequests: 60,

@@ -168,7 +168,9 @@ export default function DoorTeamSection({ eventId }: DoorTeamSectionProps) {
               <div>
                 <p className="font-medium text-gray-900">{member.invited_email}</p>
                 <p className="text-xs text-gray-500">
-                  {member.user_id ? "Account linked" : "Pending until they sign up with this email"}
+                  {member.user_id
+                    ? "Signed in with this email"
+                    : "Waiting for them to sign in with this email"}
                 </p>
               </div>
               <button

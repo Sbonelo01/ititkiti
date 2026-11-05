@@ -13,8 +13,12 @@ export type AdminUserView = {
   role: AssignableRole;
 };
 
-const LIST_PAGE_SIZE = 200;
-const LIST_MAX_PAGES = 5;
+export class AuthUserLookupUnavailableError extends Error {
+  constructor() {
+    super("Auth user lookup is not configured");
+    this.name = "AuthUserLookupUnavailableError";
+  }
+}
 
 export function toAdminUserView(
   user: { id: string; email?: string | null } & RoleMetadataSource
@@ -38,34 +42,48 @@ export function matchUsersByEmail<T extends { email?: string | null }>(
   return users.filter((user) => (user.email ?? "").toLowerCase().includes(q));
 }
 
+function isLookupMissing(error: { code?: string; message?: string }): boolean {
+  const code = error.code ?? "";
+  if (code === "PGRST202" || code === "42883") return true;
+  const message = (error.message ?? "").toLowerCase();
+  return message.includes("could not find the function") || message.includes("does not exist");
+}
+
+/**
+ * Exact email lookup through service-role RPC. Does not page auth.admin.listUsers.
+ * Partial queries return nothing. A missing function fails closed.
+ */
 export async function findAuthUsersByEmail(emailQuery: string): Promise<User[]> {
   const q = emailQuery.trim().toLowerCase();
-  if (q.length < 3) return [];
+  if (!q.includes("@") || q.length < 3) return [];
 
   const supabase = getSupabaseAdmin();
-  const matches: User[] = [];
-
-  for (let page = 1; page <= LIST_MAX_PAGES; page += 1) {
-    const { data, error } = await supabase.auth.admin.listUsers({
-      page,
-      perPage: LIST_PAGE_SIZE,
-    });
-    if (error) {
-      throw error;
+  const { data, error } = await supabase.rpc("lookup_auth_user_by_email", { p_email: q });
+  if (error) {
+    if (isLookupMissing(error)) {
+      throw new AuthUserLookupUnavailableError();
     }
-
-    const users = data.users ?? [];
-    matches.push(...matchUsersByEmail(users, q));
-
-    if (q.includes("@") && matches.length > 0) {
-      return matches;
-    }
-    if (users.length < LIST_PAGE_SIZE) {
-      break;
-    }
+    throw error;
   }
+  if (!data || typeof data !== "object") return [];
 
-  return matches;
+  const row = data as {
+    id?: unknown;
+    email?: unknown;
+    app_metadata?: User["app_metadata"];
+    user_metadata?: User["user_metadata"];
+  };
+  if (typeof row.id !== "string" || typeof row.email !== "string") return [];
+  if (row.email.trim().toLowerCase() !== q) return [];
+
+  return [
+    {
+      id: row.id,
+      email: row.email,
+      app_metadata: row.app_metadata ?? {},
+      user_metadata: row.user_metadata ?? {},
+    } as User,
+  ];
 }
 
 export async function updateAuthUserRole(

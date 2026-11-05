@@ -6,6 +6,16 @@ export function normalizeScannerEmail(email: string): string {
   return email.trim().toLowerCase();
 }
 
+/** Inbox proof. `confirmed_at` alone is not enough for an email invite. */
+export function hasConfirmedEmail(user: Pick<User, "email_confirmed_at">): boolean {
+  return typeof user.email_confirmed_at === "string" && user.email_confirmed_at.trim().length > 0;
+}
+
+function confirmedScannerEmail(user: User): string | null {
+  if (!hasConfirmedEmail(user) || !user.email?.trim()) return null;
+  return normalizeScannerEmail(user.email);
+}
+
 export function hasPlatformScannerAccess(user: User): boolean {
   return getPrivilegedRole(user) !== null;
 }
@@ -24,20 +34,17 @@ export function getScannerRoleForClient(user: User): string | null {
   return product === "organizer" ? "organizer" : product;
 }
 
-export async function linkPendingScannerMemberships(
-  userId: string,
-  email: string | undefined
-): Promise<void> {
-  if (!email?.trim()) return;
+export async function linkPendingScannerMemberships(user: User): Promise<void> {
+  const email = confirmedScannerEmail(user);
+  if (!email) return;
 
   const supabase = getSupabaseAdmin();
-  const normalized = normalizeScannerEmail(email);
 
   await supabase
     .from("event_scanner_members")
-    .update({ user_id: userId })
+    .update({ user_id: user.id })
     .is("user_id", null)
-    .eq("invited_email", normalized)
+    .eq("invited_email", email)
     .is("revoked_at", null);
 }
 
@@ -72,7 +79,7 @@ export async function canScanEvent(user: User, eventId: string): Promise<boolean
     return true;
   }
 
-  const email = user.email ? normalizeScannerEmail(user.email) : null;
+  const email = confirmedScannerEmail(user);
   if (!email) {
     return false;
   }
@@ -108,7 +115,7 @@ export async function requireScannerAppAccess(user: User): Promise<boolean> {
     return true;
   }
 
-  const email = user.email ? normalizeScannerEmail(user.email) : null;
+  const email = confirmedScannerEmail(user);
   if (!email) {
     return false;
   }
@@ -153,7 +160,7 @@ export async function listScannerEventsForUser(user: User): Promise<ScannerEvent
     return events ?? [];
   }
 
-  const email = user.email ? normalizeScannerEmail(user.email) : null;
+  const email = confirmedScannerEmail(user);
 
   const { data: byUserRows } = await supabase
     .from("event_scanner_members")

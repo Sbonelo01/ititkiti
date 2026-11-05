@@ -15,7 +15,7 @@ const bodySchema = z.object({
 type RouteContext = { params: Promise<{ id: string }> };
 
 export async function PATCH(req: NextRequest, context: RouteContext) {
-  const rateLimited = applyRateLimit(req, {
+  const rateLimited = await applyRateLimit(req, {
     keyPrefix: "invoices-status",
     windowMs: 60_000,
     maxRequests: 30,
