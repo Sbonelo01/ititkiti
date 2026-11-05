@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
+import { declaredBodyTooLarge, readBoundedJson, REQUEST_LIMITS } from "@/server/http/boundedBody";
 import { applyRateLimit } from "@/utils/rateLimit";
 import { extractBearerToken } from "@/server/auth/staffAuth";
 import { requireSuperAdminAuth } from "@/server/auth/superAdminAuth";
@@ -65,12 +66,16 @@ export async function GET(req: NextRequest) {
 }
 
 export async function PATCH(req: NextRequest) {
+  const oversized = declaredBodyTooLarge(req, REQUEST_LIMITS.smallJsonBytes);
+  if (oversized) return oversized;
+
   const gate = await requireGate(req);
   if (!gate.ok) return gate.response;
 
   try {
-    const body = await req.json();
-    const parsed = updateBodySchema.safeParse(body);
+    const bounded = await readBoundedJson(req, REQUEST_LIMITS.smallJsonBytes);
+    if (!bounded.ok) return bounded.response;
+    const parsed = updateBodySchema.safeParse(bounded.value);
     if (!parsed.success) {
       return NextResponse.json({ error: "Invalid email or role" }, { status: 400 });
     }

@@ -1,26 +1,28 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
+import { readBoundedJson, REQUEST_LIMITS } from "@/server/http/boundedBody";
 import { applyRateLimit } from "@/utils/rateLimit";
 import { schedulePurchaseConfirmationEmail } from "@/server/email/purchaseConfirmationEmailDelivery";
 import { finalizePurchaseAtomic } from "@/server/payments/finalizePurchase";
 import { resolveAndVerifyPurchase } from "@/server/payments/verifyPaystackCharge";
 
+const ticketSelectionSchema = z.object({
+  ticketTypeId: z.string().trim().min(1).max(REQUEST_LIMITS.maxTicketTypeIdLength),
+  quantity: z.number().int().positive().max(REQUEST_LIMITS.maxTicketQuantity),
+});
+
 const purchaseSchema = z.object({
-  reference: z.string().min(1),
+  reference: z.string().trim().min(1).max(REQUEST_LIMITS.maxReferenceLength),
   eventId: z.string().uuid(),
   ticketSelections: z
-    .array(
-      z.object({
-        ticketTypeId: z.string().min(1),
-        quantity: z.number().int().positive(),
-      })
-    )
+    .array(ticketSelectionSchema)
+    .max(REQUEST_LIMITS.maxTicketSelections)
     .optional(),
-  quantity: z.number().int().positive().optional(),
+  quantity: z.number().int().positive().max(REQUEST_LIMITS.maxTicketQuantity).optional(),
   user: z.object({
-    email: z.string().email(),
-    name: z.string().optional(),
-    userId: z.string().optional(),
+    email: z.string().trim().email().max(REQUEST_LIMITS.maxEmailLength),
+    name: z.string().trim().max(REQUEST_LIMITS.maxNameLength).optional(),
+    userId: z.string().trim().max(REQUEST_LIMITS.maxUserIdLength).optional(),
   }),
 });
 
@@ -33,8 +35,10 @@ export async function POST(req: NextRequest) {
   if (rateLimited) return rateLimited;
 
   try {
-    const body = await req.json();
-    const parsed = purchaseSchema.safeParse(body);
+    const bounded = await readBoundedJson(req, REQUEST_LIMITS.purchaseBytes);
+    if (!bounded.ok) return bounded.response;
+
+    const parsed = purchaseSchema.safeParse(bounded.value);
     if (!parsed.success) {
       return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
     }
