@@ -1,11 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
+import { declaredBodyTooLarge, readBoundedJson, REQUEST_LIMITS } from "@/server/http/boundedBody";
 import { extractBearerToken } from "@/server/auth/staffAuth";
 import { requireSession } from "@/server/auth/sessionAuth";
 import { linkPendingScannerMemberships } from "@/server/auth/scannerAuth";
 import { validateAndMarkTicketUsedForScanner } from "@/server/tickets/validateTicket";
 
 export async function handleValidateTicketPost(req: NextRequest): Promise<NextResponse> {
+  const oversized = declaredBodyTooLarge(req, REQUEST_LIMITS.ticketScanBytes);
+  if (oversized) return oversized;
+
   const authHeader = req.headers.get("authorization");
   const bearerToken = extractBearerToken(authHeader);
   let accessToken = bearerToken;
@@ -32,8 +36,10 @@ export async function handleValidateTicketPost(req: NextRequest): Promise<NextRe
   await linkPendingScannerMemberships(session.user.id, session.user.email);
 
   try {
-    const { qr_code_data } = await req.json();
-    const result = await validateAndMarkTicketUsedForScanner(qr_code_data, session.user);
+    const bounded = await readBoundedJson(req, REQUEST_LIMITS.ticketScanBytes);
+    if (!bounded.ok) return bounded.response;
+    const { qr_code_data } = bounded.value as { qr_code_data?: string };
+    const result = await validateAndMarkTicketUsedForScanner(qr_code_data ?? "", session.user);
 
     if (result.status === "unauthorized") {
       return NextResponse.json(

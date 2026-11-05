@@ -4,6 +4,7 @@ import { POST } from "./route";
 import { schedulePurchaseConfirmationEmail } from "@/server/email/purchaseConfirmationEmailDelivery";
 import { finalizePurchaseAtomic } from "@/server/payments/finalizePurchase";
 import { resolveAndVerifyPurchase } from "@/server/payments/verifyPaystackCharge";
+import { REQUEST_LIMITS } from "@/server/http/boundedBody";
 import { resetRateLimitBucketsForTests } from "@/utils/rateLimit";
 
 vi.mock("@/server/email/purchaseConfirmationEmailDelivery", () => ({
@@ -206,5 +207,67 @@ describe("POST /api/purchase-tickets", () => {
     );
     expect(res.status).toBe(400);
     expect(finalizePurchaseAtomic).not.toHaveBeenCalled();
+  });
+
+  it("rejects an oversized purchase body before payment verification", async () => {
+    const res = await POST(
+      jsonPost(
+        {
+          reference: "R-big",
+          eventId: EVENT_ID,
+          quantity: 1,
+          user: { email: "a@b.com", name: "n".repeat(REQUEST_LIMITS.purchaseBytes) },
+        },
+        "198.51.100.40"
+      )
+    );
+    expect(res.status).toBe(413);
+    expect(resolveAndVerifyPurchase).not.toHaveBeenCalled();
+  });
+
+  it("rejects more ticket selections than an event can define", async () => {
+    const res = await POST(
+      jsonPost(
+        {
+          reference: "R-many",
+          eventId: EVENT_ID,
+          ticketSelections: Array.from({ length: REQUEST_LIMITS.maxTicketSelections + 1 }, (_, index) => ({
+            ticketTypeId: `type-${index}`,
+            quantity: 1,
+          })),
+          user: { email: "a@b.com" },
+        },
+        "198.51.100.41"
+      )
+    );
+    expect(res.status).toBe(400);
+    expect(resolveAndVerifyPurchase).not.toHaveBeenCalled();
+  });
+
+  it("still accepts a postgres-integer quantity for a real checkout", async () => {
+    vi.mocked(resolveAndVerifyPurchase).mockResolvedValue({
+      ok: false,
+      error: "Payment verification failed",
+      status: 400,
+    });
+    const res = await POST(
+      jsonPost(
+        {
+          reference: "R-max",
+          eventId: EVENT_ID,
+          quantity: REQUEST_LIMITS.maxTicketQuantity,
+          user: { email: "a@b.com", name: "Ann" },
+        },
+        "198.51.100.42"
+      )
+    );
+    expect(res.status).toBe(400);
+    expect(resolveAndVerifyPurchase).toHaveBeenCalledWith(
+      "R-max",
+      EVENT_ID,
+      undefined,
+      REQUEST_LIMITS.maxTicketQuantity,
+      expect.objectContaining({ email: "a@b.com", name: "Ann" })
+    );
   });
 });

@@ -5,6 +5,7 @@ import { POST } from "./route";
 import { schedulePurchaseConfirmationEmail } from "@/server/email/purchaseConfirmationEmailDelivery";
 import { finalizePurchaseAtomic } from "@/server/payments/finalizePurchase";
 import { computeExpectedAmountKobo } from "@/server/payments/computeExpectedAmountKobo";
+import { REQUEST_LIMITS } from "@/server/http/boundedBody";
 import { resetRateLimitBucketsForTests } from "@/utils/rateLimit";
 
 vi.mock("@/server/email/purchaseConfirmationEmailDelivery", () => ({
@@ -188,5 +189,14 @@ describe("POST /api/paystack/webhook", () => {
     const res = await POST(webhookRequest(raw, "203.0.113.18", sign(raw, secret)));
     expect(res.status).toBe(400);
     expect(finalizePurchaseAtomic).not.toHaveBeenCalled();
+  });
+
+  it("rejects an oversized signed body before finalizing a charge", async () => {
+    vi.mocked(computeExpectedAmountKobo).mockClear();
+    const raw = `{"event":"charge.success","pad":"${"x".repeat(REQUEST_LIMITS.webhookBytes)}"}`;
+    const res = await POST(webhookRequest(raw, "203.0.113.19", sign(raw, secret)));
+    expect(res.status).toBe(413);
+    expect(finalizePurchaseAtomic).not.toHaveBeenCalled();
+    expect(computeExpectedAmountKobo).not.toHaveBeenCalled();
   });
 });
