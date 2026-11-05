@@ -33,7 +33,7 @@ export async function handleValidateTicketPost(req: NextRequest): Promise<NextRe
     );
   }
 
-  await linkPendingScannerMemberships(session.user.id, session.user.email);
+  await linkPendingScannerMemberships(session.user);
 
   try {
     const bounded = await readBoundedJson(req, REQUEST_LIMITS.ticketScanBytes);

@@ -14,7 +14,7 @@ type PaymentReceiptPayload = {
  * Allowed: staff/admin, event organizer, or purchaser (email matches receipt).
  */
 export async function GET(req: NextRequest) {
-  const rateLimited = applyRateLimit(req, {
+  const rateLimited = await applyRateLimit(req, {
     keyPrefix: "payment-lookup",
     windowMs: 60_000,
     maxRequests: 30,

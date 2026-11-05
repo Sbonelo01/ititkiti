@@ -37,29 +37,3 @@ export async function requireEventOrganizer(
 
   return { ok: true, user: session.user, eventId };
 }
-
-export async function findAuthUserIdByEmail(email: string): Promise<string | null> {
-  const supabase = getSupabaseAdmin();
-  const normalized = email.trim().toLowerCase();
-  let page = 1;
-  const perPage = 200;
-
-  while (page <= 50) {
-    const { data, error } = await supabase.auth.admin.listUsers({ page, perPage });
-    if (error || !data.users.length) {
-      break;
-    }
-
-    const match = data.users.find((u) => u.email?.trim().toLowerCase() === normalized);
-    if (match) {
-      return match.id;
-    }
-
-    if (data.users.length < perPage) {
-      break;
-    }
-    page += 1;
-  }
-
-  return null;
-}

@@ -7,7 +7,7 @@ import { handleValidateTicketPost } from "@/server/tickets/handleValidateTicketP
  * Requires Bearer token with event-scoped scan permission.
  */
 export async function POST(req: NextRequest) {
-  const rateLimited = applyRateLimit(req, {
+  const rateLimited = await applyRateLimit(req, {
     keyPrefix: "validate-ticket-mobile",
     windowMs: 60_000,
     maxRequests: 120,
