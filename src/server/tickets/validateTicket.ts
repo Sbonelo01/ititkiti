@@ -42,13 +42,9 @@ async function lookupPaidTicket(qrCodeData: string): Promise<ValidatedTicket | n
   return ticket;
 }
 
-export async function validateAndMarkTicketUsed(qrCodeData: string): Promise<ValidateTicketResult> {
-  return validateAndMarkTicketUsedForScanner(qrCodeData, null);
-}
-
 export async function validateAndMarkTicketUsedForScanner(
   qrCodeData: string,
-  scannerUser: User | null
+  scannerUser: User
 ): Promise<ValidateTicketResult> {
   if (!qrCodeData?.trim()) {
     return { success: false, status: "error", error: "Missing QR code data" };
@@ -64,15 +60,13 @@ export async function validateAndMarkTicketUsedForScanner(
     };
   }
 
-  if (scannerUser) {
-    const allowed = await canScanEvent(scannerUser, ticket.event_id);
-    if (!allowed) {
-      return {
-        success: false,
-        status: "unauthorized",
-        error: "Not authorized to scan tickets for this event",
-      };
-    }
+  const allowed = await canScanEvent(scannerUser, ticket.event_id);
+  if (!allowed) {
+    return {
+      success: false,
+      status: "unauthorized",
+      error: "Not authorized to scan tickets for this event",
+    };
   }
 
   if (ticket.used) {

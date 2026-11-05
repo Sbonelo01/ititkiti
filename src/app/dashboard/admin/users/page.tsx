@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowLeftIcon } from "@heroicons/react/24/outline";
 import { supabase } from "@/utils/supabaseClient";
-import { isSuperAdminEmail } from "@/utils/superAdmin";
+import { isSuperAdminUser } from "@/utils/superAdmin";
 import {
   searchAdminUsers,
   updateAdminUserRole,
@@ -38,7 +38,7 @@ export default function SuperAdminUsersPage() {
       const {
         data: { session },
       } = await supabase.auth.getSession();
-      if (!session?.user || !isSuperAdminEmail(session.user.email)) {
+      if (!session?.user || !isSuperAdminUser(session.user)) {
         setAuthorized(false);
         setTimeout(() => router.push("/dashboard"), 2000);
         return;

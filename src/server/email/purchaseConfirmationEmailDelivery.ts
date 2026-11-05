@@ -200,10 +200,9 @@ export function createSupabasePurchaseConfirmationDb(supabase: SupabaseClient): 
         supabase
           .from("tickets")
           .select("id, attendee_name, qr_code_data, created_at, ticket_types(name, price)")
+          .eq("paystack_reference", reference)
           .eq("event_id", receipt.event_id)
-          .eq("email", to)
           .eq("payment_status", "paid")
-          .gte("created_at", receipt.created_at)
           .order("created_at", { ascending: true })
           .order("id", { ascending: true })
           .limit(expected),
@@ -213,9 +212,8 @@ export function createSupabasePurchaseConfirmationDb(supabase: SupabaseClient): 
       const event = eventResult.data as EventRow | null;
       if (!event) return { ok: false, reason: "error" };
 
-      // Tickets do not store the Paystack reference (20260430). The receipt row
-      // is inserted first in the same transaction, so this purchase is the first
-      // `expected` paid tickets for that email at or after receipt.created_at.
+      // Tickets for this charge share payment_receipts.reference. A same-email
+      // order for the same event must not contribute QR codes.
       const rows = ((ticketResult.data as TicketRow[] | null) ?? []).slice(0, expected);
       if (rows.length < expected) return { ok: false, reason: "not_ready" };
 

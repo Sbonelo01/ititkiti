@@ -72,9 +72,16 @@ describe("applyRateLimit", () => {
     expect(await applyRateLimit(other, opts)).toBeNull();
   });
 
-  it("does not trust x-forwarded-for when the platform header is missing", async () => {
+  it("does not trust x-forwarded-for or x-real-ip when the platform header is missing", async () => {
     vi.stubEnv("VERCEL", "1");
-    expect(resolveClientIp(makeReq({ "x-forwarded-for": "203.0.113.8" })).trusted).toBe(false);
+    expect(
+      resolveClientIp(
+        makeReq({
+          "x-forwarded-for": "203.0.113.8",
+          "x-real-ip": "203.0.113.9",
+        })
+      )
+    ).toEqual({ ip: "untrusted", trusted: false });
   });
 
   it("fails closed and stays non-durable when the shared store is unavailable", async () => {

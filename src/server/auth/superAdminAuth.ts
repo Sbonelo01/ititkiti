@@ -1,5 +1,5 @@
 import { getSupabaseAdmin } from "@/server/supabaseAdmin";
-import { isSuperAdminEmail } from "@/utils/superAdmin";
+import { isSuperAdminUser } from "@/utils/superAdmin";
 
 export type SuperAdminAuthResult =
   | { ok: true; userId: string; email: string }
@@ -22,7 +22,7 @@ export async function requireSuperAdminAuth(
     return { ok: false, status: 401, error: "Unauthorized" };
   }
 
-  if (!isSuperAdminEmail(user.email)) {
+  if (!isSuperAdminUser(user)) {
     return { ok: false, status: 403, error: "Forbidden" };
   }
 

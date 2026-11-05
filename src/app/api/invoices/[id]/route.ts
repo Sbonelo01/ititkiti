@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { applyRateLimit } from "@/utils/rateLimit";
-import { canAccessInvoice } from "@/server/auth/sessionAuth";
+import { canAccessInvoice, requireSession } from "@/server/auth/sessionAuth";
 import { getInvoiceById } from "@/server/invoices/generateOrganizerInvoice";
 
 type RouteContext = { params: Promise<{ id: string }> };
@@ -12,6 +12,11 @@ export async function GET(req: NextRequest, context: RouteContext) {
     maxRequests: 60,
   });
   if (rateLimited) return rateLimited;
+
+  const session = await requireSession(req.headers.get("authorization"));
+  if (!session.ok) {
+    return NextResponse.json({ error: session.error }, { status: session.status });
+  }
 
   const { id } = await context.params;
 
