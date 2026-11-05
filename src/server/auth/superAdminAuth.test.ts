@@ -40,7 +40,7 @@ describe("requireSuperAdminAuth", () => {
     });
   });
 
-  it("returns 403 for staff/admin sessions that are not the allowlisted email", async () => {
+  it("returns 403 for an app_metadata admin who is not the intended account", async () => {
     mockGetUser({
       id: "admin-1",
       email: "other-admin@example.com",
@@ -53,11 +53,25 @@ describe("requireSuperAdminAuth", () => {
     });
   });
 
-  it("accepts the allowlisted email regardless of role metadata", async () => {
+  it("rejects the intended email when app_metadata is not admin", async () => {
     mockGetUser({
       id: "founder-1",
       email: "SboneloMkhize15@Gmail.com",
       app_metadata: {},
+      user_metadata: { role: "admin" },
+    });
+    await expect(requireSuperAdminAuth("token")).resolves.toEqual({
+      ok: false,
+      status: 403,
+      error: "Forbidden",
+    });
+  });
+
+  it("accepts the intended account only with server-written admin metadata", async () => {
+    mockGetUser({
+      id: "founder-1",
+      email: "SboneloMkhize15@Gmail.com",
+      app_metadata: { role: "admin" },
       user_metadata: { role: "attendee" },
     });
     await expect(requireSuperAdminAuth("token")).resolves.toEqual({

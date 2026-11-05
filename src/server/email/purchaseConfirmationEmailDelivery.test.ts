@@ -312,6 +312,70 @@ describe("deliverPurchaseConfirmationEmail", () => {
   });
 });
 
+describe("createSupabasePurchaseConfirmationDb", () => {
+  it("binds QR lookup to the payment reference", async () => {
+    const filters: string[] = [];
+    const ticketChain = {
+      select: () => ticketChain,
+      eq: (column: string) => {
+        filters.push(column);
+        return ticketChain;
+      },
+      gte: (column: string) => {
+        filters.push(`gte:${column}`);
+        return ticketChain;
+      },
+      order: () => ticketChain,
+      limit: () => ticketChain,
+      then: (resolve: (value: { data: unknown[]; error: null }) => void) =>
+        resolve({ data: [], error: null }),
+    };
+    const receiptChain = {
+      select: () => receiptChain,
+      eq: (column: string) => {
+        filters.push(column);
+        return receiptChain;
+      },
+      maybeSingle: async () => ({
+        data: {
+          reference: REFERENCE,
+          event_id: EVENT_ID,
+          email: "guest@example.com",
+          payload: { quantity: 1 },
+          created_at: "2026-10-20T12:00:00.000Z",
+        },
+        error: null,
+      }),
+    };
+    const eventChain = {
+      select: () => eventChain,
+      eq: () => eventChain,
+      maybeSingle: async () => ({
+        data: {
+          id: EVENT_ID,
+          title: "Jazz Night",
+          date: "2026-06-20T18:00:00.000Z",
+          location: "Cape Town",
+          price: 100,
+        },
+        error: null,
+      }),
+    };
+    let calls = 0;
+    const from = () => {
+      calls += 1;
+      if (calls === 1) return receiptChain;
+      if (calls === 2) return eventChain;
+      return ticketChain;
+    };
+    const db = createSupabasePurchaseConfirmationDb({ from } as unknown as SupabaseClient);
+    await db.load(REFERENCE);
+    expect(filters).toContain("paystack_reference");
+    expect(filters).not.toContain("email");
+    expect(filters.some((item) => item.startsWith("gte:"))).toBe(false);
+  });
+});
+
 describe("purchase confirmation migration", () => {
   const sql = readFileSync(
     path.resolve(process.cwd(), "supabase/migrations/20261020_purchase_confirmation_emails.sql"),

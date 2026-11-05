@@ -89,14 +89,15 @@ function firstValidIp(header: string | null): string | null {
 }
 
 /**
- * Client IP from the platform header only. `x-forwarded-for` is caller-controlled
- * and is never used. Off-platform, every caller shares one untrusted bucket.
+ * Client IP from `x-vercel-forwarded-for` only.
+ * Vercel documents that header as the copy that a proxy in front of Vercel
+ * cannot overwrite. `x-forwarded-for` and `x-real-ip` are documented as the
+ * same header family and are not used. Off-platform, or when the platform
+ * header is missing, every caller shares one untrusted bucket.
  */
 export function resolveClientIp(req: NextRequest): { ip: string; trusted: boolean } {
   if (process.env.VERCEL === "1") {
-    const platformIp =
-      firstValidIp(req.headers.get("x-vercel-forwarded-for")) ??
-      firstValidIp(req.headers.get("x-real-ip"));
+    const platformIp = firstValidIp(req.headers.get("x-vercel-forwarded-for"));
     if (platformIp) {
       return { ip: platformIp, trusted: true };
     }

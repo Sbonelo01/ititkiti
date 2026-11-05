@@ -263,16 +263,16 @@ export async function deliverOrganizerWelcomeEmail(
   const claim = await claimOrganizerWelcomeEmail(db, eventId, user.id, nowMs);
   if (claim === "already_sent") return { outcome: "skipped", reason: "already_sent" };
   if (claim === "in_flight") return { outcome: "skipped", reason: "in_flight" };
-  if (claim === "missing_table") {
+  if (claim === "missing_table" || claim === "error") {
     log(
-      "[organizer-welcome-email] public.organizer_welcome_emails is missing. Apply supabase/migrations/20260927_organizer_welcome_emails.sql. Brevo does not dedupe this send.",
-      { eventId, organizerId: user.id, reason: "missing_idempotency_table" }
+      "[organizer-welcome-email] idempotency claim failed; organizer email was not sent",
+      {
+        eventId,
+        organizerId: user.id,
+        reason: claim === "missing_table" ? "missing_idempotency_table" : "claim_failed",
+      }
     );
-  } else if (claim === "error") {
-    log(
-      "[organizer-welcome-email] could not record an idempotency claim; Brevo does not dedupe this send",
-      { eventId, organizerId: user.id, reason: "claim_failed" }
-    );
+    return { outcome: "failed", reason: "claim_failed" };
   }
 
   const result = await sendWithRetry(
