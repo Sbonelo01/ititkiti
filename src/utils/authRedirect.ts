@@ -30,6 +30,29 @@ export function safeAuthRedirectPath(
   return trimmed;
 }
 
+/** True when post-auth should continue into listing an event. */
+export function isSellAuthRedirect(next: string | null | undefined): boolean {
+  const pathOnly = safeAuthRedirectPath(next).split(/[?#]/)[0];
+  return pathOnly.includes("/create-event");
+}
+
+export type AuthScreenMode = "signin" | "signup";
+
+/**
+ * Logged-out visitors who followed a sell CTA should create an organizer
+ * account. Every other auth wall opens on sign-in. The screen still offers
+ * the other mode via the toggle.
+ */
+export function initialAuthScreenMode(next: string | null | undefined): AuthScreenMode {
+  return isSellAuthRedirect(next) ? "signup" : "signin";
+}
+
+export function initialSignupRole(
+  next: string | null | undefined
+): "organizer" | "attendee" {
+  return isSellAuthRedirect(next) ? "organizer" : "attendee";
+}
+
 export function isLocalhostOrigin(origin: string): boolean {
   try {
     const { hostname } = new URL(origin);
