@@ -1,15 +1,24 @@
 import { NextRequest, NextResponse } from "next/server";
 import { declaredBodyTooLarge, readBoundedJson, REQUEST_LIMITS } from "@/server/http/boundedBody";
 import { normalizeScannerEmail } from "@/server/auth/scannerAuth";
-import {
-  findAuthUserIdByEmail,
-  requireEventOrganizer,
-} from "@/server/events/eventOrganizerAuth";
+import { requireEventOrganizer } from "@/server/events/eventOrganizerAuth";
 import { getSupabaseAdmin } from "@/server/supabaseAdmin";
+import { applyRateLimit } from "@/utils/rateLimit";
+
+const INVITE_EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+const INVITE_ACCEPTED = { ok: true } as const;
 
 type RouteContext = { params: Promise<{ eventId: string }> };
 
 export async function GET(req: NextRequest, context: RouteContext) {
+  const rateLimited = await applyRateLimit(req, {
+    keyPrefix: "scanner-invite-list",
+    windowMs: 60_000,
+    maxRequests: 60,
+  });
+  if (rateLimited) return rateLimited;
+
   const { eventId } = await context.params;
   const auth = await requireEventOrganizer(req.headers.get("authorization"), eventId);
   if (!auth.ok) {
@@ -32,6 +41,13 @@ export async function GET(req: NextRequest, context: RouteContext) {
 }
 
 export async function POST(req: NextRequest, context: RouteContext) {
+  const rateLimited = await applyRateLimit(req, {
+    keyPrefix: "scanner-invite",
+    windowMs: 60_000,
+    maxRequests: 10,
+  });
+  if (rateLimited) return rateLimited;
+
   const oversized = declaredBodyTooLarge(req, REQUEST_LIMITS.smallJsonBytes);
   if (oversized) return oversized;
 
@@ -46,41 +62,22 @@ export async function POST(req: NextRequest, context: RouteContext) {
   const body = (bounded.value ?? {}) as { email?: string };
 
   const rawEmail = typeof body.email === "string" ? body.email.trim() : "";
-  if (!rawEmail) {
-    return NextResponse.json({ error: "Email is required" }, { status: 400 });
+  const invitedEmail = rawEmail ? normalizeScannerEmail(rawEmail) : "";
+  if (!invitedEmail || invitedEmail.length > 320 || !INVITE_EMAIL.test(invitedEmail)) {
+    return NextResponse.json({ error: "Enter a valid email address" }, { status: 400 });
   }
 
-  const invitedEmail = normalizeScannerEmail(rawEmail);
   const supabase = getSupabaseAdmin();
+  const { error } = await supabase.from("event_scanner_members").insert({
+    event_id: eventId,
+    user_id: null,
+    invited_email: invitedEmail,
+    invited_by: auth.user.id,
+  });
 
-  const { data: existing } = await supabase
-    .from("event_scanner_members")
-    .select("id")
-    .eq("event_id", eventId)
-    .eq("invited_email", invitedEmail)
-    .is("revoked_at", null)
-    .maybeSingle();
-
-  if (existing) {
-    return NextResponse.json({ error: "This email already has scanner access for this event" }, { status: 409 });
-  }
-
-  const userId = await findAuthUserIdByEmail(invitedEmail);
-
-  const { data: member, error } = await supabase
-    .from("event_scanner_members")
-    .insert({
-      event_id: eventId,
-      user_id: userId,
-      invited_email: invitedEmail,
-      invited_by: auth.user.id,
-    })
-    .select("id, event_id, user_id, invited_email, invited_by, created_at, revoked_at")
-    .single();
-
-  if (error) {
+  if (error && error.code !== "23505") {
     return NextResponse.json({ error: "Failed to add scanner access" }, { status: 500 });
   }
 
-  return NextResponse.json({ member }, { status: 201 });
+  return NextResponse.json(INVITE_ACCEPTED);
 }

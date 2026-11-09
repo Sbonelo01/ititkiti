@@ -6,28 +6,86 @@ export const GOOGLE_SIGN_IN_INCOMPLETE_ERROR =
   "Could not complete Google sign-in. Please try again.";
 
 const LOCALHOST_HOSTS = new Set(["localhost", "127.0.0.1", "::1"]);
+const AUTH_REDIRECT_BASE = "https://auth-redirect.invalid";
+
+function containsControlOrBackslash(value: string): boolean {
+  return /[\\\u0000-\u001F\u007F\u2028\u2029]/.test(value);
+}
+
+function containsEncodedControlOrBackslash(value: string): boolean {
+  return /%(?:5c|0[0-9a-f]|1[0-9a-f]|7f)/i.test(value);
+}
+
+/** Reject raw or percent-encoded controls and backslashes, including a second decode. */
+function isRejectedRedirectText(value: string): boolean {
+  let current = value;
+  for (let pass = 0; pass < 3; pass += 1) {
+    if (containsControlOrBackslash(current) || containsEncodedControlOrBackslash(current)) {
+      return true;
+    }
+    let decoded: string;
+    try {
+      decoded = decodeURIComponent(current);
+    } catch {
+      return false;
+    }
+    if (decoded === current) return false;
+    if (decoded.startsWith("//")) return true;
+    current = decoded;
+  }
+  return containsControlOrBackslash(current) || containsEncodedControlOrBackslash(current);
+}
+
+function sameOriginAppPath(candidate: string): string | null {
+  let url: URL;
+  try {
+    url = new URL(candidate, AUTH_REDIRECT_BASE);
+  } catch {
+    return null;
+  }
+  if (url.origin !== AUTH_REDIRECT_BASE || url.username || url.password) return null;
+  const path = `${url.pathname}${url.search}${url.hash}`;
+  if (!path.startsWith("/") || path.startsWith("//") || isRejectedRedirectText(path)) {
+    return null;
+  }
+  let decoded: string;
+  try {
+    decoded = decodeURIComponent(candidate);
+  } catch {
+    return path;
+  }
+  if (decoded !== candidate) {
+    try {
+      const decodedUrl = new URL(decoded, AUTH_REDIRECT_BASE);
+      if (decodedUrl.origin !== AUTH_REDIRECT_BASE || decodedUrl.username || decodedUrl.password) {
+        return null;
+      }
+    } catch {
+      return null;
+    }
+  }
+  return path;
+}
 
 /**
- * Only allow same-origin relative paths for post-auth redirects.
- * Rejects protocol-relative URLs and anything that could leave the site.
+ * Only allow a relative path that still resolves on the application origin.
+ * Controls, backslashes, and encoded forms of either are rejected before resolution.
  */
 export function safeAuthRedirectPath(
   next: string | null | undefined,
   fallback: string = DEFAULT_AUTH_REDIRECT
 ): string {
   if (!next) return fallback;
-
-  const trimmed = next.trim();
-  if (
-    !trimmed.startsWith("/") ||
-    trimmed.startsWith("//") ||
-    trimmed.includes("://") ||
-    trimmed.includes("\\")
-  ) {
+  if (containsControlOrBackslash(next) || containsEncodedControlOrBackslash(next)) {
     return fallback;
   }
 
-  return trimmed;
+  const trimmed = next.trim();
+  if (!trimmed.startsWith("/") || trimmed.startsWith("//") || isRejectedRedirectText(trimmed)) {
+    return fallback;
+  }
+
+  return sameOriginAppPath(trimmed) ?? fallback;
 }
 
 export function isLocalhostOrigin(origin: string): boolean {
@@ -53,8 +111,20 @@ function configuredSiteOrigin(): string | null {
 }
 
 function originFrom(value: string): string | null {
+  const trimmed = value.trim();
+  if (
+    !trimmed ||
+    containsControlOrBackslash(trimmed) ||
+    containsEncodedControlOrBackslash(trimmed)
+  ) {
+    return null;
+  }
   try {
-    return new URL(value).origin;
+    const url = new URL(trimmed);
+    if (url.username || url.password) return null;
+    if (url.origin === "null") return null;
+    if (url.protocol !== "http:" && url.protocol !== "https:") return null;
+    return url.origin;
   } catch {
     return null;
   }
@@ -82,7 +152,20 @@ export function resolveAuthOrigin(runtimeOrigin?: string | null): string {
 
 /** Exact `/auth/callback` URL (no query). Query `next` can miss allowlists. */
 export function getOAuthRedirectTo(origin: string): string {
-  return new URL("/auth/callback", resolveAuthOrigin(origin)).toString();
+  const base = resolveAuthOrigin(origin);
+  const url = new URL("/auth/callback", base);
+  const baseUrl = new URL(base);
+  if (
+    url.origin !== baseUrl.origin ||
+    url.pathname !== "/auth/callback" ||
+    url.username ||
+    url.password
+  ) {
+    return new URL("/auth/callback", "http://localhost:3000").toString();
+  }
+  url.search = "";
+  url.hash = "";
+  return url.toString();
 }
 
 export function persistAuthRedirectPath(

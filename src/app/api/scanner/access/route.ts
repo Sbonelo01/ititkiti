@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { applyRateLimit } from "@/utils/rateLimit";
 import {
   getScannerRoleForClient,
   linkPendingScannerMemberships,
@@ -8,6 +9,13 @@ import {
 import { requireSession } from "@/server/auth/sessionAuth";
 
 export async function GET(req: NextRequest) {
+  const rateLimited = await applyRateLimit(req, {
+    keyPrefix: "scanner-access",
+    windowMs: 60_000,
+    maxRequests: 60,
+  });
+  if (rateLimited) return rateLimited;
+
   const session = await requireSession(req.headers.get("authorization"));
   if (!session.ok) {
     return NextResponse.json(
@@ -16,7 +24,7 @@ export async function GET(req: NextRequest) {
     );
   }
 
-  await linkPendingScannerMemberships(session.user.id, session.user.email);
+  await linkPendingScannerMemberships(session.user);
 
   const allowed = await requireScannerAppAccess(session.user);
   if (!allowed) {

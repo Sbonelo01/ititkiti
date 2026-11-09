@@ -17,7 +17,7 @@ type PaystackChargeSuccessPayload = {
 };
 
 export async function POST(req: NextRequest) {
-  const rateLimited = applyRateLimit(req, {
+  const rateLimited = await applyRateLimit(req, {
     keyPrefix: "paystack-webhook",
     windowMs: 60_000,
     maxRequests: 120,
