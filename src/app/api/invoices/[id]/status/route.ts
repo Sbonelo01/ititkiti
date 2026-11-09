@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
+import { declaredBodyTooLarge, readBoundedJson, REQUEST_LIMITS } from "@/server/http/boundedBody";
 import { applyRateLimit } from "@/utils/rateLimit";
 import { requireStaffAuth, extractBearerToken } from "@/server/auth/staffAuth";
 import {
@@ -21,6 +22,9 @@ export async function PATCH(req: NextRequest, context: RouteContext) {
   });
   if (rateLimited) return rateLimited;
 
+  const oversized = declaredBodyTooLarge(req, REQUEST_LIMITS.smallJsonBytes);
+  if (oversized) return oversized;
+
   const staff = await requireStaffAuth(extractBearerToken(req.headers.get("authorization")));
   if (!staff.ok) {
     return NextResponse.json({ error: staff.error }, { status: staff.status });
@@ -29,8 +33,9 @@ export async function PATCH(req: NextRequest, context: RouteContext) {
   const { id } = await context.params;
 
   try {
-    const body = await req.json();
-    const parsed = bodySchema.safeParse(body);
+    const bounded = await readBoundedJson(req, REQUEST_LIMITS.smallJsonBytes);
+    if (!bounded.ok) return bounded.response;
+    const parsed = bodySchema.safeParse(bounded.value);
     if (!parsed.success) {
       return NextResponse.json({ error: "Invalid status" }, { status: 400 });
     }

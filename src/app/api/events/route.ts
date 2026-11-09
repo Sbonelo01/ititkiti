@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
+import { declaredBodyTooLarge, readBoundedJson, REQUEST_LIMITS } from "@/server/http/boundedBody";
 import { applyRateLimit } from "@/utils/rateLimit";
 import { requireOrganizerAuth } from "@/server/auth/sessionAuth";
 import { createOrganizerEvent } from "@/server/events/createOrganizerEvent";
@@ -30,13 +31,19 @@ export async function POST(req: NextRequest) {
   });
   if (rateLimited) return rateLimited;
 
+  const oversized = declaredBodyTooLarge(req, REQUEST_LIMITS.eventCreateBytes);
+  if (oversized) return oversized;
+
   const auth = await requireOrganizerAuth(req.headers.get("authorization"));
   if (!auth.ok) {
     return NextResponse.json({ error: auth.error }, { status: auth.status });
   }
 
   try {
-    const parsed = bodySchema.safeParse(await req.json());
+    const bounded = await readBoundedJson(req, REQUEST_LIMITS.eventCreateBytes);
+    if (!bounded.ok) return bounded.response;
+
+    const parsed = bodySchema.safeParse(bounded.value);
     if (!parsed.success) {
       return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
     }

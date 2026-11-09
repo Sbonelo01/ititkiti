@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { declaredBodyTooLarge, readBoundedJson, REQUEST_LIMITS } from "@/server/http/boundedBody";
 import { normalizeScannerEmail } from "@/server/auth/scannerAuth";
 import {
   findAuthUserIdByEmail,
@@ -31,20 +32,20 @@ export async function GET(req: NextRequest, context: RouteContext) {
 }
 
 export async function POST(req: NextRequest, context: RouteContext) {
+  const oversized = declaredBodyTooLarge(req, REQUEST_LIMITS.smallJsonBytes);
+  if (oversized) return oversized;
+
   const { eventId } = await context.params;
   const auth = await requireEventOrganizer(req.headers.get("authorization"), eventId);
   if (!auth.ok) {
     return NextResponse.json({ error: auth.error }, { status: auth.status });
   }
 
-  let body: { email?: string };
-  try {
-    body = await req.json();
-  } catch {
-    return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
-  }
+  const bounded = await readBoundedJson(req, REQUEST_LIMITS.smallJsonBytes, "Invalid JSON body");
+  if (!bounded.ok) return bounded.response;
+  const body = (bounded.value ?? {}) as { email?: string };
 
-  const rawEmail = body.email?.trim();
+  const rawEmail = typeof body.email === "string" ? body.email.trim() : "";
   if (!rawEmail) {
     return NextResponse.json({ error: "Email is required" }, { status: 400 });
   }

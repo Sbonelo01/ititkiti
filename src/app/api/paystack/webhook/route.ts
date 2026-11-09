@@ -1,5 +1,6 @@
 import crypto from "crypto";
 import { NextRequest, NextResponse } from "next/server";
+import { readBoundedText, REQUEST_LIMITS } from "@/server/http/boundedBody";
 import { applyRateLimit } from "@/utils/rateLimit";
 import { schedulePurchaseConfirmationEmail } from "@/server/email/purchaseConfirmationEmailDelivery";
 import { finalizePurchaseAtomic } from "@/server/payments/finalizePurchase";
@@ -23,7 +24,9 @@ export async function POST(req: NextRequest) {
   });
   if (rateLimited) return rateLimited;
 
-  const rawBody = await req.text();
+  const bounded = await readBoundedText(req, REQUEST_LIMITS.webhookBytes, "Invalid JSON payload");
+  if (!bounded.ok) return bounded.response;
+  const rawBody = bounded.text;
   const signature = req.headers.get("x-paystack-signature");
   const secret = process.env.PAYSTACK_WEBHOOK_SECRET || process.env.PAYSTACK_SECRET_KEY;
 
