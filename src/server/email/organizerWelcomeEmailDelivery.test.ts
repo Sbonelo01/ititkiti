@@ -192,6 +192,19 @@ describe("deliverOrganizerWelcomeEmail", () => {
     expect(db.row).toBeNull();
   });
 
+  it("does not send when the idempotency claim fails", async () => {
+    const db = new MemoryWelcomeEmailDb();
+    db.insertClaim = async () => ({
+      inserted: false,
+      conflict: false,
+      error: true,
+    });
+    const send = vi.fn();
+    const result = await run(db, send);
+    expect(result).toEqual({ outcome: "failed", reason: "claim_failed" });
+    expect(send).not.toHaveBeenCalled();
+  });
+
   it("does not send again while a claim is in flight", async () => {
     const db = new MemoryWelcomeEmailDb();
     const now = Date.parse("2026-09-27T12:00:00.000Z");

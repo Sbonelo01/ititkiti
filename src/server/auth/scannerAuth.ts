@@ -75,6 +75,10 @@ export async function canScanEvent(user: User, eventId: string): Promise<boolean
     .is("revoked_at", null)
     .maybeSingle();
 
+  if (!hasConfirmedEmail(user)) {
+    return false;
+  }
+
   if (byUser) {
     return true;
   }
@@ -99,6 +103,10 @@ export async function canScanEvent(user: User, eventId: string): Promise<boolean
 export async function requireScannerAppAccess(user: User): Promise<boolean> {
   if (hasPlatformScannerAccess(user) || hasOrganizerProductRole(user)) {
     return true;
+  }
+
+  if (!hasConfirmedEmail(user)) {
+    return false;
   }
 
   const supabase = getSupabaseAdmin();
@@ -158,6 +166,10 @@ export async function listScannerEventsForUser(user: User): Promise<ScannerEvent
       .order("date", { ascending: false });
 
     return events ?? [];
+  }
+
+  if (!hasConfirmedEmail(user)) {
+    return [];
   }
 
   const email = confirmedScannerEmail(user);

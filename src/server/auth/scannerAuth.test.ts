@@ -135,6 +135,24 @@ describe("email-confirmed scanner membership", () => {
     expect(from).not.toHaveBeenCalled();
   });
 
+  it("does not let an unconfirmed user scan through a preexisting user_id link", async () => {
+    const members = queryBuilder({ id: "already-linked" });
+    const from = vi.fn(() => members);
+    vi.mocked(getSupabaseAdmin).mockReturnValue({ from } as never);
+    const allowed = await canScanEvent(
+      mockUser({
+        id: "attacker",
+        email: "door@example.com",
+        email_confirmed_at: undefined,
+        app_metadata: {},
+        user_metadata: { role: "attendee" },
+      }),
+      "event-1"
+    );
+    expect(allowed).toBe(false);
+    expect(members.eq).not.toHaveBeenCalledWith("invited_email", "door@example.com");
+  });
+
   it("does not grant invite access from an unconfirmed email match", async () => {
     const members = queryBuilder(null);
     const from = vi.fn(() => members);

@@ -1,5 +1,13 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import {
+  buildContentSecurityPolicy,
+  CONTENT_SECURITY_POLICY_HEADER,
+} from "@/lib/security/contentSecurityPolicy";
+import {
+  parseScannerCorsAllowlist,
+  resolveScannerCorsOrigin,
+} from "@/lib/security/scannerCors";
 
 const SCANNER_API_PATHS = new Set([
   "/api/scanner/access",
@@ -12,19 +20,10 @@ function isScannerMobileApi(pathname: string): boolean {
 }
 
 function resolveCorsOrigin(request: NextRequest): string | null {
-  const origin = request.headers.get("origin");
-  const allowlist = process.env.SCANNER_CORS_ORIGINS?.split(",")
-    .map((value) => value.trim())
-    .filter(Boolean);
-
-  if (allowlist?.length) {
-    if (origin && allowlist.includes(origin)) {
-      return origin;
-    }
-    return null;
-  }
-
-  return origin ?? "*";
+  return resolveScannerCorsOrigin(
+    request.headers.get("origin"),
+    parseScannerCorsAllowlist(process.env.SCANNER_CORS_ORIGINS)
+  );
 }
 
 function applyScannerCorsHeaders(response: NextResponse, request: NextRequest): void {
@@ -56,6 +55,7 @@ export function middleware(request: NextRequest) {
 
   const response = NextResponse.next();
 
+  response.headers.set(CONTENT_SECURITY_POLICY_HEADER, buildContentSecurityPolicy());
   response.headers.set("X-Content-Type-Options", "nosniff");
   response.headers.set("X-Frame-Options", "DENY");
   response.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
