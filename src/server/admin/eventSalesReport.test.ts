@@ -12,6 +12,7 @@ import {
   type SalesEventInput,
   type SalesReceiptInput,
   type SalesTicketInput,
+  type SalesTicketTypeInput,
 } from "@/server/admin/eventSalesReport";
 
 const NOW = new Date("2026-11-11T12:00:00.000Z");
@@ -20,6 +21,7 @@ function build(args: {
   events?: SalesEventInput[];
   tickets?: SalesTicketInput[];
   receipts?: SalesReceiptInput[];
+  ticketTypes?: SalesTicketTypeInput[];
   search?: string;
   when?: "all" | "upcoming" | "past";
   page?: number;
@@ -28,6 +30,7 @@ function build(args: {
     events: args.events ?? [],
     tickets: args.tickets ?? [],
     receipts: args.receipts ?? [],
+    ticketTypes: args.ticketTypes,
     search: args.search ?? "",
     when: args.when ?? "all",
     page: args.page ?? 1,
@@ -495,6 +498,27 @@ describe("buildEventSalesReport", () => {
     expect(report.totals.paidTickets).toBe(0);
     expect(report.totals.moneyStatus).toBe("no_sales");
     expect(report.warnings.omittedPaidTickets).toBe(1);
+  });
+
+  it("lists current ticket types without treating the catalog price as collected sales", () => {
+    const report = build({
+      events: [eventA],
+      tickets: [{ id: "t1", eventId: "evt-a", paymentStatus: "paid", paystackReference: null }],
+      ticketTypes: [
+        { id: "tt-2", eventId: "evt-a", name: "VIP", listPriceZar: 0, quantity: 5, availableQuantity: 4 },
+        { id: "tt-1", eventId: "evt-a", name: "General", listPriceZar: 500, quantity: 20, availableQuantity: 18 },
+        { id: "tt-1", eventId: "evt-a", name: "General", listPriceZar: 500, quantity: 20, availableQuantity: 18 },
+        { id: "tt-x", eventId: "missing", name: "Orphan", listPriceZar: 10, quantity: 1, availableQuantity: 1 },
+      ],
+    });
+    expect(report.events[0]?.ticketTypes).toEqual([
+      { id: "tt-1", name: "General", listPriceZar: 500, quantity: 20, availableQuantity: 18 },
+      { id: "tt-2", name: "VIP", listPriceZar: 0, quantity: 5, availableQuantity: 4 },
+    ]);
+    expect(report.totals.listedTicketTypes).toBe(2);
+    expect(report.events[0]?.moneyStatus).toBe("incomplete");
+    expect(report.events[0]?.faceValueZar).toBeNull();
+    expect(report.warnings.omittedTicketTypes).toBe(1);
   });
 
   it("does not price sales from the invoice builder", () => {

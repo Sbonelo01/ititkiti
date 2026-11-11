@@ -50,6 +50,23 @@ export type SalesReceiptInput = {
   payload: unknown;
 };
 
+export type SalesTicketTypeInput = {
+  id: string;
+  eventId: string;
+  name: string;
+  listPriceZar: number | null;
+  quantity: number | null;
+  availableQuantity: number | null;
+};
+
+export type ListedTicketType = {
+  id: string;
+  name: string;
+  listPriceZar: number | null;
+  quantity: number | null;
+  availableQuantity: number | null;
+};
+
 export type EventSalesFigures = {
   paidTickets: number;
   referencedOrders: number;
@@ -73,6 +90,7 @@ export type EventSalesEventRow = EventSalesFigures & {
   scheduleStatus: ScheduleStatus;
   listingStatus: "listed";
   organizerId: string | null;
+  ticketTypes: ListedTicketType[];
 };
 
 export type EventSalesDatasetWarnings = {
@@ -83,10 +101,13 @@ export type EventSalesDatasetWarnings = {
   inconsistentReferences: number;
   omittedPaidTickets: number;
   omittedReceipts: number;
+  skippedTicketTypeRows: number;
+  omittedTicketTypes: number;
 };
 
 export type EventSalesTotals = EventSalesFigures & {
   listedEvents: number;
+  listedTicketTypes: number;
   excludedNonPaidTickets: number;
 };
 
@@ -370,6 +391,50 @@ function figuresFromParts(parts: {
   };
 }
 
+function indexListedTicketTypes(
+  rows: SalesTicketTypeInput[] | undefined,
+  knownEvents: Set<string>,
+  warnings: EventSalesDatasetWarnings
+): Map<string, ListedTicketType[]> {
+  const byEvent = new Map<string, ListedTicketType[]>();
+  const seen = new Set<string>();
+  for (const raw of rows ?? []) {
+    if (!raw || typeof raw.id !== "string" || raw.id.length === 0 || typeof raw.eventId !== "string" || raw.eventId.length === 0) {
+      warnings.skippedTicketTypeRows += 1;
+      continue;
+    }
+    if (!knownEvents.has(raw.eventId)) {
+      warnings.omittedTicketTypes += 1;
+      continue;
+    }
+    if (seen.has(raw.id)) continue;
+    seen.add(raw.id);
+    const name = typeof raw.name === "string" && raw.name.trim().length > 0 ? raw.name.trim() : "Untitled ticket";
+    const listed: ListedTicketType = {
+      id: raw.id,
+      name,
+      listPriceZar:
+        typeof raw.listPriceZar === "number" && Number.isFinite(raw.listPriceZar) && raw.listPriceZar >= 0
+          ? raw.listPriceZar
+          : null,
+      quantity: typeof raw.quantity === "number" && Number.isInteger(raw.quantity) && raw.quantity >= 0 ? raw.quantity : null,
+      availableQuantity:
+        typeof raw.availableQuantity === "number" &&
+        Number.isInteger(raw.availableQuantity) &&
+        raw.availableQuantity >= 0
+          ? raw.availableQuantity
+          : null,
+    };
+    const list = byEvent.get(raw.eventId) ?? [];
+    list.push(listed);
+    byEvent.set(raw.eventId, list);
+  }
+  for (const list of byEvent.values()) {
+    list.sort((a, b) => a.name.localeCompare(b.name) || a.id.localeCompare(b.id));
+  }
+  return byEvent;
+}
+
 function compareEvents(a: EventSalesEventRow, b: EventSalesEventRow): number {
   const aTime = a.startsAt ? Date.parse(a.startsAt) : Number.NaN;
   const bTime = b.startsAt ? Date.parse(b.startsAt) : Number.NaN;
@@ -384,6 +449,7 @@ export function buildEventSalesReport(args: {
   events: SalesEventInput[];
   tickets: SalesTicketInput[];
   receipts: SalesReceiptInput[];
+  ticketTypes?: SalesTicketTypeInput[];
   search: string;
   when: SalesWhen;
   page: number;
@@ -397,6 +463,8 @@ export function buildEventSalesReport(args: {
     inconsistentReferences: 0,
     omittedPaidTickets: 0,
     omittedReceipts: 0,
+    skippedTicketTypeRows: 0,
+    omittedTicketTypes: 0,
   };
   const conflictedEvents = new Set<string>();
 
@@ -534,6 +602,8 @@ export function buildEventSalesReport(args: {
     paidByEvent.set(ticket.eventId, list);
   }
 
+  const typesByEvent = indexListedTicketTypes(args.ticketTypes, new Set(eventMap.keys()), warnings);
+
   const rows: EventSalesEventRow[] = [];
   for (const event of eventMap.values()) {
     const eventPaid = paidByEvent.get(event.id) ?? [];
@@ -557,6 +627,7 @@ export function buildEventSalesReport(args: {
       scheduleStatus: scheduleStatusForSales(startsAt, args.now),
       listingStatus: "listed",
       organizerId: typeof event.organizerId === "string" && event.organizerId.length > 0 ? event.organizerId : null,
+      ticketTypes: typesByEvent.get(event.id) ?? [],
     });
   }
 
@@ -637,6 +708,7 @@ function rollup(
   return {
     ...totals,
     listedEvents: events.length,
+    listedTicketTypes: events.reduce((sum, event) => sum + event.ticketTypes.length, 0),
     excludedNonPaidTickets,
     moneyStatus,
     faceValueZar: faceKnown

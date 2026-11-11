@@ -133,7 +133,17 @@ describe("loadEventSalesDashboard", () => {
     vi.mocked(getSupabaseAdmin).mockReturnValue({
       auth: { admin: { getUserById } },
       from(table: string) {
-        const rows = table === "events" ? events : table === "tickets" ? tickets : receipts;
+        const rows =
+      table === "events" ? events : table === "tickets" ? tickets : table === "ticket_types" ? [
+        {
+          id: "tt-general",
+          event_id: "evt-a",
+          name: "General",
+          price: 40,
+          quantity: 100,
+          available_quantity: 90,
+        },
+      ] : receipts;
         const query = rangeResult(rows);
         const original = query.select.bind(query);
         query.select = (columns: string) => {
@@ -161,10 +171,21 @@ describe("loadEventSalesDashboard", () => {
     expect(serialized).not.toContain("TICKET-SECRET");
     expect(serialized).not.toContain("organizerId");
     expect(serialized).not.toContain("9999");
+    expect(report.events[0]?.ticketTypes).toEqual([
+      {
+        id: "tt-general",
+        name: "General",
+        listPriceZar: 40,
+        quantity: 100,
+        availableQuantity: 90,
+      },
+    ]);
+    expect(report.totals.listedTicketTypes).toBe(1);
     expect(selects).toEqual([
       "events:id, title, date, organizer_id",
       "tickets:id, event_id, payment_status, paystack_reference",
       "payment_receipts:reference, event_id, payload",
+      "ticket_types:id, event_id, name, price, quantity, available_quantity",
       "tickets:id, event_id, payment_status, paystack_reference",
     ]);
   });

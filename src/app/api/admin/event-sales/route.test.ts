@@ -216,8 +216,9 @@ describe("/api/admin/event-sales", () => {
 
   it("keeps the route on the super-admin helper and the page off the service role", () => {
     const route = readFileSync(path.resolve(process.cwd(), "src/app/api/admin/event-sales/route.ts"), "utf8");
-    const page = readFileSync(path.resolve(process.cwd(), "src/app/dashboard/admin/sales/page.tsx"), "utf8");
+    const page = readFileSync(path.resolve(process.cwd(), "src/components/admin/AdminEventSalesPage.tsx"), "utf8");
     const adminPage = readFileSync(path.resolve(process.cwd(), "src/app/dashboard/admin/page.tsx"), "utf8");
+    const dashboard = readFileSync(path.resolve(process.cwd(), "src/app/dashboard/page.tsx"), "utf8");
     expect(route).toContain("requireSuperAdminAuth");
     expect(route).not.toContain("user_metadata");
     expect(route).not.toContain("isStaffOrAdmin");
@@ -228,5 +229,9 @@ describe("/api/admin/event-sales", () => {
     expect(adminPage).not.toContain("computeBuyerServiceFeeZar");
     expect(adminPage).not.toContain("payment_status");
     expect(adminPage).toContain("/dashboard/admin/sales");
+    expect(dashboard).toContain("isSuperAdminUser");
+    expect(dashboard).toContain("AdminEventSalesPage");
+    expect(dashboard).toContain('get("view") === "mine"');
+    expect(dashboard).not.toContain("user_metadata.role");
   });
 });

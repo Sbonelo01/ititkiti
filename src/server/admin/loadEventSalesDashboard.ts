@@ -9,6 +9,7 @@ import {
   type SalesEventInput,
   type SalesReceiptInput,
   type SalesTicketInput,
+  type SalesTicketTypeInput,
   type SalesWhen,
 } from "@/server/admin/eventSalesReport";
 
@@ -112,6 +113,29 @@ function asReceipt(value: unknown): SalesReceiptInput {
   };
 }
 
+function finiteListPrice(value: unknown): number | null {
+  return typeof value === "number" && Number.isFinite(value) && value >= 0 ? value : null;
+}
+
+function nonNegativeInt(value: unknown): number | null {
+  return typeof value === "number" && Number.isInteger(value) && value >= 0 ? value : null;
+}
+
+function asTicketType(value: unknown): SalesTicketTypeInput {
+  if (!value || typeof value !== "object") {
+    return { id: "", eventId: "", name: "", listPriceZar: null, quantity: null, availableQuantity: null };
+  }
+  const row = value as Record<string, unknown>;
+  return {
+    id: typeof row.id === "string" ? row.id : "",
+    eventId: typeof row.event_id === "string" ? row.event_id : "",
+    name: typeof row.name === "string" ? row.name : "",
+    listPriceZar: finiteListPrice(row.price),
+    quantity: nonNegativeInt(row.quantity),
+    availableQuantity: nonNegativeInt(row.available_quantity),
+  };
+}
+
 async function organizerLabel(
   organizerId: string | null,
   cache: Map<string, string>
@@ -141,7 +165,7 @@ export async function loadEventSalesDashboard(query: {
   const supabase = getSupabaseAdmin();
   const now = query.now ?? new Date();
 
-  const [eventRows, ticketRows, receiptRows] = await Promise.all([
+  const [eventRows, ticketRows, receiptRows, ticketTypeRows] = await Promise.all([
     selectAllRows<unknown>((from, to) =>
       supabase
         .from("events")
@@ -163,12 +187,20 @@ export async function loadEventSalesDashboard(query: {
         .order("reference", { ascending: true })
         .range(from, to)
     ),
+    selectAllRows<unknown>((from, to) =>
+      supabase
+        .from("ticket_types")
+        .select("id, event_id, name, price, quantity, available_quantity")
+        .order("id", { ascending: true })
+        .range(from, to)
+    ),
   ]);
 
   const report = buildEventSalesReport({
     events: eventRows.map(asEvent),
     tickets: ticketRows.map(asTicket),
     receipts: receiptRows.map(asReceipt),
+    ticketTypes: ticketTypeRows.map(asTicketType),
     search: query.search,
     when: query.when,
     page: query.page,

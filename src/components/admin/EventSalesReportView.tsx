@@ -20,6 +20,9 @@ type Props = {
   when: SalesWhen;
   loading: boolean;
   error: string | null;
+  backHref: string;
+  backLabel: string;
+  ownAccountHref?: string;
   onSearchChange: (value: string) => void;
   onWhenChange: (value: SalesWhen) => void;
   onSubmit: () => void;
@@ -108,6 +111,39 @@ function VerifiedSubset({ figures }: { figures: EventSalesFigures }) {
   );
 }
 
+function TicketTypeList({ types }: { types: PublicEventSalesRow["ticketTypes"] }) {
+  return (
+    <div className="mt-3 rounded-xl bg-gray-50 p-3">
+      <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500">Listed ticket types</h3>
+      <p className="mt-1 text-xs text-gray-500">
+        Current catalog inventory. A list price here is not money collected.
+      </p>
+      {types.length === 0 ? (
+        <p className="mt-2 text-sm text-gray-700">No ticket types are stored for this event.</p>
+      ) : (
+        <ul className="mt-2 space-y-2">
+          {types.map((ticketType) => (
+            <li key={ticketType.id} className="text-sm text-gray-800">
+              <span className="font-semibold">{ticketType.name}</span>
+              <span className="mt-0.5 block text-xs text-gray-600">
+                {ticketType.listPriceZar === null
+                  ? "List price not stored"
+                  : ticketType.listPriceZar === 0
+                    ? "Listed free"
+                    : `List price ${formatZarCents(ticketType.listPriceZar)}`}
+                {" · "}
+                Qty {ticketType.quantity ?? "not stored"}
+                {" · "}
+                Available {ticketType.availableQuantity ?? "not stored"}
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
 function EventCard({ event }: { event: PublicEventSalesRow }) {
   const when = event.startsAt ? formatEventWhen(event.startsAt) : "No date stored";
   return (
@@ -128,6 +164,7 @@ function EventCard({ event }: { event: PublicEventSalesRow }) {
         <span className="text-gray-500">Organiser: </span>
         {event.organizerLabel}
       </p>
+      <TicketTypeList types={event.ticketTypes} />
       <dl className="mt-3 grid grid-cols-2 gap-2 text-sm">
         <div>
           <dt className="text-xs text-gray-500">Paid tickets</dt>
@@ -170,6 +207,9 @@ export default function EventSalesReportView({
   when,
   loading,
   error,
+  backHref,
+  backLabel,
+  ownAccountHref,
   onSearchChange,
   onWhenChange,
   onSubmit,
@@ -188,17 +228,30 @@ export default function EventSalesReportView({
       <div className="bg-gray-900 px-4 py-8 text-white">
         <div className="mx-auto max-w-6xl">
           <Link
-            href="/dashboard/admin"
-            className="mb-4 inline-flex items-center gap-1 text-sm text-gray-300 hover:text-white"
+            href={backHref}
+            className="mb-4 inline-flex min-h-11 items-center gap-1 text-sm text-gray-300 hover:text-white"
           >
             <ArrowLeftIcon className="h-4 w-4" aria-hidden />
-            Admin
+            {backLabel}
           </Link>
-          <h1 className="text-2xl font-bold">Events and sales</h1>
+          <h1 className="text-2xl font-bold">Platform events and sales</h1>
           <p className="mt-1 max-w-3xl text-sm text-gray-300">
-            Listed events across organisers, paid tickets, and stored ZAR amounts. This is a
+            Every listed event, its ticket types, and paid sales across organisers. This is a
             snapshot from the last load, not a live feed.
           </p>
+          <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+            <Link href="/dashboard/admin" className="inline-flex min-h-11 items-center rounded-full bg-white/10 px-4 py-2 text-sm font-semibold hover:bg-white/20">
+              Scanner and invoices
+            </Link>
+            <Link href="/dashboard/admin/users" className="inline-flex min-h-11 items-center rounded-full bg-white/10 px-4 py-2 text-sm font-semibold hover:bg-white/20">
+              Users and staff
+            </Link>
+            {ownAccountHref && (
+              <Link href={ownAccountHref} className="inline-flex min-h-11 items-center rounded-full bg-white/10 px-4 py-2 text-sm font-semibold hover:bg-white/20">
+                Your own account
+              </Link>
+            )}
+          </div>
         </div>
       </div>
 
@@ -266,7 +319,13 @@ export default function EventSalesReportView({
                 Totals for this filter ({report.totals.listedEvents} listed event
                 {report.totals.listedEvents === 1 ? "" : "s"}, all pages)
               </h2>
-              <dl className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
+              <dl className="mt-3 grid grid-cols-2 gap-3 lg:grid-cols-5">
+                <div>
+                  <dt className="text-xs text-gray-500">Listed ticket types</dt>
+                  <dd className="text-xl font-bold tabular-nums text-gray-900">
+                    {report.totals.listedTicketTypes}
+                  </dd>
+                </div>
                 <div>
                   <dt className="text-xs text-gray-500">Paid tickets</dt>
                   <dd className="text-xl font-bold tabular-nums text-gray-900">{report.totals.paidTickets}</dd>
@@ -338,6 +397,10 @@ export default function EventSalesReportView({
               </summary>
               <ul className="mt-3 list-disc space-y-2 pl-5">
                 <li>Every row in events is listed. There is no separate published or draft status.</li>
+              <li>
+                Ticket type name, list price, quantity, and available quantity are the current
+                catalog. They are not used as historical sales.
+              </li>
                 <li>Upcoming and past use the event date compared with the snapshot time.</li>
                 <li>A paid ticket is a distinct ticket whose payment status is paid.</li>
                 <li>
@@ -394,6 +457,11 @@ function WarningList({ report }: { report: PublicEventSalesDashboard }) {
   if (warnings.omittedReceipts > 0) {
     items.push(
       `${warnings.omittedReceipts} payment receipts are not on a listed event and are outside these totals.`
+    );
+  }
+  if (warnings.omittedTicketTypes > 0 || warnings.skippedTicketTypeRows > 0) {
+    items.push(
+      "Some ticket-type rows were skipped or are not on a listed event, so the inventory list may be incomplete."
     );
   }
   if (

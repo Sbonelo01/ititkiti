@@ -1,5 +1,6 @@
 "use client";
 
+import { visibleTikitiBillToEmail } from "@/constants/billing";
 import { BRAND } from "@/constants/branding";
 import { ORGANIZER_COPY, invoiceStatusLabel } from "@/constants/organizerCopy";
 import type { InvoiceLineItems, OrganizerInvoiceRecord } from "@/server/invoices/types";
@@ -39,6 +40,7 @@ type InvoiceDocumentProps = {
 export default function InvoiceDocument({ invoice, showPrintButton = true }: InvoiceDocumentProps) {
   const lineItems = invoice.line_items as InvoiceLineItems;
   const billTo = invoice.bill_to as BillParty;
+  const billToEmail = visibleTikitiBillToEmail(billTo.email);
   const seller = invoice.seller as BillParty;
 
   const statusColors: Record<string, string> = {
@@ -84,7 +86,13 @@ export default function InvoiceDocument({ invoice, showPrintButton = true }: Inv
           {billTo.tradingAs && billTo.legalName && (
             <p className="text-sm text-gray-600">Trading as {billTo.tradingAs}</p>
           )}
-          {billTo.email && <p className="text-sm text-gray-600 mt-1">{billTo.email}</p>}
+          {billToEmail && (
+            <p className="text-sm text-gray-600 mt-1">
+              <a className="font-semibold text-green-800 hover:underline" href={`mailto:${billToEmail}`}>
+                {billToEmail}
+              </a>
+            </p>
+          )}
           {billTo.vatNumber && <p className="text-sm text-gray-600">VAT: {billTo.vatNumber}</p>}
           {billTo.address && <p className="text-sm text-gray-600">{billTo.address}</p>}
         </div>
