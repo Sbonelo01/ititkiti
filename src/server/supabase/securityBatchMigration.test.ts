@@ -42,5 +42,13 @@ describe("rate limit and auth lookup migration", () => {
     );
     expect(MIGRATION).toContain("security definer");
     expect(MIGRATION).toContain("set search_path = pg_catalog");
+    expect(MIGRATION).toContain("extract(epoch from");
+    expect(MIGRATION).toContain("position('@' in");
+    expect(MIGRATION).toContain("coalesce(");
+    expect(MIGRATION).toContain("greatest(");
+    expect(MIGRATION).not.toContain("pg_catalog.extract(");
+    expect(MIGRATION).not.toContain("pg_catalog.position(");
+    expect(MIGRATION).not.toContain("pg_catalog.coalesce(");
+    expect(MIGRATION).not.toContain("pg_catalog.greatest(");
   });
 });

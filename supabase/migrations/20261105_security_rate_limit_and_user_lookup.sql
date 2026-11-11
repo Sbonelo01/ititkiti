@@ -4,6 +4,8 @@
 -- counters and does not treat them as a shared durable limit.
 -- Admin email search calls public.lookup_auth_user_by_email and does not page
 -- through auth.admin.listUsers. If this function is missing, that search fails closed.
+-- extract, position, coalesce, and greatest are SQL keywords. They are not
+-- functions in pg_catalog, so this file calls them in keyword form.
 
 create table if not exists public.rate_limit_buckets (
   bucket_key text primary key,
@@ -79,9 +81,9 @@ begin
 
     return pg_catalog.jsonb_build_object(
       'allowed', false,
-      'retry_after_seconds', pg_catalog.greatest(
+      'retry_after_seconds', greatest(
         1,
-        pg_catalog.ceil(pg_catalog.extract(epoch from (v_start + v_window - v_now)))::integer
+        pg_catalog.ceil(extract(epoch from (v_start + v_window - v_now)))::integer
       )
     );
   end if;
@@ -103,13 +105,13 @@ as $$
   select pg_catalog.jsonb_build_object(
     'id', u.id,
     'email', u.email,
-    'app_metadata', pg_catalog.coalesce(u.raw_app_meta_data, '{}'::jsonb),
-    'user_metadata', pg_catalog.coalesce(u.raw_user_meta_data, '{}'::jsonb)
+    'app_metadata', coalesce(u.raw_app_meta_data, '{}'::jsonb),
+    'user_metadata', coalesce(u.raw_user_meta_data, '{}'::jsonb)
   )
   from auth.users u
   where u.email is not null
     and pg_catalog.lower(u.email) = pg_catalog.lower(pg_catalog.btrim(p_email))
-    and pg_catalog.position('@' in pg_catalog.btrim(p_email)) > 1
+    and position('@' in pg_catalog.btrim(p_email)) > 1
   limit 1;
 $$;
 
