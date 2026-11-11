@@ -8,9 +8,9 @@ import { fetchPublicEventsList, normalizePublicEventsForClient } from "@/server/
 export const revalidate = 60;
 
 export const metadata = buildPageMetadata({
-  title: `${BRAND.name} — Paperless Event Ticketing in South Africa`,
+  title: `${BRAND.name} — You keep 100% of the ticket price`,
   description:
-    "Discover events, buy digital QR tickets, and sell paperless tickets in South Africa. Secure Paystack checkout and a free web scanner for organizers at scan.tikiti.fun.",
+    "List events free on Tikiti. Organizers keep 100% of ticket face value. Buyers pay the platform fee at checkout and get QR tickets. Scan at the door in the browser.",
   path: "/",
 });
 

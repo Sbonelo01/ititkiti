@@ -112,3 +112,46 @@ export const ORGANIZER_PAYOUT_COPY =
 
 export const BUYER_FEE_COPY =
   "A small platform fee is added at checkout to fund secure payments, QR tickets, and support. Organizers keep their full ticket price.";
+
+export function formatZar(amount: number): string {
+  const rounded = roundZar(amount);
+  const text = Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(2);
+  return `R${text}`;
+}
+
+export type PricingExample = {
+  tierId: string;
+  label: string;
+  faceZar: number;
+  feeZar: number;
+  buyerPaysZar: number;
+  organizerReceivesZar: number;
+  tierAmountLabel: string;
+};
+
+const EXAMPLE_FACE_BY_TIER: Record<string, number> = {
+  entry: 40,
+  standard: 100,
+  premium: 500,
+};
+
+/** Display rows for published tiers. Amounts come from computeBuyerServiceFeeZar. */
+export function buildPricingExamples(): PricingExample[] {
+  return PRICING_TIERS.map((tier) => {
+    const faceZar = EXAMPLE_FACE_BY_TIER[tier.id];
+    if (faceZar === undefined) {
+      throw new Error(`No example face value for pricing tier ${tier.id}`);
+    }
+    const feeZar = computeBuyerServiceFeeZar(faceZar);
+    const tierAmountLabel = tier.id === "premium" ? "5%" : formatZar(feeZar);
+    return {
+      tierId: tier.id,
+      label: tier.label,
+      faceZar,
+      feeZar,
+      buyerPaysZar: roundZar(faceZar + feeZar),
+      organizerReceivesZar: faceZar,
+      tierAmountLabel,
+    };
+  });
+}

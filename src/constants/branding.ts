@@ -1,3 +1,10 @@
+/**
+ * Fill of public/favicon.svg and the wordmark PNG (RGB 34, 197, 94).
+ * Primary buttons use Tailwind green-600. `--spotify-green` (#1DB954) is a
+ * different green, used only for select-option hover.
+ */
+export const BRAND_GREEN = "#22C55E";
+
 export const BRAND = {
   name: "Tikiti",
   tagline: "Paperless ticketing for a greener tomorrow",

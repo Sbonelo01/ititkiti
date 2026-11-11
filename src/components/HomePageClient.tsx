@@ -1,29 +1,16 @@
 "use client";
-import { useState, useEffect } from "react";
-import { supabase } from "@/utils/supabaseClient";
+
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { 
-  CalendarIcon, 
-  MapPinIcon, 
-  TicketIcon, 
-  MagnifyingGlassIcon,
-  ArrowRightIcon,
-  PlayIcon,
-  StarIcon,
-  UserGroupIcon,
-  ShieldCheckIcon,
-  CreditCardIcon,
-  GlobeAmericasIcon,
-  QrCodeIcon,
-  DevicePhoneMobileIcon
-} from '@heroicons/react/24/outline';
+import { supabase } from "@/utils/supabaseClient";
 import { HomePageSkeleton } from "@/components/AppLoadingSkeleton";
-import OrganizerAppPromo from "@/components/OrganizerAppPromo";
-import AudienceSplit from "@/components/AudienceSplit";
-import { CtaLink } from "@/components/ui/CtaButton";
-import { BRAND } from "@/constants/branding";
-import { useRouter } from "next/navigation";
+import { LandingLink } from "@/components/landing/LandingLink";
+import PricingSection from "@/components/landing/PricingSection";
+import ScannerAppLink from "@/components/ScannerAppLink";
+import { ORGANIZER_APP, SCANNER_APP_URL } from "@/constants/branding";
+import { GET_TICKETS_LABEL, SELL_PATH } from "@/constants/landing";
+import { formatEventWhen, selectUpcomingEvents } from "@/utils/upcomingEvents";
 
 interface Event {
   id: string;
@@ -37,461 +24,127 @@ interface Event {
   poster_url?: string;
 }
 
+function formatPrice(price: number): string {
+  if (price === 0) return "Free";
+  return `R${price.toFixed(2)}`;
+}
+
+const STEPS = [
+  {
+    title: "Create an organizer account",
+    body: "Sign up, then continue into listing your event.",
+  },
+  {
+    title: "List your event free",
+    body: "Add ticket types, prices and quantities from one dashboard.",
+  },
+  {
+    title: "Guests get instant QR tickets",
+    body: "After payment, tickets land in their dashboard — no printing, no post.",
+  },
+  {
+    title: "Scan and settle",
+    body: "Check in at scan.tikiti.fun in any phone or tablet browser. After the event starts, generate a settlement invoice. You receive 100% of ticket face value.",
+  },
+] as const;
+
 export default function HomePageClient({ initialEvents = [] }: { initialEvents?: Event[] }) {
   const [events, setEvents] = useState<Event[]>(initialEvents);
   const [loading, setLoading] = useState(initialEvents.length === 0);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [heroSearch, setHeroSearch] = useState("");
-  const [filterPrice, setFilterPrice] = useState<string>("all");
-  const [currentCarouselIndex, setCurrentCarouselIndex] = useState(0);
-  const router = useRouter();
-
-  const goToEventSearch = (term: string) => {
-    const q = term.trim();
-    router.push(q ? `/events?q=${encodeURIComponent(q)}` : "/events");
-  };
 
   useEffect(() => {
-    fetchEvents();
-  }, []);
-
-  // Auto-advance carousel
-  useEffect(() => {
-    if (events.length > 0) {
-      const interval = setInterval(() => {
-        setCurrentCarouselIndex((prev) =>
-          prev === Math.min(4, events.length - 1) ? 0 : prev + 1
-        );
-      }, 5000);
-
-      return () => clearInterval(interval);
-    }
-  }, [events.length]);
-
-  const fetchEvents = async () => {
-    try {
-      console.log("Fetching events...");
-
-      const { data, error } = await supabase
-        .from("events")
-        .select("*")
-        .order("created_at", { ascending: false });
-
-      console.log("Query result:", { data, error });
-
-      if (error) {
+    let cancelled = false;
+    const fetchEvents = async () => {
+      try {
+        const { data, error } = await supabase
+          .from("events")
+          .select("*")
+          .order("created_at", { ascending: false });
+        if (error || cancelled) return;
+        setEvents(data || []);
+      } catch (error) {
         console.error("Error fetching events:", error);
-        return;
+      } finally {
+        if (!cancelled) setLoading(false);
       }
-
-      console.log("Fetched events:", data);
-      setEvents(data || []);
-    } catch (error) {
-      console.error("Error:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const filteredEvents = events.filter((event) => {
-    const matchesSearch =
-      event.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      event.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      event.location.toLowerCase().includes(searchTerm.toLowerCase());
-
-    let matchesPrice = true;
-    if (filterPrice === "free") {
-      matchesPrice = event.price === 0;
-    } else if (filterPrice === "paid") {
-      matchesPrice = event.price > 0;
-    }
-
-    return matchesSearch && matchesPrice;
-  });
-
-  const latestEvents = events.slice(0, Math.min(5, events.length));
-  const allEvents = filteredEvents;
-
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString("en-US", {
-      weekday: "long",
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  };
-
-  const formatPrice = (price: number) => {
-    if (price === 0) return "Free";
-    return `R${price.toFixed(2)}`;
-  };
+    };
+    fetchEvents();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   if (loading) {
     return <HomePageSkeleton />;
   }
 
+  const upcoming = selectUpcomingEvents(events);
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 to-white">
-      {/* Hero Section */}
-      <section className="relative bg-gradient-to-br from-green-600 via-green-700 to-green-800 py-14 sm:py-20 overflow-hidden">
-        {/* Animated background elements */}
-        <div className="absolute inset-0 opacity-10">
-          <div className="absolute top-10 left-10 w-32 h-32 bg-white rounded-full animate-bounce"></div>
-          <div className="absolute top-20 right-20 w-24 h-24 bg-green-200 rounded-full animate-pulse"></div>
-          <div className="absolute bottom-10 left-1/4 w-20 h-20 bg-emerald-200 rounded-full animate-spin"></div>
-          <div className="absolute bottom-20 right-1/3 w-28 h-28 bg-teal-200 rounded-full animate-bounce"></div>
-          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-40 h-40 bg-white rounded-full animate-pulse"></div>
-        </div>
-        
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          <div className="text-center">
-            <div className="flex items-center justify-center mb-6 px-2">
-              <GlobeAmericasIcon className="hidden sm:block h-8 w-8 text-emerald-300 mr-3 shrink-0" aria-hidden />
-              <span className="bg-white/20 backdrop-blur-sm text-white px-4 py-2 rounded-full text-sm font-semibold text-center">
-                Paperless · Eco-friendly · Innovative
-              </span>
-              <GlobeAmericasIcon className="hidden sm:block h-8 w-8 text-emerald-300 ml-3 shrink-0" aria-hidden />
-            </div>
-            
-            <h1 className="text-4xl sm:text-5xl md:text-7xl font-bold text-white mb-6 leading-tight px-1">
-              Events without
-              <span className="block text-transparent bg-clip-text bg-gradient-to-r from-emerald-200 to-lime-200">
-                the paper waste
-              </span>
+    <div className="bg-[#F7FBF8] text-gray-950">
+      <section className="py-8 sm:py-14">
+        <div className="mx-auto grid max-w-6xl items-center gap-10 px-4 sm:px-6 lg:grid-cols-[1.1fr_0.9fr]">
+          <div>
+            <p className="inline-flex rounded-full bg-green-100 px-3 py-1.5 text-xs font-bold uppercase tracking-wide text-green-700">
+              Paperless ticketing · South Africa
+            </p>
+            <h1 className="mt-4 text-4xl font-extrabold tracking-tight text-gray-950 sm:text-5xl lg:text-6xl">
+              You keep 100% of the ticket price.
             </h1>
-            
-            <p className="text-lg sm:text-xl md:text-2xl text-white/90 mb-8 sm:mb-10 max-w-3xl mx-auto px-1">
-              {BRAND.ecoDescription} Buy or sell tickets in minutes — secure, instant, and paperless.
+            <p className="mt-4 max-w-xl text-lg text-gray-600">
+              List your event free on Tikiti. Buyers pay a small platform fee at checkout — nothing is
+              deducted from your ticket price. Guests get instant QR tickets. You scan at the door in
+              the browser, no app download.
             </p>
-
-            <div className="mb-10 mx-auto max-w-2xl w-full">
-              <form
-                className="flex flex-col sm:flex-row gap-2 rounded-2xl bg-white p-2 shadow-xl"
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  goToEventSearch(heroSearch);
-                }}
-              >
-                <label htmlFor="hero-search" className="sr-only">
-                  Search events
-                </label>
-                <input
-                  id="hero-search"
-                  type="search"
-                  placeholder="Search concerts, sports, festivals…"
-                  value={heroSearch}
-                  onChange={(e) => setHeroSearch(e.target.value)}
-                  className="flex-1 rounded-xl border-0 px-4 py-3.5 text-base text-gray-900 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-green-500"
-                />
-                <button
-                  type="submit"
-                  className="inline-flex items-center justify-center gap-2 rounded-xl bg-green-600 px-6 py-3.5 font-semibold text-white hover:bg-green-700 transition-colors cursor-pointer"
-                >
-                  <MagnifyingGlassIcon className="h-5 w-5" aria-hidden />
-                  Find tickets
-                </button>
-              </form>
-              <p className="mt-3 text-sm text-white/75">
-                Popular: live music · sports · community · free events
-              </p>
+            <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+              <LandingLink href={SELL_PATH} className="w-full sm:w-auto">
+                Start selling — it&apos;s free to list
+              </LandingLink>
+              <LandingLink href="#upcoming" variant="secondary" className="w-full sm:w-auto">
+                Browse events
+              </LandingLink>
             </div>
-
-            <div className="mb-12">
-              <AudienceSplit />
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto pt-4 border-t border-white/20">
-              <div className="text-center">
-                <div className="text-4xl font-bold text-white mb-2">100%</div>
-                <div className="text-white/80">Paperless tickets</div>
-              </div>
-              <div className="text-center">
-                <div className="text-4xl font-bold text-white mb-2">0</div>
-                <div className="text-white/80">Printed stubs at the door</div>
-              </div>
-              <div className="text-center">
-                <div className="text-4xl font-bold text-white mb-2">1 scan</div>
-                <div className="text-white/80">Instant QR check-in</div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Features Section */}
-      <section className="py-20 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-gray-800 mb-4">
-              {BRAND.ecoHeadline}
-            </h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              Tikiti is built for modern, sustainable events — digital tickets, mobile check-in, and zero paper at the gate.
+            <ul className="mt-5 flex flex-wrap gap-2 text-sm font-semibold text-gray-700">
+              <li className="rounded-full border border-gray-200 bg-white px-3 py-1.5">Free to list</li>
+              <li className="rounded-full border border-gray-200 bg-white px-3 py-1.5">You keep 100% face value</li>
+              <li className="rounded-full border border-gray-200 bg-white px-3 py-1.5">Free web scanner</li>
+            </ul>
+            <p className="mt-4 text-sm text-gray-600">
+              Looking for tickets?{" "}
+              <Link href="#upcoming" className="font-bold text-green-800 underline">
+                Find events near you
+              </Link>{" "}
+              — pay securely and get a QR ticket on your phone.
             </p>
           </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            <div className="bg-gradient-to-br from-green-50 to-white p-8 rounded-2xl shadow-lg hover:shadow-xl transition-shadow duration-200 border border-green-100/80">
-              <div className="bg-green-600 w-16 h-16 rounded-2xl flex items-center justify-center mb-6">
-                <GlobeAmericasIcon className="h-8 w-8 text-white" />
-              </div>
-              <h3 className="text-xl font-bold text-gray-800 mb-4">Zero paper tickets</h3>
-              <p className="text-gray-600">
-                Every ticket lives on your phone as a QR code. No printing, no envelopes, no landfill — just scan and go.
-              </p>
-            </div>
-            
-            <div className="bg-gradient-to-br from-green-50 to-white p-8 rounded-2xl shadow-lg hover:shadow-xl transition-shadow duration-200 border border-green-100/80">
-              <div className="bg-green-600 w-16 h-16 rounded-2xl flex items-center justify-center mb-6">
-                <QrCodeIcon className="h-8 w-8 text-white" />
-              </div>
-              <h3 className="text-xl font-bold text-gray-800 mb-4">Instant digital delivery</h3>
-              <p className="text-gray-600">
-                Attendees receive tickets immediately after payment. Secure QR codes stored in their dashboard — no waiting, no post.
-              </p>
-            </div>
-            
-            <div className="bg-gradient-to-br from-green-50 to-white p-8 rounded-2xl shadow-lg hover:shadow-xl transition-shadow duration-200 border border-green-100/80">
-              <div className="bg-green-600 w-16 h-16 rounded-2xl flex items-center justify-center mb-6">
-                <DevicePhoneMobileIcon className="h-8 w-8 text-white" />
-              </div>
-              <h3 className="text-xl font-bold text-gray-800 mb-4">Organizer ticket scanner</h3>
-              <p className="text-gray-600">
-                Event organizers get Tikiti Scanner free at scan.tikiti.fun — validate QR tickets at the door from any phone or tablet browser. No download required.
-              </p>
-            </div>
 
-            <div className="bg-gradient-to-br from-green-50 to-white p-8 rounded-2xl shadow-lg hover:shadow-xl transition-shadow duration-200 border border-green-100/80">
-              <div className="bg-green-500 w-16 h-16 rounded-2xl flex items-center justify-center mb-6">
-                <ShieldCheckIcon className="h-8 w-8 text-white" />
+          <div
+            className="relative hidden min-h-[420px] overflow-hidden rounded-[28px] border border-green-200 bg-gradient-to-b from-green-50 to-white p-8 shadow-lg sm:block"
+            aria-hidden="true"
+          >
+            <div className="max-w-[260px] rounded-2xl bg-white p-4 shadow-lg">
+              <div className="mb-3 flex items-center gap-2">
+                <Image src="/tikiti-icon.png" alt="" width={28} height={28} />
+                <span className="text-[11px] font-bold uppercase tracking-wide text-gray-500">
+                  Digital ticket
+                </span>
               </div>
-              <h3 className="text-xl font-bold text-gray-800 mb-4">Secure transactions</h3>
-              <p className="text-gray-600">
-                Bank-level payment security keeps every purchase protected — greener doesn&apos;t mean less safe.
-              </p>
-            </div>
-            
-            <div className="bg-gradient-to-br from-green-50 to-white p-8 rounded-2xl shadow-lg hover:shadow-xl transition-shadow duration-200 border border-green-100/80">
-              <div className="bg-green-500 w-16 h-16 rounded-2xl flex items-center justify-center mb-6">
-                <CreditCardIcon className="h-8 w-8 text-white" />
+              <p className="text-lg font-extrabold">Your event</p>
+              <p className="text-sm text-gray-500">QR on the guest’s phone · no printing</p>
+              <p className="mt-3 text-sm font-extrabold text-green-800">You keep 100%</p>
+              <div className="mt-4 border-t-2 border-dashed border-gray-200 pt-4">
+                <div className="h-14 w-14 rounded-md bg-[repeating-linear-gradient(0deg,#14532d_0_4px,transparent_4px_8px),repeating-linear-gradient(90deg,#14532d_0_4px,transparent_4px_8px)]" />
               </div>
-              <h3 className="text-xl font-bold text-gray-800 mb-4">Smart event management</h3>
-              <p className="text-gray-600">
-                Create events, track sales, and manage ticket types from one dashboard — all without printing a single ticket.
-              </p>
             </div>
-            
-            <div className="bg-gradient-to-br from-green-50 to-white p-8 rounded-2xl shadow-lg hover:shadow-xl transition-shadow duration-200 border border-green-100/80">
-              <div className="bg-green-500 w-16 h-16 rounded-2xl flex items-center justify-center mb-6">
-                <UserGroupIcon className="h-8 w-8 text-white" />
-              </div>
-              <h3 className="text-xl font-bold text-gray-800 mb-4">Faster, cleaner entry</h3>
-              <p className="text-gray-600">
-                Shorter queues, less clutter at the gate, and a smoother experience for guests and staff alike.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Latest Events Carousel Section */}
-      {latestEvents.length > 0 && (
-        <section className="bg-gradient-to-br from-green-600 via-green-700 to-green-800 py-16 shadow-2xl relative overflow-hidden">
-          {/* Animated background elements */}
-          <div className="absolute inset-0 opacity-10">
-            <div className="absolute top-10 left-10 w-20 h-20 bg-white rounded-full animate-bounce"></div>
-            <div className="absolute top-20 right-20 w-16 h-16 bg-green-200 rounded-full animate-pulse"></div>
-            <div className="absolute bottom-10 left-1/4 w-12 h-12 bg-emerald-200 rounded-full animate-spin"></div>
-            <div className="absolute bottom-20 right-1/3 w-14 h-14 bg-teal-200 rounded-full animate-bounce"></div>
-          </div>
-          
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center mb-12 relative z-10">
-              <h2 className="text-5xl font-bold text-white mb-4">
-                Latest Events
-              </h2>
-              <p className="text-xl text-white/90 mb-8">
-                Discover the newest events happening around you
-              </p>
-              <Link
-                href="/events"
-                className="inline-flex items-center px-6 sm:px-8 py-3.5 sm:py-4 bg-white text-green-600 rounded-xl font-semibold hover:bg-green-50 transition-colors duration-200 shadow-lg"
-              >
-                Browse all events
-                <ArrowRightIcon className="ml-2 h-5 w-5" aria-hidden />
-              </Link>
-            </div>
-
-            <div className="relative">
-              <div className="overflow-hidden rounded-2xl">
-                <div
-                  className="flex transition-transform duration-500 ease-in-out"
-                  style={{ transform: `translateX(-${currentCarouselIndex * 100}%)` }}
-                >
-                  {latestEvents.map((event) => (
-                    <div key={event.id} className="w-full flex-shrink-0">
-                      <div className="bg-white/10 backdrop-blur-sm rounded-2xl shadow-2xl p-8 mx-4 border border-white/20">
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
-                          <div className="relative">
-                            {/* Tickets Available Tag */}
-                            <div className="absolute top-0 right-0 z-10">
-                              <span className="bg-white text-green-600 px-4 py-2 rounded-full text-sm font-semibold shadow-lg">
-                                {event.total_tickets} tickets
-                              </span>
-                            </div>
-                            <h3 className="text-4xl font-bold text-white mb-4 leading-tight">
-                              {event.title}
-                            </h3>
-                            <p className="text-white/90 mb-6 line-clamp-3 text-lg">
-                              {event.description}
-                            </p>
-                            <div className="space-y-4 mb-6">
-                              <div className="flex items-center text-white/90">
-                                <CalendarIcon className="h-5 w-5 mr-3 text-white" />
-                                {formatDate(event.date)}
-                              </div>
-                              <div className="flex items-center text-white/90">
-                                <MapPinIcon className="h-5 w-5 mr-3 text-white" />
-                                {event.location}
-                              </div>
-                              <div className="flex items-center text-white/90">
-                                <TicketIcon className="h-5 w-5 mr-3 text-white" />
-                                {event.total_tickets} tickets available
-                              </div>
-                            </div>
-                            <div className="flex items-center justify-between">
-                              <span className="text-3xl font-bold text-white">
-                                {formatPrice(event.price)}
-                              </span>
-                              <Link
-                                href={`/events/${event.id}`}
-                                className="w-full sm:w-auto inline-flex items-center justify-center bg-white text-green-600 px-6 py-3.5 rounded-xl hover:bg-green-50 transition-colors duration-200 font-semibold shadow-lg gap-2 touch-target"
-                              >
-                                Get tickets
-                                <PlayIcon className="h-4 w-4" aria-hidden />
-                              </Link>
-                            </div>
-                          </div>
-                          
-                          {/* Tickets Available Section */}
-                          <div className="relative rounded-2xl p-8 text-center flex flex-col justify-center items-center h-full shadow-2xl overflow-hidden">
-                            {event.poster_url && (
-                              <div className="absolute inset-0">
-                                <Image
-                                  src={event.poster_url}
-                                  alt={event.title + " poster"}
-                                  fill
-                                  className="object-cover"
-                                />
-                                <div className="absolute inset-0 bg-opacity-60"></div>
-                              </div>
-                            )}
-                            <div className="relative z-10">
-                              <div className="text-7xl font-bold text-white mb-2">
-                                {event.total_tickets}
-                              </div>
-                              <div className="text-white/90 text-lg">Tickets Available</div>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
+            <div className="absolute bottom-6 right-6 w-40 rotate-6 rounded-[28px] bg-gray-950 p-2.5 shadow-xl">
+              <div className="flex h-64 flex-col gap-2 rounded-[20px] bg-green-50 p-3">
+                <p className="text-xs font-bold">Tikiti Scanner</p>
+                <p className="text-[11px] text-green-800">{SCANNER_APP_URL.replace(/^https?:\/\//, "")} · web only</p>
+                <div className="grid flex-1 place-items-center rounded-xl border-2 border-dashed border-green-700 text-[11px] font-bold text-green-800">
+                  Align QR
                 </div>
-              </div>
-
-              {/* Carousel Navigation */}
-              <div className="flex justify-center mt-8 space-x-3">
-                {latestEvents.map((_, index) => (
-                  <button
-                    key={index}
-                    onClick={() => setCurrentCarouselIndex(index)}
-                    className={`w-4 h-4 rounded-full transition-all duration-200 ${
-                      index === currentCarouselIndex
-                        ? "bg-white shadow-lg"
-                        : "bg-white/50 hover:bg-white/70"
-                    }`}
-                  />
-                ))}
-              </div>
-            </div>
-          </div>
-        </section>
-      )}
-
-      <OrganizerAppPromo />
-
-      {/* Testimonials Section */}
-      <section className="py-20 bg-gradient-to-br from-gray-50 to-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-gray-800 mb-4">
-              What Our Users Say
-            </h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              Join thousands of satisfied customers who trust Tikiti for their ticketing needs.
-            </p>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="bg-white p-8 rounded-2xl shadow-lg">
-              <div className="flex items-center mb-4">
-                {[...Array(5)].map((_, i) => (
-                  <StarIcon key={i} className="h-5 w-5 text-yellow-400 fill-current" />
-                ))}
-              </div>
-              <p className="text-gray-600 mb-6">
-                &ldquo;Going paperless with Tikiti was a no-brainer. We sold out fast, scanned tickets at the door with the app, and didn&apos;t print a single stub.&rdquo;
-              </p>
-              <div className="flex items-center">
-                <div className="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center text-white font-bold text-lg mr-4">
-                  S
-                </div>
-                <div>
-                  <div className="font-semibold text-gray-800">Sarah Johnson</div>
-                  <div className="text-gray-500 text-sm">Event Organizer</div>
-                </div>
-              </div>
-            </div>
-            
-            <div className="bg-white p-8 rounded-2xl shadow-lg">
-              <div className="flex items-center mb-4">
-                {[...Array(5)].map((_, i) => (
-                  <StarIcon key={i} className="h-5 w-5 text-yellow-400 fill-current" />
-                ))}
-              </div>
-              <p className="text-gray-600 mb-6">
-                &ldquo;Bought tickets for multiple events through Tikiti. Always secure, always instant. Best ticketing platform I&apos;ve used!&rdquo;
-              </p>
-              <div className="flex items-center">
-                <div className="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center text-white font-bold text-lg mr-4">
-                  M
-                </div>
-                <div>
-                  <div className="font-semibold text-gray-800">Mike Chen</div>
-                  <div className="text-gray-500 text-sm">Music Lover</div>
-                </div>
-              </div>
-            </div>
-            
-            <div className="bg-white p-8 rounded-2xl shadow-lg">
-              <div className="flex items-center mb-4">
-                {[...Array(5)].map((_, i) => (
-                  <StarIcon key={i} className="h-5 w-5 text-yellow-400 fill-current" />
-                ))}
-              </div>
-              <p className="text-gray-600 mb-6">
-                &ldquo;The dashboard is incredible. I can track sales, manage attendees, and everything in real-time. Highly recommended!&rdquo;
-              </p>
-              <div className="flex items-center">
-                <div className="w-12 h-12 bg-purple-500 rounded-full flex items-center justify-center text-white font-bold text-lg mr-4">
-                  A
-                </div>
-                <div>
-                  <div className="font-semibold text-gray-800">Alex Rodriguez</div>
-                  <div className="text-gray-500 text-sm">Sports Event Manager</div>
+                <div className="rounded-xl bg-green-600 py-2 text-center text-xs font-extrabold text-white">
+                  Valid ticket
                 </div>
               </div>
             </div>
@@ -499,137 +152,148 @@ export default function HomePageClient({ initialEvents = [] }: { initialEvents?:
         </div>
       </section>
 
-      {/* CTA Section */}
-      <section className="py-20 bg-gradient-to-br from-green-600 to-green-700">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-4xl font-bold text-white mb-6">
-            Ready to run a greener event?
-          </h2>
-          <p className="text-xl text-white/90 mb-8 max-w-2xl mx-auto">
-            Create your event on Tikiti, open the scanner at scan.tikiti.fun, and go fully paperless from ticket sale to front door.
+      <section id="upcoming" className="py-16 sm:py-20">
+        <div className="mx-auto max-w-6xl px-4 sm:px-6">
+          <p className="inline-flex rounded-full bg-green-100 px-3 py-1.5 text-xs font-bold uppercase tracking-wide text-green-700">
+            For guests
           </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <CtaLink href="/events" variant="secondary" className="px-8 py-4">
-              Browse & buy tickets
-              <ArrowRightIcon className="h-5 w-5" />
-            </CtaLink>
-            <CtaLink href="/dashboard/create-event" variant="primary" className="px-8 py-4">
-              Sell tickets free
-              <CalendarIcon className="h-5 w-5" />
-            </CtaLink>
+          <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <h2 className="text-3xl font-extrabold tracking-tight sm:text-4xl">Upcoming events</h2>
+              <p className="mt-2 max-w-xl text-lg text-gray-600">
+                Browse, pay securely, and get an instant QR ticket on your phone.
+              </p>
+            </div>
+            <Link href="/events" className="font-bold text-green-800 underline">
+              Browse all events
+            </Link>
           </div>
+
+          {upcoming.length === 0 ? (
+            <div className="mt-8 rounded-2xl border border-gray-200 bg-white p-6">
+              <h3 className="text-xl font-bold">No upcoming events listed yet</h3>
+              <p className="mt-2 text-gray-600">
+                New listings appear here when the event date is still ahead. You can still browse the
+                full events page.
+              </p>
+              <div className="mt-4 flex flex-col gap-3 sm:flex-row">
+                <LandingLink href="/events" variant="secondary">Browse events</LandingLink>
+                <LandingLink href={SELL_PATH}>List your event free</LandingLink>
+              </div>
+            </div>
+          ) : (
+            <div className="mt-8 grid gap-4 md:grid-cols-2">
+              {upcoming.map((event) => (
+                <article key={event.id} className="flex flex-col rounded-2xl border border-gray-200 bg-white p-6">
+                  <h3 className="text-xl font-extrabold">{event.title}</h3>
+                  <p className="mt-2 text-sm text-gray-600">{formatEventWhen(event.date)}</p>
+                  <p className="text-sm text-gray-600">{event.location}</p>
+                  <p className="mt-3 text-xl font-extrabold">{formatPrice(event.price)}</p>
+                  <p className="text-sm text-gray-500">{event.total_tickets} tickets available</p>
+                  <LandingLink href={`/events/${event.id}`} variant="secondary" className="mt-4 self-start">
+                    {GET_TICKETS_LABEL}
+                  </LandingLink>
+                </article>
+              ))}
+            </div>
+          )}
         </div>
       </section>
 
-      {/* All Events Section */}
-      <main className="max-w-7xl mx-auto py-16 px-4 sm:px-6 lg:px-8">
-        <div className="mb-12">
-          <div className="text-center mb-12">
-            <h2 className="text-4xl font-bold text-gray-800 mb-4">
-              All Events
-            </h2>
-            <p className="text-gray-600 text-lg">
-              Discover amazing events happening around you
-            </p>
-          </div>
+      <PricingSection
+        eyebrow="How pricing works"
+        heading="Buyers pay the platform fee. You keep the ticket price."
+        exampleMode="fee"
+      />
 
-          {/* Search and Filter */}
-          <div className="flex flex-col sm:flex-row gap-6 mb-8">
-            <div className="flex-1 relative">
-              <div className="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none">
-                <MagnifyingGlassIcon className="h-5 w-5 text-gray-400" />
-              </div>
-              <input
-                type="text"
-                placeholder="Search events..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-4 pr-12 py-4 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:shadow-lg bg-white text-gray-800 placeholder-gray-500 shadow-lg border-0"
-              />
-            </div>
-            <select
-              value={filterPrice}
-              onChange={(e) => setFilterPrice(e.target.value)}
-              className="px-6 py-4 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:shadow-lg bg-white text-gray-800 shadow-lg border-0"
-            >
-              <option value="all">All Prices</option>
-              <option value="free">Free</option>
-              <option value="paid">Paid</option>
-            </select>
-          </div>
-        </div>
-
-        {allEvents.length === 0 ? (
-          <div className="text-center py-16">
-            <div className="bg-white rounded-2xl shadow-xl p-8 max-w-md mx-auto">
-              <MagnifyingGlassIcon className="h-16 w-16 text-gray-300 mx-auto mb-4" aria-hidden />
-              <h3 className="text-2xl font-bold text-gray-800 mb-4">No events found</h3>
-              <p className="text-gray-600 mb-6">
-                {searchTerm || filterPrice !== "all"
-                  ? "Try a different search or filter."
-                  : "No events are live yet — be the first to sell tickets on Tikiti."}
-              </p>
-              {!searchTerm && filterPrice === "all" && (
-                <CtaLink href="/dashboard/create-event" variant="primary" className="w-full">
-                  List your event free
-                </CtaLink>
-              )}
-            </div>
-          </div>
-        ) : (
-          <div className="grid gap-6 sm:gap-8 md:grid-cols-2 lg:grid-cols-3">
-            {allEvents.map((event) => (
-              <Link key={event.id} href={`/events/${event.id}`} className="block group">
-                <div className="bg-white rounded-2xl shadow-xl overflow-hidden hover:shadow-2xl transition-shadow duration-300 border border-gray-100 h-full">
-                {event.poster_url && (
-                  <div className="w-full h-48 relative">
-                    <Image
-                      src={event.poster_url}
-                      alt={event.title + " poster"}
-                      fill
-                      className="object-cover"
-                    />
-                  </div>
-                )}
-                <div className="p-6">
-                  <h3 className="text-xl font-bold text-gray-800 mb-3 line-clamp-2">
-                    {event.title}
-                  </h3>
-                  <p className="text-gray-600 mb-4 line-clamp-3">
-                    {event.description}
-                  </p>
-
-                  <div className="space-y-3 mb-4">
-                    <div className="flex items-center text-sm text-gray-600">
-                      <CalendarIcon className="h-4 w-4 mr-2 text-green-500" />
-                      {formatDate(event.date)}
-                    </div>
-                    <div className="flex items-center text-sm text-gray-600">
-                      <MapPinIcon className="h-4 w-4 mr-2 text-blue-500" />
-                      {event.location}
-                    </div>
-                    <div className="flex items-center text-sm text-gray-600">
-                      <TicketIcon className="h-4 w-4 mr-2 text-purple-500" />
-                      {event.total_tickets} tickets available
-                    </div>
-                  </div>
-
-                  <div className="flex justify-between items-center pt-4 border-t border-gray-100 gap-3">
-                    <span className="text-xl sm:text-2xl font-bold text-green-600 shrink-0">
-                      {formatPrice(event.price)}
-                    </span>
-                    <span className="inline-flex items-center gap-2 rounded-xl bg-green-600 text-white px-4 py-2.5 font-semibold group-hover:bg-green-700 transition-colors duration-200 text-sm sm:text-base">
-                      Get tickets
-                      <ArrowRightIcon className="h-4 w-4" aria-hidden />
-                    </span>
-                  </div>
+      <section className="py-16 sm:py-20">
+        <div className="mx-auto max-w-6xl px-4 sm:px-6">
+          <p className="inline-flex rounded-full bg-green-100 px-3 py-1.5 text-xs font-bold uppercase tracking-wide text-green-700">
+            From listing to the door
+          </p>
+          <h2 className="mt-4 text-3xl font-extrabold tracking-tight sm:text-4xl">
+            Set up in minutes. Stay paperless the whole way.
+          </h2>
+          <p className="mt-3 max-w-2xl text-lg text-gray-600">
+            The same organizer path Tikiti already offers: list the event, sell QR tickets, scan at
+            the door, then settle.
+          </p>
+          <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {STEPS.map((step, index) => (
+              <article key={step.title} className="rounded-2xl border border-gray-200 bg-white p-5">
+                <div className="mb-3 grid h-8 w-8 place-items-center rounded-lg bg-green-100 font-extrabold text-green-900">
+                  {index + 1}
                 </div>
-                </div>
-              </Link>
+                <h3 className="text-lg font-extrabold">{step.title}</h3>
+                <p className="mt-2 text-sm text-gray-600">{step.body}</p>
+              </article>
             ))}
           </div>
-        )}
-      </main>
+        </div>
+      </section>
+
+      <section className="bg-gradient-to-br from-green-800 via-green-700 to-green-900 py-16 text-white sm:py-20">
+        <div className="mx-auto grid max-w-6xl items-center gap-10 px-4 sm:px-6 lg:grid-cols-2">
+          <div>
+            <p className="inline-flex rounded-full bg-white/15 px-3 py-1.5 text-xs font-bold uppercase tracking-wide">
+              For event organizers
+            </p>
+            <h2 className="mt-4 text-3xl font-extrabold tracking-tight sm:text-4xl">
+              Your door team, in the browser
+            </h2>
+            <p className="mt-4 text-lg text-white/90">{ORGANIZER_APP.description}</p>
+            <ul className="mt-6 space-y-2 text-white/95">
+              {ORGANIZER_APP.features.map((feature) => (
+                <li key={feature} className="pl-6 relative before:absolute before:left-0 before:top-2 before:h-3 before:w-3 before:rounded-full before:bg-[var(--brand-green)]">
+                  {feature}
+                </li>
+              ))}
+              <li className="relative pl-6 before:absolute before:left-0 before:top-2 before:h-3 before:w-3 before:rounded-full before:bg-[var(--brand-green)]">
+                Door team members can be invited from the event edit page
+              </li>
+            </ul>
+            <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+              <LandingLink href={SELL_PATH} variant="onGreen">
+                Create an event — get scanner access
+              </LandingLink>
+              <ScannerAppLink variant="outline" label="Open scanner" />
+            </div>
+            <p className="mt-3 text-sm text-white/80">
+              Free at {SCANNER_APP_URL.replace(/^https?:\/\//, "")} — web only, no app download required.
+            </p>
+          </div>
+          <div className="mx-auto w-44 rounded-[28px] bg-gray-950 p-2.5 shadow-xl" aria-hidden="true">
+            <div className="flex h-72 flex-col gap-2 rounded-[20px] bg-green-50 p-3 text-gray-950">
+              <p className="text-xs font-bold">Tikiti Scanner</p>
+              <p className="text-[11px] text-green-800">{SCANNER_APP_URL.replace(/^https?:\/\//, "")}</p>
+              <div className="grid flex-1 place-items-center rounded-xl border-2 border-dashed border-green-700 text-[11px] font-bold text-green-800">
+                Camera in the browser
+              </div>
+              <div className="rounded-xl bg-green-600 py-2 text-center text-xs font-extrabold text-white">
+                Valid ticket
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="bg-gradient-to-br from-green-800 via-green-700 to-green-900 py-14 text-center text-white">
+        <div className="mx-auto max-w-3xl px-4">
+          <h2 className="text-3xl font-extrabold tracking-tight sm:text-4xl">Ready to list your event?</h2>
+          <p className="mt-3 text-lg text-white/90">
+            Create your organizer account, list free, and go paperless from ticket sale to the front
+            door. You keep 100% of ticket face value.
+          </p>
+          <div className="mt-6 flex flex-col justify-center gap-3 sm:flex-row">
+            <LandingLink href={SELL_PATH} variant="onGreen">
+              Start selling — it&apos;s free to list
+            </LandingLink>
+            <LandingLink href="#upcoming" variant="ghostOnGreen">
+              Browse events
+            </LandingLink>
+          </div>
+        </div>
+      </section>
     </div>
   );
 }

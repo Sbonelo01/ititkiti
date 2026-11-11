@@ -6,6 +6,7 @@
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --spotify-green: #1DB954;
+  --brand-green: #22C55E;
   --font-sans: var(--font-jakarta), var(--font-roboto), system-ui, sans-serif;
   --font-mono: var(--font-geist-mono);
 }
@@ -40,6 +41,16 @@ body {
 .touch-target {
   min-height: 44px;
   min-width: 44px;
+}
+
+/*
+  Menu control text, including the mobile toggle.
+  Uses the same green text token as the rest of the site (`--color-green-700`),
+  not the browser default blue and not the logo fill (`--brand-green`), which is
+  too light for text on white.
+*/
+.site-menu-button {
+  color: var(--color-green-700);
 }
 
 @media print {
