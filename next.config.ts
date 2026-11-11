@@ -5,6 +5,14 @@ const supabaseHost = process.env.NEXT_PUBLIC_SUPABASE_URL
   : undefined;
 
 const nextConfig: NextConfig = {
+  async headers() {
+    const noStore = [{ key: "Cache-Control", value: "private, no-store, max-age=0" }];
+    return [
+      { source: "/dashboard/admin", headers: noStore },
+      { source: "/dashboard/admin/:path*", headers: noStore },
+      { source: "/api/admin/:path*", headers: noStore },
+    ];
+  },
   images: {
     remotePatterns: supabaseHost
       ? [

@@ -3,31 +3,11 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/utils/supabaseClient";
 import { getPrivilegedRole, isStaffOrAdmin } from "@/utils/roles";
 import { isSuperAdminUser } from "@/utils/superAdmin";
-import Image from "next/image";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import QRScanner from "@/components/QRScanner";
-import { computeBuyerServiceFeeZar } from "@/constants/pricing";
-
-interface AdminEvent {
-  id: string;
-  title: string;
-  price: number;
-  poster_url?: string;
-}
-
-type EventRevenueStats = {
-  ticketsSold: number;
-  ticketRevenue: number;
-  tikitiRevenue: number;
-  totalProcessed: number;
-};
 
 export default function AdminDashboard() {
-  const [events, setEvents] = useState<AdminEvent[]>([]);
-  const [eventStats, setEventStats] = useState<Record<string, EventRevenueStats>>({});
-  const [platformTikitiRevenue, setPlatformTikitiRevenue] = useState(0);
-  const [loading, setLoading] = useState(true);
   const [authorized, setAuthorized] = useState<boolean | null>(null);
   const router = useRouter();
   const [showScanner, setShowScanner] = useState(false);
@@ -48,72 +28,6 @@ export default function AdminDashboard() {
     checkAuth();
   }, [router]);
 
-  useEffect(() => {
-    if (authorized !== true) return;
-    async function fetchEventsAndTickets() {
-      setLoading(true);
-      const { data: eventsData } = await supabase
-        .from("events")
-        .select("id, title, price, poster_url");
-      setEvents(eventsData || []);
-      if (eventsData && eventsData.length > 0) {
-        const ids = eventsData.map((e) => e.id);
-        const eventPriceMap = Object.fromEntries(eventsData.map((e) => [e.id, e.price]));
-
-        const { data: ticketsData } = await supabase
-          .from("tickets")
-          .select(`
-            event_id,
-            ticket_type_id,
-            ticket_types ( price )
-          `)
-          .in("event_id", ids)
-          .eq("payment_status", "paid");
-
-        const stats: Record<string, EventRevenueStats> = {};
-        let totalTikitiRevenue = 0;
-
-        (ticketsData || []).forEach((row) => {
-          const eventId = row.event_id as string;
-          if (!stats[eventId]) {
-            stats[eventId] = {
-              ticketsSold: 0,
-              ticketRevenue: 0,
-              tikitiRevenue: 0,
-              totalProcessed: 0,
-            };
-          }
-
-          let ticketPrice = eventPriceMap[eventId] ?? 0;
-          const tt = row.ticket_types as { price?: number } | { price?: number }[] | null;
-          if (Array.isArray(tt) && tt[0]?.price != null) {
-            ticketPrice = Number(tt[0].price);
-          } else if (tt && !Array.isArray(tt) && tt.price != null) {
-            ticketPrice = Number(tt.price);
-          }
-
-          stats[eventId].ticketsSold += 1;
-          stats[eventId].ticketRevenue += ticketPrice;
-          stats[eventId].tikitiRevenue += computeBuyerServiceFeeZar(ticketPrice);
-        });
-
-        for (const eventId of Object.keys(stats)) {
-          const s = stats[eventId];
-          s.totalProcessed = s.ticketRevenue + s.tikitiRevenue;
-          totalTikitiRevenue += s.tikitiRevenue;
-        }
-
-        setEventStats(stats);
-        setPlatformTikitiRevenue(totalTikitiRevenue);
-      } else {
-        setEventStats({});
-        setPlatformTikitiRevenue(0);
-      }
-      setLoading(false);
-    }
-    fetchEventsAndTickets();
-  }, [authorized]);
-
   // Get user role for conditional rendering
   const [userRole, setUserRole] = useState<string | null>(null);
   const [showUserAdmin, setShowUserAdmin] = useState(false);
@@ -129,11 +43,6 @@ export default function AdminDashboard() {
     }
     getUserRole();
   }, []);
-
-  const formatPrice = (price: number) => {
-    if (price === 0) return "R0.00";
-    return `R${price.toFixed(2)}`;
-  };
 
   async function handleScan(qrValue: string) {
     setValidating(true);
@@ -195,10 +104,16 @@ export default function AdminDashboard() {
     <div className="min-h-screen bg-gradient-to-br from-green-50 to-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {showUserAdmin && (
-          <div className="mb-6">
+          <div className="mb-6 flex flex-wrap gap-3">
+            <Link
+              href="/dashboard/admin/sales"
+              className="inline-block bg-green-600 text-white px-6 py-3 rounded-xl font-semibold hover:bg-green-700 transition-colors"
+            >
+              Events &amp; sales
+            </Link>
             <Link
               href="/dashboard/admin/users"
-              className="inline-block bg-green-600 text-white px-6 py-3 rounded-xl font-semibold hover:bg-green-700 transition-colors"
+              className="inline-block bg-gray-800 text-white px-6 py-3 rounded-xl font-semibold hover:bg-gray-900 transition-colors"
             >
               Users &amp; staff
             </Link>
@@ -250,22 +165,8 @@ export default function AdminDashboard() {
             )}
           </div>
         ) : (
-          // Admin view - full dashboard
           <>
-            <h1 className="text-4xl font-bold mb-4">Admin Event Revenue Dashboard</h1>
-            {!loading && events.length > 0 && (
-              <div className="mb-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                <div className="bg-white rounded-2xl shadow-lg border border-green-100 p-5">
-                  <p className="text-sm font-medium text-gray-600">Tikiti platform revenue (all events)</p>
-                  <p className="text-2xl font-bold text-green-700 mt-1 tabular-nums">
-                    {formatPrice(platformTikitiRevenue)}
-                  </p>
-                  <p className="text-xs text-gray-500 mt-1">
-                    Buyer-paid service fees from paid tickets (organizers keep 100% of face value)
-                  </p>
-                </div>
-              </div>
-            )}
+            <h1 className="text-4xl font-bold mb-4">Admin</h1>
             <div className="flex flex-wrap gap-3 mb-8">
               <Link
                 href="/dashboard/admin/invoices"
@@ -310,69 +211,6 @@ export default function AdminDashboard() {
                 aria-live="polite"
               >
                 {scanResult.message}
-              </div>
-            )}
-            {loading ? (
-              <div className="text-center py-12">
-                <div className="animate-spin rounded-full h-12 w-12 border-4 border-green-200 border-t-green-500 mx-auto mb-4"></div>
-                <p className="text-lg text-gray-600 font-medium">Loading events...</p>
-              </div>
-            ) : (
-              <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                {events.map((event) => {
-                  const stats = eventStats[event.id] ?? {
-                    ticketsSold: 0,
-                    ticketRevenue: 0,
-                    tikitiRevenue: 0,
-                    totalProcessed: 0,
-                  };
-                  return (
-                    <div
-                      key={event.id}
-                      className="bg-white rounded-2xl shadow-xl overflow-hidden hover:shadow-2xl transition-all duration-300 transform hover:scale-105"
-                    >
-                      {event.poster_url && (
-                        <div className="w-full h-48 relative">
-                          <Image
-                            src={event.poster_url}
-                            alt={event.title + " poster"}
-                            fill
-                            className="object-cover"
-                          />
-                        </div>
-                      )}
-                      <div className="p-6">
-                        <h3 className="text-xl font-bold text-gray-800 mb-2">
-                          {event.title}
-                        </h3>
-                        <div className="flex justify-between items-center pt-4 border-t border-gray-100">
-                          <span className="text-lg font-semibold text-green-600">
-                            {event.price === 0 ? "Free" : formatPrice(event.price)}
-                          </span>
-                          <span className="text-sm text-gray-500">
-                            Sold: {stats.ticketsSold}
-                          </span>
-                        </div>
-                        <dl className="mt-3 space-y-2 text-sm text-gray-700">
-                          <div className="flex justify-between gap-4">
-                            <dt>Ticket sales (organizer)</dt>
-                            <dd className="font-semibold tabular-nums">{formatPrice(stats.ticketRevenue)}</dd>
-                          </div>
-                          <div className="flex justify-between gap-4">
-                            <dt>Tikiti revenue</dt>
-                            <dd className="font-bold text-green-700 tabular-nums">
-                              {formatPrice(stats.tikitiRevenue)}
-                            </dd>
-                          </div>
-                          <div className="flex justify-between gap-4 pt-2 border-t border-gray-100">
-                            <dt className="font-medium">Total processed</dt>
-                            <dd className="font-bold tabular-nums">{formatPrice(stats.totalProcessed)}</dd>
-                          </div>
-                        </dl>
-                      </div>
-                    </div>
-                  );
-                })}
               </div>
             )}
           </>
