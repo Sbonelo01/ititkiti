@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
-import { Roboto, Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
+import { plusJakarta, roboto } from "@/fonts/appFonts";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { AuthPendingRedirect } from "@/components/AuthPendingRedirect";
@@ -10,18 +10,6 @@ import {
   DEFAULT_SITE_DESCRIPTION,
   getMetadataBase,
 } from "@/lib/seo/metadata";
-
-const roboto = Roboto({
-  subsets: ["latin"],
-  weight: ["300", "400", "500", "700"],
-  variable: "--font-roboto",
-});
-
-const plusJakarta = Plus_Jakarta_Sans({
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
-  variable: "--font-jakarta",
-});
 
 export const metadata: Metadata = {
   metadataBase: getMetadataBase(),

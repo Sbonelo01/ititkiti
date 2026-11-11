@@ -1,10 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireEventOrganizer } from "@/server/events/eventOrganizerAuth";
 import { getSupabaseAdmin } from "@/server/supabaseAdmin";
+import { applyRateLimit } from "@/utils/rateLimit";
 
 type RouteContext = { params: Promise<{ eventId: string; memberId: string }> };
 
 export async function DELETE(req: NextRequest, context: RouteContext) {
+  const rateLimited = await applyRateLimit(req, {
+    keyPrefix: "scanner-invite-revoke",
+    windowMs: 60_000,
+    maxRequests: 20,
+  });
+  if (rateLimited) return rateLimited;
+
   const { eventId, memberId } = await context.params;
   const auth = await requireEventOrganizer(req.headers.get("authorization"), eventId);
   if (!auth.ok) {

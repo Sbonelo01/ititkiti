@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/utils/supabaseClient";
 import { getPrivilegedRole, isStaffOrAdmin } from "@/utils/roles";
-import { isSuperAdminEmail } from "@/utils/superAdmin";
+import { isSuperAdminUser } from "@/utils/superAdmin";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -124,7 +124,7 @@ export default function AdminDashboard() {
       const user = session?.user;
       if (user) {
         setUserRole(getPrivilegedRole(user));
-        setShowUserAdmin(isSuperAdminEmail(user.email));
+        setShowUserAdmin(isSuperAdminUser(user));
       }
     }
     getUserRole();

@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import {
+  AuthUserLookupUnavailableError,
   findAuthUsersByEmail,
   matchUsersByEmail,
   toAdminUserView,
@@ -54,28 +55,48 @@ describe("findAuthUsersByEmail", () => {
     vi.mocked(getSupabaseAdmin).mockReset();
   });
 
-  it("stops after an exact email match", async () => {
-    const listUsers = vi.fn().mockResolvedValue({
+  it("looks up one exact email and does not list users", async () => {
+    const rpc = vi.fn().mockResolvedValue({
       data: {
-        users: [
-          {
-            id: "u1",
-            email: "staff@test.com",
-            app_metadata: { role: "staff" },
-            user_metadata: {},
-          },
-        ],
+        id: "u1",
+        email: "staff@test.com",
+        app_metadata: { role: "staff" },
+        user_metadata: {},
       },
       error: null,
     });
+    const listUsers = vi.fn();
     vi.mocked(getSupabaseAdmin).mockReturnValue({
+      rpc,
       auth: { admin: { listUsers } },
     } as never);
 
     const users = await findAuthUsersByEmail("staff@test.com");
     expect(users).toHaveLength(1);
     expect(users[0].id).toBe("u1");
-    expect(listUsers).toHaveBeenCalledTimes(1);
+    expect(rpc).toHaveBeenCalledWith("lookup_auth_user_by_email", {
+      p_email: "staff@test.com",
+    });
+    expect(listUsers).not.toHaveBeenCalled();
+  });
+
+  it("does not query for a partial email", async () => {
+    const rpc = vi.fn();
+    vi.mocked(getSupabaseAdmin).mockReturnValue({ rpc } as never);
+    await expect(findAuthUsersByEmail("ada")).resolves.toEqual([]);
+    expect(rpc).not.toHaveBeenCalled();
+  });
+
+  it("fails closed when the lookup function is not installed", async () => {
+    vi.mocked(getSupabaseAdmin).mockReturnValue({
+      rpc: vi.fn().mockResolvedValue({
+        data: null,
+        error: { code: "PGRST202", message: "Could not find the function public.lookup_auth_user_by_email" },
+      }),
+    } as never);
+    await expect(findAuthUsersByEmail("staff@test.com")).rejects.toBeInstanceOf(
+      AuthUserLookupUnavailableError
+    );
   });
 });
 

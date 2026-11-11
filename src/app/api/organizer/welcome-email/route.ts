@@ -33,7 +33,7 @@ function toResponse(result: DeliverOrganizerWelcomeEmailResult): NextResponse {
 }
 
 export async function POST(req: NextRequest) {
-  const rateLimited = applyRateLimit(req, {
+  const rateLimited = await applyRateLimit(req, {
     keyPrefix: "organizer-welcome-email",
     windowMs: 60_000,
     maxRequests: 8,

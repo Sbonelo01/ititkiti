@@ -3,6 +3,7 @@ import { NextRequest } from "next/server";
 import { GET, PATCH } from "./route";
 import { requireSuperAdminAuth } from "@/server/auth/superAdminAuth";
 import {
+  AuthUserLookupUnavailableError,
   findAuthUsersByEmail,
   updateAuthUserRole,
 } from "@/server/auth/userRoleAdmin";
@@ -113,6 +114,15 @@ describe("/api/admin/users", () => {
     const body = await res.json();
     expect(body.error).toMatch(/sign up first/i);
     expect(updateAuthUserRole).not.toHaveBeenCalled();
+  });
+
+  it("returns 503 when exact lookup is not configured", async () => {
+    vi.mocked(findAuthUsersByEmail).mockRejectedValue(new AuthUserLookupUnavailableError());
+    const res = await GET(getReq("staff@test.com"));
+    expect(res.status).toBe(503);
+    const body = await res.json();
+    expect(body.error).toBe("User lookup is unavailable");
+    expect(JSON.stringify(body)).not.toMatch(/listUsers|schema|function/i);
   });
 
   it("updates the role via the admin helper", async () => {
