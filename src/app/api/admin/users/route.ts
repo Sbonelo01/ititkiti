@@ -5,6 +5,7 @@ import { applyRateLimit } from "@/utils/rateLimit";
 import { extractBearerToken } from "@/server/auth/staffAuth";
 import { requireSuperAdminAuth } from "@/server/auth/superAdminAuth";
 import {
+  AuthUserLookupUnavailableError,
   findAuthUsersByEmail,
   toAdminUserView,
   updateAuthUserRole,
@@ -12,7 +13,7 @@ import {
 import { ASSIGNABLE_ROLES } from "@/utils/roles";
 
 const searchQuerySchema = z.object({
-  email: z.string().trim().min(3).max(320),
+  email: z.string().trim().email().max(320),
 });
 
 const updateBodySchema = z.object({
@@ -27,7 +28,7 @@ const RATE_LIMIT = {
 } as const;
 
 async function requireGate(req: NextRequest) {
-  const rateLimited = applyRateLimit(req, RATE_LIMIT);
+  const rateLimited = await applyRateLimit(req, RATE_LIMIT);
   if (rateLimited) return { ok: false as const, response: rateLimited };
 
   const auth = await requireSuperAdminAuth(
@@ -60,7 +61,10 @@ export async function GET(req: NextRequest) {
       success: true,
       users: users.map(toAdminUserView),
     });
-  } catch {
+  } catch (error) {
+    if (error instanceof AuthUserLookupUnavailableError) {
+      return NextResponse.json({ error: "User lookup is unavailable" }, { status: 503 });
+    }
     return NextResponse.json({ error: "Failed to search users" }, { status: 500 });
   }
 }
@@ -100,7 +104,10 @@ export async function PATCH(req: NextRequest) {
       success: true,
       user: toAdminUserView(updated.user),
     });
-  } catch {
+  } catch (error) {
+    if (error instanceof AuthUserLookupUnavailableError) {
+      return NextResponse.json({ error: "User lookup is unavailable" }, { status: 503 });
+    }
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

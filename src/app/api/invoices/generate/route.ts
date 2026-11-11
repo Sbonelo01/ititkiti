@@ -10,7 +10,7 @@ const bodySchema = z.object({
 });
 
 export async function POST(req: NextRequest) {
-  const rateLimited = applyRateLimit(req, {
+  const rateLimited = await applyRateLimit(req, {
     keyPrefix: "invoices-generate",
     windowMs: 60_000,
     maxRequests: 10,

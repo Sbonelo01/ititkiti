@@ -6,7 +6,7 @@ import { submitOrganizerInvoice } from "@/server/invoices/generateOrganizerInvoi
 type RouteContext = { params: Promise<{ id: string }> };
 
 export async function POST(req: NextRequest, context: RouteContext) {
-  const rateLimited = applyRateLimit(req, {
+  const rateLimited = await applyRateLimit(req, {
     keyPrefix: "invoices-submit",
     windowMs: 60_000,
     maxRequests: 20,
