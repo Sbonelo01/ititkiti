@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import EventDetailClient from "@/components/EventDetailClient";
 import JsonLd from "@/components/seo/JsonLd";
 import { buildEventJsonLd } from "@/lib/seo/jsonLd";
+import { fetchPublicOrganizerCard } from "@/server/events/fetchPublicOrganizer";
 import {
   fetchPublicEventById,
   lowestTicketPrice,
@@ -23,6 +24,7 @@ export default async function EventDetailPage({ params }: PageProps) {
   const { event: rawEvent, ticketTypes } = result;
   const event = normalizePublicEventForClient(rawEvent);
   const minPrice = lowestTicketPrice(rawEvent, ticketTypes);
+  const organizer = await fetchPublicOrganizerCard(rawEvent.organizer_id).catch(() => null);
 
   return (
     <>
@@ -36,11 +38,13 @@ export default async function EventDetailPage({ params }: PageProps) {
           price: event.price,
           posterUrl: event.poster_url,
           lowestPrice: minPrice,
+          publicOrganizer: organizer,
         })}
       />
       <EventDetailClient
         eventId={id}
         initialEvent={event}
+        organizer={organizer}
         initialTicketTypes={ticketTypes.map((tt) => ({
           ...tt,
           description: tt.description ?? undefined,

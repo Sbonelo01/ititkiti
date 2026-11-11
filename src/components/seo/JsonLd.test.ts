@@ -80,6 +80,38 @@ describe("JsonLd script markup", () => {
       "@type": "Event",
       name: "Jazz Night",
       description: "Live set & dancing",
+      organizer: { "@type": "Organization", name: "Tikiti" },
     });
+  });
+
+  it("publishes the organiser display name and not a private account email", () => {
+    const html = renderJsonLd(
+      buildEventJsonLd({
+        id: "evt-3",
+        title: "Jazz Night",
+        description: "Live set",
+        date: "2026-10-01T18:00:00.000Z",
+        location: "Durban",
+        price: 80,
+        publicOrganizer: {
+          displayName: "Analytical Engines",
+          websiteUrl: "https://events.example/nights",
+          publicEmail: "press@example.com",
+        },
+      })
+    );
+    const [body] = scriptBodies(html);
+    const parsed = JSON.parse(body) as {
+      organizer: { name: string; email?: string; url?: string; telephone?: string };
+    };
+
+    expect(parsed.organizer).toEqual({
+      "@type": "Organization",
+      name: "Analytical Engines",
+      url: "https://events.example/nights",
+      email: "press@example.com",
+    });
+    expect(parsed.organizer.telephone).toBeUndefined();
+    expect(body).not.toContain("ada.private@example.com");
   });
 });

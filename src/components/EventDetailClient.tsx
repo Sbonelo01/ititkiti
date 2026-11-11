@@ -13,6 +13,8 @@ import { buildAppleMapsSearchUrl, buildGoogleMapsSearchUrl } from "@/utils/mapsL
 import { computeBuyerServiceFeeZar } from "@/constants/pricing";
 import { buildPaystackReference } from "@/utils/paystackChargeMetadata";
 import { ORGANIZER_COPY } from "@/constants/organizerCopy";
+import OrganizedBySection from "@/components/OrganizedBySection";
+import type { PublicOrganizerCard } from "@/lib/events/publicOrganizer";
 
 interface Event {
   id: string;
@@ -98,10 +100,12 @@ export default function EventDetailClient({
   eventId,
   initialEvent = null,
   initialTicketTypes = [],
+  organizer = null,
 }: {
   eventId: string;
   initialEvent?: Event | null;
   initialTicketTypes?: TicketType[];
+  organizer?: PublicOrganizerCard | null;
 }) {
   const [event, setEvent] = useState<Event | null>(initialEvent);
   const [ticketTypes, setTicketTypes] = useState<TicketType[]>(initialTicketTypes);
@@ -536,6 +540,12 @@ export default function EventDetailClient({
           </div>
         </div>
       </section>
+
+      {organizer ? (
+        <div className="max-w-3xl lg:max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-5 sm:mb-8">
+          <OrganizedBySection organizer={organizer} />
+        </div>
+      ) : null}
 
       {/* Main Content */}
       <div className="max-w-3xl lg:max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-4">
