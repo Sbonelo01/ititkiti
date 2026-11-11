@@ -1,10 +1,13 @@
 "use client";
 import { useEffect, useState, useRef, useCallback } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense } from "react";
 import { supabase } from "@/utils/supabaseClient";
 import { getProductRole } from "@/utils/roles";
+import { isSuperAdminUser } from "@/utils/superAdmin";
 import { User } from "@supabase/supabase-js";
 import Link from "next/link";
+import AdminEventSalesPage from "@/components/admin/AdminEventSalesPage";
 import { QRCodeCanvas } from "qrcode.react";
 import { AppRouterInstance } from "next/dist/shared/lib/app-router-context.shared-runtime";
 import Image from "next/image";
@@ -65,11 +68,12 @@ interface DashboardTicket {
   events?: DashboardEvent;
 }
 
-export default function Dashboard() {
+function DashboardContent() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [userRole, setUserRole] = useState<string | null>(null);
   const router = useRouter();
+  const ownAccount = useSearchParams().get("view") === "mine";
 
   useEffect(() => {
     const checkUser = async () => {
@@ -119,11 +123,48 @@ export default function Dashboard() {
     return null;
   }
 
-  if (userRole === "organizer") {
-    return <OrganizerDashboard user={user} router={router} />;
-  } else {
-    return <AttendeeDashboard user={user} />;
+  if (isSuperAdminUser(user) && !ownAccount) {
+    return <AdminEventSalesPage embedded />;
   }
+
+  const personalDashboard =
+    userRole === "organizer" ? (
+      <OrganizerDashboard user={user} router={router} />
+    ) : (
+      <AttendeeDashboard user={user} />
+    );
+
+  if (!isSuperAdminUser(user)) {
+    return personalDashboard;
+  }
+
+  return (
+    <>
+      <div className="bg-gray-900 px-4 py-3 text-sm text-white">
+        <div className="mx-auto flex max-w-6xl flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <p>This is your own account. Platform listings and sales are on the main dashboard.</p>
+          <Link href="/dashboard" className="inline-flex min-h-11 items-center font-semibold text-green-200 underline">
+            Platform dashboard
+          </Link>
+        </div>
+      </div>
+      {personalDashboard}
+    </>
+  );
+}
+
+export default function Dashboard() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-gradient-to-br from-green-50 to-white flex items-center justify-center">
+          <p className="text-lg text-gray-600 font-medium">Loading dashboard...</p>
+        </div>
+      }
+    >
+      <DashboardContent />
+    </Suspense>
+  );
 }
 
 interface EventSalesData {

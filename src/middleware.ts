@@ -65,6 +65,10 @@ export function middleware(request: NextRequest) {
     response.headers.set("Cache-Control", "no-store");
   }
 
+  if (pathname.startsWith("/api/admin") || pathname.startsWith("/dashboard/admin")) {
+    response.headers.set("Cache-Control", "private, no-store, max-age=0");
+  }
+
   return response;
 }
 
