@@ -9,7 +9,7 @@ export default function AudienceSplit({ compact = false }: { compact?: boolean }
           <TicketIcon className="h-5 w-5" aria-hidden />
           Buy tickets
         </CtaLink>
-        <CtaLink href="/dashboard/create-event" variant="primary" className="flex-1 py-3">
+        <CtaLink href="/sell" variant="primary" className="flex-1 py-3">
           <CalendarDaysIcon className="h-5 w-5" aria-hidden />
           Sell tickets
         </CtaLink>
@@ -40,7 +40,7 @@ export default function AudienceSplit({ compact = false }: { compact?: boolean }
         <p className="mt-1 text-sm text-gray-600 leading-relaxed">
           List your event in minutes. You keep 100% of ticket price — buyers pay a small platform fee at checkout.
         </p>
-        <CtaLink href="/dashboard/create-event" variant="primary" className="mt-4 w-full">
+        <CtaLink href="/sell" variant="primary" className="mt-4 w-full">
           Start selling — it&apos;s free to list
         </CtaLink>
       </div>

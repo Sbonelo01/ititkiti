@@ -50,9 +50,15 @@ export default function RootLayout({
       <body
         className={`${roboto.variable} ${plusJakarta.variable} antialiased bg-background text-foreground font-sans`}
       >
+        <a
+          href="#main"
+          className="sr-only focus:not-sr-only focus:absolute focus:left-3 focus:top-3 focus:z-[70] focus:rounded-lg focus:bg-gray-950 focus:px-3 focus:py-2 focus:text-white"
+        >
+          Skip to content
+        </a>
         <Navbar />
         <AuthPendingRedirect />
-        <main className="pt-16 md:pt-20 pb-[var(--mobile-nav-offset)] md:pb-8 min-h-screen bg-background">
+        <main id="main" className="pt-16 md:pt-20 pb-[var(--mobile-nav-offset)] md:pb-8 min-h-screen bg-background">
           {children}
         </main>
         <Footer />

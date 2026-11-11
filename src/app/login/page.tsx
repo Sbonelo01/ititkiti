@@ -4,17 +4,14 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "@/utils/supabaseClient";
 import { getProductRole, sanitizeProductRole } from "@/utils/roles";
 import Image from "next/image";
-import { 
-  TicketIcon, 
-  UserIcon, 
+import Link from "next/link";
+import {
+  UserIcon,
   BuildingOfficeIcon,
-  SparklesIcon,
-  ShieldCheckIcon,
-  CreditCardIcon,
-  UserGroupIcon
-} from '@heroicons/react/24/outline';
+} from "@heroicons/react/24/outline";
 import { AuthPageSkeleton } from "@/components/AppLoadingSkeleton";
 import { CtaButton } from "@/components/ui/CtaButton";
+import { buildPricingExamples, formatZar } from "@/constants/pricing";
 import {
   consumeAuthRedirectPath,
   getOAuthRedirectTo,
@@ -298,473 +295,372 @@ function LoginForm() {
     setCompanyLogoPreview(null);
   };
 
+  const fieldClass =
+    "mb-3 w-full rounded-xl border border-gray-300 bg-white px-3 py-3 text-base text-gray-900 placeholder:text-gray-500 focus:outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-green-700)]";
+  const labelClass = "mb-1.5 block text-sm font-bold text-gray-900";
+  const sellSignup = isSellRedirect && !isLogin;
+  const examples = buildPricingExamples();
+
+  const title = isCheckoutRedirect
+    ? isLogin
+      ? "Almost there"
+      : "Quick signup to checkout"
+    : sellSignup
+      ? "Create your seller account"
+      : isSellRedirect
+        ? "Sign in to sell tickets"
+        : isLogin
+          ? "Sign in"
+          : "Create your account";
+
+  const lede = isCheckoutRedirect
+    ? "Sign in once — your QR tickets land in your dashboard right after payment."
+    : sellSignup
+      ? "Create an organizer account, then continue into listing your event. You keep 100% of ticket face value. Listing is free."
+      : isSellRedirect
+        ? "Sign in, then we'll help you enable organizer tools on your account."
+        : isLogin
+          ? "Sign in to your events and tickets."
+          : "Create an account to buy QR tickets or list an event. Listing is free, and organizers keep 100% of ticket face value.";
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 to-white">
-      {/* Hero Section */}
-      <section className="relative bg-gradient-to-br from-green-600 via-green-700 to-green-800 py-10 sm:py-16 overflow-hidden">
-        {/* Animated background elements */}
-        <div className="absolute inset-0 opacity-10">
-          <div className="absolute top-10 left-10 w-32 h-32 bg-white rounded-full animate-bounce"></div>
-          <div className="absolute top-20 right-20 w-24 h-24 bg-green-200 rounded-full animate-pulse"></div>
-          <div className="absolute bottom-10 left-1/4 w-20 h-20 bg-emerald-200 rounded-full animate-spin"></div>
-          <div className="absolute bottom-20 right-1/3 w-28 h-28 bg-teal-200 rounded-full animate-bounce"></div>
-        </div>
-        
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          <div className="text-center">
-            <div className="flex items-center justify-center mb-6">
-              <SparklesIcon className="h-8 w-8 text-yellow-300 mr-3" />
-              <span className="bg-white/20 backdrop-blur-sm text-white px-4 py-2 rounded-full text-sm font-semibold">
-                Welcome to Tikiti
+    <div className="bg-[#F7FBF8] text-gray-950">
+      <section className="mx-auto max-w-6xl px-4 pt-8 sm:px-6">
+        <p className="inline-flex rounded-full bg-green-100 px-3 py-1.5 text-xs font-bold uppercase tracking-wide text-green-700">
+          {sellSignup ? "Organizer sign-up" : isLogin ? "Sign in" : "Create account"}
+        </p>
+        <h1 id="auth-title" className="mt-4 text-4xl font-extrabold tracking-tight sm:text-5xl">
+          {title}
+        </h1>
+        <p id="auth-lede" className="mt-3 max-w-2xl text-lg text-gray-600">
+          {lede}
+        </p>
+      </section>
+
+      <section className="mx-auto grid max-w-6xl items-start gap-8 px-4 py-8 sm:px-6 lg:grid-cols-2">
+        <div className="rounded-3xl border border-gray-200 bg-white p-6 shadow-lg sm:p-8">
+          {sellSignup && (
+            <div className="mb-4 flex flex-wrap items-start justify-between gap-3 rounded-2xl border border-green-200 bg-green-50 px-4 py-3">
+              <div>
+                <p className="font-bold">Organizer account</p>
+                <p className="text-sm text-gray-600">You&apos;ll list your event right after this.</p>
+              </div>
+              <span className="rounded-full bg-white px-3 py-1 text-xs font-bold text-green-900">
+                Selling tickets
               </span>
-              <SparklesIcon className="h-8 w-8 text-yellow-300 ml-3" />
             </div>
-            
-            <h1 className="text-3xl sm:text-5xl md:text-6xl font-bold text-white mb-6 leading-tight">
-              {isCheckoutRedirect
-                ? isLogin
-                  ? "Almost there!"
-                  : "Quick signup to checkout"
-                : isSellRedirect
-                  ? isLogin
-                    ? "Sign in to sell tickets"
-                    : "Create your seller account"
-                  : isLogin
-                    ? "Welcome back!"
-                    : "Join Tikiti today"}
-            </h1>
-            
-            <p className="text-xl text-white/90 mb-8 max-w-2xl mx-auto">
-              {isCheckoutRedirect
-                ? "Sign in once — your QR tickets land in your dashboard right after payment."
-                : isSellRedirect
-                  ? isLogin
-                    ? "Sign in, then we'll help you enable organizer tools on your account."
-                    : "Create an organizer account, then continue into listing your event."
-                  : isLogin
-                    ? "Sign in to access your events and manage your tickets"
-                    : "Create your account and start discovering amazing events or organizing your own"}
+          )}
+          {sellSignup && (
+            <p className="mb-4 text-sm text-gray-600">
+              Buying tickets instead?{" "}
+              <Link href="/events" className="font-bold text-green-800 underline">
+                Browse events
+              </Link>
+              .
+            </p>
+          )}
+
+          <button
+            type="button"
+            onClick={handleGoogleSignIn}
+            disabled={loading || googleLoading}
+            className="inline-flex w-full items-center justify-center gap-3 rounded-xl border border-gray-300 bg-white px-4 py-3 font-bold text-gray-900 hover:bg-gray-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-green-700)] disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {googleLoading ? (
+              "Continuing with Google…"
+            ) : (
+              <>
+                <GoogleGlyph />
+                Continue with Google
+              </>
+            )}
+          </button>
+          <p className="mt-2 text-center text-xs text-gray-600">
+            New Google accounts start as ticket buyers. You can enable selling after sign-in.
+          </p>
+
+          <div className="my-4 flex items-center gap-3 text-sm text-gray-500">
+            <span className="h-px flex-1 bg-gray-200" />
+            or continue with email
+            <span className="h-px flex-1 bg-gray-200" />
+          </div>
+
+          {(error || message) && (
+            <div className="mb-4">
+              {error && (
+                <p id="form-error" role="alert" className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                  {error}
+                </p>
+              )}
+              {message && (
+                <p id="form-status" role="status" className="rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800">
+                  {message}
+                </p>
+              )}
+            </div>
+          )}
+
+          <form onSubmit={handleAuth} className="space-y-1">
+            {!isLogin && !sellSignup && (
+              <fieldset className="mb-4">
+                <legend className="mb-2 text-sm font-bold text-gray-900">I am a</legend>
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  <label className={`flex cursor-pointer items-start gap-3 rounded-xl border-2 bg-white p-3 ${role === "attendee" ? "border-green-600" : "border-gray-200"}`}>
+                    <input
+                      type="radio"
+                      name="role"
+                      value="attendee"
+                      checked={role === "attendee"}
+                      onChange={() => setRole("attendee")}
+                      className="mt-1"
+                    />
+                    <span>
+                      <span className="flex items-center font-semibold">
+                        <UserIcon className="mr-2 h-5 w-5 text-green-700" aria-hidden />
+                        Attendee
+                      </span>
+                      <span className="block text-sm text-gray-600">I want to buy tickets</span>
+                    </span>
+                  </label>
+                  <label className={`flex cursor-pointer items-start gap-3 rounded-xl border-2 bg-white p-3 ${role === "organizer" ? "border-green-600" : "border-gray-200"}`}>
+                    <input
+                      type="radio"
+                      name="role"
+                      value="organizer"
+                      checked={role === "organizer"}
+                      onChange={() => setRole("organizer")}
+                      className="mt-1"
+                    />
+                    <span>
+                      <span className="flex items-center font-semibold">
+                        <BuildingOfficeIcon className="mr-2 h-5 w-5 text-green-700" aria-hidden />
+                        Organizer
+                      </span>
+                      <span className="block text-sm text-gray-600">I want to create events</span>
+                    </span>
+                  </label>
+                </div>
+              </fieldset>
+            )}
+
+            {!isLogin && (
+              <div>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div>
+                    <label htmlFor="given-name" className={labelClass}>First name</label>
+                    <input
+                      id="given-name"
+                      name="given-name"
+                      type="text"
+                      autoComplete="given-name"
+                      required
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      className={fieldClass}
+                      placeholder="Your first name"
+                    />
+                  </div>
+                  {role === "organizer" && (
+                    <div>
+                      <label htmlFor="family-name" className={labelClass}>Last name</label>
+                      <input
+                        id="family-name"
+                        name="family-name"
+                        type="text"
+                        autoComplete="family-name"
+                        required
+                        value={surname}
+                        onChange={(e) => setSurname(e.target.value)}
+                        className={fieldClass}
+                        placeholder="Your last name"
+                      />
+                    </div>
+                  )}
+                </div>
+                {role === "organizer" && (
+                  <div>
+                    <label htmlFor="company-name" className={labelClass}>Organizer or company name</label>
+                    <input
+                      id="company-name"
+                      name="organization"
+                      type="text"
+                      autoComplete="organization"
+                      required
+                      value={companyName}
+                      onChange={(e) => setCompanyName(e.target.value)}
+                      className={fieldClass}
+                      placeholder="Your company name"
+                    />
+                  </div>
+                )}
+                <div>
+                  <label htmlFor="phone" className={labelClass}>Phone number</label>
+                  <input
+                    id="phone"
+                    name="tel"
+                    type="tel"
+                    autoComplete="tel"
+                    required
+                    value={cellphone}
+                    onChange={(e) => setCellphone(e.target.value)}
+                    className={fieldClass}
+                    placeholder="e.g. 061 069 2364"
+                  />
+                </div>
+              </div>
+            )}
+
+            <div>
+              <label htmlFor="email" className={labelClass}>Email address</label>
+              <input
+                id="email"
+                name="email"
+                type="email"
+                autoComplete="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className={fieldClass}
+                placeholder="Enter your email"
+                aria-describedby={error ? "form-error" : undefined}
+              />
+            </div>
+            <div>
+              <label htmlFor="password" className={labelClass}>Password</label>
+              <input
+                id="password"
+                name="password"
+                type="password"
+                autoComplete={isLogin ? "current-password" : "new-password"}
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className={fieldClass}
+                placeholder="Enter your password"
+              />
+            </div>
+
+            {!isLogin && role === "organizer" && (
+              <details className="mb-4 rounded-xl border border-gray-200 p-4">
+                <summary className="cursor-pointer text-sm font-bold text-gray-900">
+                  Company logo (optional)
+                </summary>
+                <p className="mt-2 text-xs text-gray-600">
+                  You can add a logo now or later from your profile.
+                </p>
+                <label htmlFor="company-logo" className={`${labelClass} mt-3`}>
+                  Upload a logo
+                </label>
+                <input
+                  id="company-logo"
+                  type="file"
+                  accept="image/*"
+                  onChange={handleLogoChange}
+                  className="w-full text-sm"
+                />
+                {companyLogoPreview && (
+                  <div className="relative mt-3 h-32 w-full overflow-hidden rounded-xl border border-gray-200">
+                    <Image src={companyLogoPreview} alt="Company logo preview" fill className="object-contain" />
+                  </div>
+                )}
+              </details>
+            )}
+
+            <CtaButton
+              type="submit"
+              disabled={loading || googleLoading}
+              variant="primary"
+              className="mt-2 w-full rounded-full py-4 text-base font-bold"
+            >
+              {loading ? (
+                isLogin ? "Signing in…" : "Creating account…"
+              ) : isCheckoutRedirect ? (
+                isLogin ? "Sign in & continue to checkout" : "Create account & continue"
+              ) : sellSignup ? (
+                "Create organizer account"
+              ) : (
+                isLogin ? "Sign in" : "Create account"
+              )}
+            </CtaButton>
+
+            <p className="pt-4 text-center text-gray-600">
+              {isLogin ? "Don't have an account? " : "Already have an account? "}
+              <button
+                type="button"
+                onClick={handleToggle}
+                className="font-bold text-green-800 underline"
+              >
+                {isLogin ? "Sign up" : "Sign in"}
+              </button>
+            </p>
+          </form>
+        </div>
+
+        <aside className="space-y-4">
+          <div className="rounded-3xl border border-gray-200 bg-white p-6 shadow-lg">
+            <h2 className="text-xl font-extrabold">What you keep</h2>
+            <p className="mt-2 text-sm text-gray-600">
+              You receive 100% of ticket face value. Buyers pay the platform fee at checkout.
+            </p>
+            <dl className="mt-4 text-sm">
+              {examples.map((example) => (
+                <div key={example.tierId} className="flex justify-between gap-3 border-b border-gray-100 py-2">
+                  <dt>{example.label}</dt>
+                  <dd className="font-bold">Buyer pays {example.tierAmountLabel}</dd>
+                </div>
+              ))}
+            </dl>
+            <p className="mt-3 text-xs text-gray-500">
+              Listing is free. Card processing is included in the buyer fee. Example: a{" "}
+              {formatZar(examples[1]?.faceZar ?? 100)} ticket adds a {formatZar(examples[1]?.feeZar ?? 10)} buyer fee.
             </p>
           </div>
-        </div>
-      </section>
-
-      {/* Login/Signup Form Section */}
-      <section className="py-16">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-            {/* Form Side */}
-            <div className="bg-white rounded-2xl shadow-xl p-8">
-              <div className="text-center mb-8">
-                <div className="flex items-center justify-center mb-4">
-                  <div className="bg-green-500 w-16 h-16 rounded-2xl flex items-center justify-center shadow-lg">
-                    <TicketIcon className="h-8 w-8 text-white" />
-                  </div>
-                </div>
-                <h2 className="text-3xl font-bold text-gray-800 mb-2">
-                  {isCheckoutRedirect
-                    ? isLogin
-                      ? "Sign in to buy tickets"
-                      : "Create account & buy"
-                    : isSellRedirect
-                      ? isLogin
-                        ? "Sign in to continue"
-                        : "Sign up as organizer"
-                      : isLogin
-                        ? "Sign in"
-                        : "Create account"}
-                </h2>
-                <p className="text-gray-600">
-                  {isCheckoutRedirect
-                    ? "Takes under a minute — then you're back to checkout."
-                    : isSellRedirect
-                      ? isLogin
-                        ? "Already a buyer? You'll enable selling on the next screen."
-                        : "Organizer signup — you'll list your event right after this."
-                      : isLogin
-                        ? "Welcome back to Tikiti"
-                        : "Join thousands of event organizers and attendees"}
-                </p>
-              </div>
-
-              {(error || message) && (
-                <div className="mb-6">
-                  {error && (
-                    <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm">
-                      {error}
-                    </div>
-                  )}
-                  {message && (
-                    <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-xl text-sm">
-                      {message}
-                    </div>
-                  )}
-                </div>
+          <div className="rounded-3xl border border-gray-200 bg-white p-6 shadow-lg">
+            <h2 className="text-xl font-extrabold">What happens next</h2>
+            <ol className="mt-3 list-decimal space-y-2 pl-5 text-sm text-gray-700">
+              {sellSignup ? (
+                <>
+                  <li>Create your organizer account.</li>
+                  <li>Confirm your email before continuing. That confirmation step is part of the live sign-up.</li>
+                  <li>Continue into listing your event. Listing is free.</li>
+                  <li>Door scanning is included at scan.tikiti.fun. After the event starts, generate a settlement invoice for 100% of face value.</li>
+                </>
+              ) : isCheckoutRedirect ? (
+                <>
+                  <li>Sign in or create an account.</li>
+                  <li>Return to checkout and pay with Paystack.</li>
+                  <li>Your QR ticket appears in your dashboard after payment.</li>
+                </>
+              ) : (
+                <>
+                  <li>Sign in to the dashboard for your tickets or events.</li>
+                  <li>Guests get QR tickets after payment. Organizers list events for free.</li>
+                  <li>Door scanning is in the browser at scan.tikiti.fun.</li>
+                </>
               )}
-
-              <div className="space-y-4 mb-6">
-                <button
-                  type="button"
-                  onClick={handleGoogleSignIn}
-                  disabled={loading || googleLoading}
-                  className="w-full inline-flex items-center justify-center gap-3 rounded-xl border border-gray-200 bg-white px-6 py-3.5 font-semibold text-gray-800 shadow-sm hover:bg-gray-50 transition-colors duration-200 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {googleLoading ? (
-                    <span className="flex items-center justify-center">
-                      <span className="animate-spin rounded-full h-5 w-5 border-b-2 border-gray-700 mr-2" aria-hidden />
-                      Continuing with Google…
-                    </span>
-                  ) : (
-                    <>
-                      <GoogleGlyph />
-                      Continue with Google
-                    </>
-                  )}
-                </button>
-                <p className="text-xs text-gray-500 text-center -mt-2">
-                  New Google accounts start as ticket buyers. You can enable selling after sign-in.
-                </p>
-                <div className="relative">
-                  <div className="absolute inset-0 flex items-center" aria-hidden>
-                    <div className="w-full border-t border-gray-200" />
-                  </div>
-                  <div className="relative flex justify-center text-sm">
-                    <span className="bg-white px-3 text-gray-500">or continue with email</span>
-                  </div>
-                </div>
-              </div>
-
-              <form onSubmit={handleAuth} className="space-y-6">
-                {/* Role Selection - only in signup mode */}
-                {!isLogin && (
-                  <div className="bg-gray-50 p-6 rounded-xl">
-                    <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-                      <UserGroupIcon className="h-5 w-5 mr-2 text-green-500" />
-                      I am a:
-                    </h3>
-                    <div className="grid grid-cols-2 gap-4">
-                      <label className={`flex items-center p-4 bg-white rounded-xl border-2 cursor-pointer transition-all duration-200 ${
-                        role === "attendee"
-                          ? "border-green-500"
-                          : "border-gray-200 hover:border-green-500"
-                      } ${isSellRedirect ? "order-2" : ""}`}>
-                        <input
-                          type="radio"
-                          name="role"
-                          value="attendee"
-                          checked={role === "attendee"}
-                          onChange={(e) =>
-                            setRole(e.target.value as "organizer" | "attendee")
-                          }
-                          className="h-4 w-4 text-green-500 focus:ring-green-500 border-gray-300"
-                        />
-                        <div className="ml-3">
-                          <div className="flex items-center">
-                            <UserIcon className="h-5 w-5 text-green-500 mr-2" />
-                            <span className="font-semibold text-gray-800">Attendee</span>
-                          </div>
-                          <p className="text-sm text-gray-600 mt-1">I want to buy tickets</p>
-                        </div>
-                      </label>
-                      <label className={`flex items-center p-4 bg-white rounded-xl border-2 cursor-pointer transition-all duration-200 ${
-                        role === "organizer"
-                          ? "border-green-500"
-                          : "border-gray-200 hover:border-green-500"
-                      } ${isSellRedirect ? "order-1" : ""}`}>
-                        <input
-                          type="radio"
-                          name="role"
-                          value="organizer"
-                          checked={role === "organizer"}
-                          onChange={(e) =>
-                            setRole(e.target.value as "organizer" | "attendee")
-                          }
-                          className="h-4 w-4 text-green-500 focus:ring-green-500 border-gray-300"
-                        />
-                        <div className="ml-3">
-                          <div className="flex items-center">
-                            <BuildingOfficeIcon className="h-5 w-5 text-green-500 mr-2" />
-                            <span className="font-semibold text-gray-800">Organizer</span>
-                          </div>
-                          <p className="text-sm text-gray-600 mt-1">I want to create events</p>
-                        </div>
-                      </label>
-                    </div>
-                  </div>
-                )}
-
-                {/* Account Information */}
-                <div className="space-y-4">
-                  <div>
-                    <label htmlFor="email" className="block text-sm font-semibold text-gray-700 mb-2">
-                      Email Address
-                    </label>
-                    <input
-                      id="email"
-                      name="email"
-                      type="email"
-                      autoComplete="email"
-                      required
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 bg-white text-gray-800 placeholder-gray-500"
-                      placeholder="Enter your email"
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="password" className="block text-sm font-semibold text-gray-700 mb-2">
-                      Password
-                    </label>
-                    <input
-                      id="password"
-                      name="password"
-                      type="password"
-                      autoComplete="current-password"
-                      required
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 bg-white text-gray-800 placeholder-gray-500"
-                      placeholder="Enter your password"
-                    />
-                  </div>
-                </div>
-
-                {/* Personal Information - only in signup mode */}
-                {!isLogin && (
-                  <div className="bg-gray-50 p-6 rounded-xl space-y-4">
-                    <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-                      <UserIcon className="h-5 w-5 mr-2 text-green-500" />
-                      Personal Information
-                    </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-2">
-                          First Name
-                        </label>
-                        <input
-                          type="text"
-                          value={name}
-                          onChange={(e) => setName(e.target.value)}
-                          required
-                          className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 bg-white text-gray-800 placeholder-gray-500"
-                          placeholder="Your first name"
-                        />
-                      </div>
-                      {role === "organizer" && (
-                        <div>
-                          <label className="block text-sm font-semibold text-gray-700 mb-2">
-                            Last Name
-                          </label>
-                          <input
-                            type="text"
-                            value={surname}
-                            onChange={(e) => setSurname(e.target.value)}
-                            required
-                            className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 bg-white text-gray-800 placeholder-gray-500"
-                            placeholder="Your last name"
-                          />
-                        </div>
-                      )}
-                    </div>
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">
-                        Phone Number
-                      </label>
-                      <input
-                        type="tel"
-                        value={cellphone}
-                        onChange={(e) => setCellphone(e.target.value)}
-                        required
-                        className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 bg-white text-gray-800 placeholder-gray-500"
-                        placeholder="e.g. 0123456789"
-                      />
-                    </div>
-                  </div>
-                )}
-
-                {/* Organization Details - only for organizers */}
-                {!isLogin && role === "organizer" && (
-                  <div className="bg-gray-50 p-6 rounded-xl space-y-4">
-                    <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-                      <BuildingOfficeIcon className="h-5 w-5 mr-2 text-green-500" />
-                      Organization Details
-                    </h3>
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">
-                        Company Name
-                      </label>
-                      <input
-                        type="text"
-                        value={companyName}
-                        onChange={(e) => setCompanyName(e.target.value)}
-                        required
-                        className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 bg-white text-gray-800 placeholder-gray-500"
-                        placeholder="Your company name"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">
-                        Company Logo (Optional)
-                      </label>
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={handleLogoChange}
-                        className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 bg-white text-gray-800 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-green-500 file:text-white hover:file:bg-green-600"
-                      />
-                      {companyLogoPreview && (
-                        <div className="mt-4 w-full h-32 relative rounded-xl overflow-hidden border border-gray-200">
-                          <Image
-                            src={companyLogoPreview}
-                            alt="Company Logo Preview"
-                            fill
-                            className="object-contain"
-                          />
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                {/* Submit Button */}
-                <CtaButton
-                  type="submit"
-                  disabled={loading || googleLoading}
-                  variant="primary"
-                  className="w-full py-4 text-lg font-bold"
-                >
-                  {loading ? (
-                    <span className="flex items-center justify-center">
-                      <span className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2" aria-hidden />
-                      {isLogin ? "Signing in…" : "Creating account…"}
-                    </span>
-                  ) : isCheckoutRedirect ? (
-                    isLogin ? "Sign in & continue to checkout" : "Create account & continue"
-                  ) : isSellRedirect && !isLogin ? (
-                    "Create organizer account"
-                  ) : (
-                    isLogin ? "Sign in" : "Create account"
-                  )}
-                </CtaButton>
-
-                {/* Toggle between login/signup */}
-                <div className="text-center">
-                  <p className="text-gray-600">
-                    {isLogin ? "Don't have an account? " : "Already have an account? "}
-                    <button
-                      type="button"
-                      onClick={handleToggle}
-                      className="text-green-600 hover:text-green-700 font-semibold transition-colors duration-200"
-                    >
-                      {isLogin ? "Sign up" : "Sign in"}
-                    </button>
-                  </p>
-                </div>
-              </form>
-            </div>
-
-            {/* Features Side */}
-            <div className="space-y-8">
-              <div className="bg-gradient-to-br from-green-50 to-white p-8 rounded-2xl shadow-lg">
-                <h3 className="text-2xl font-bold text-gray-800 mb-6">
-                  Why Choose Tikiti?
-                </h3>
-                <div className="space-y-6">
-                  <div className="flex items-start">
-                    <div className="bg-green-500 w-10 h-10 rounded-xl flex items-center justify-center mr-4 flex-shrink-0">
-                      <ShieldCheckIcon className="h-5 w-5 text-white" />
-                    </div>
-                    <div>
-                      <h4 className="font-semibold text-gray-800 mb-1">Secure & Safe</h4>
-                      <p className="text-gray-600 text-sm">Bank-level security for all transactions</p>
-                    </div>
-                  </div>
-                  <div className="flex items-start">
-                    <div className="bg-green-500 w-10 h-10 rounded-xl flex items-center justify-center mr-4 flex-shrink-0">
-                      <CreditCardIcon className="h-5 w-5 text-white" />
-                    </div>
-                    <div>
-                      <h4 className="font-semibold text-gray-800 mb-1">Instant Delivery</h4>
-                      <p className="text-gray-600 text-sm">Get your tickets instantly via email</p>
-                    </div>
-                  </div>
-                  <div className="flex items-start">
-                    <div className="bg-green-500 w-10 h-10 rounded-xl flex items-center justify-center mr-4 flex-shrink-0">
-                      <UserGroupIcon className="h-5 w-5 text-white" />
-                    </div>
-                    <div>
-                      <h4 className="font-semibold text-gray-800 mb-1">Easy Management</h4>
-                      <p className="text-gray-600 text-sm">Create and manage events effortlessly</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="bg-gradient-to-br from-blue-50 to-white p-8 rounded-2xl shadow-lg">
-                <h3 className="text-2xl font-bold text-gray-800 mb-4">
-                  Join Thousands of Users
-                </h3>
-                <div className="grid grid-cols-2 gap-4 text-center">
-                  <div>
-                    <div className="text-3xl font-bold text-green-600 mb-1">10K+</div>
-                    <div className="text-sm text-gray-600">Events Created</div>
-                  </div>
-                  <div>
-                    <div className="text-3xl font-bold text-green-600 mb-1">50K+</div>
-                    <div className="text-sm text-gray-600">Tickets Sold</div>
-                  </div>
-                </div>
-              </div>
-            </div>
+            </ol>
           </div>
-        </div>
+        </aside>
       </section>
 
-      {/* Logo Upload Prompt Modal */}
       {showLogoPrompt && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-70">
-          <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full mx-4">
-            <div className="text-center mb-6">
-              <div className="bg-green-500 w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                <BuildingOfficeIcon className="h-8 w-8 text-white" />
-              </div>
-              <h3 className="text-2xl font-bold text-gray-800 mb-2">
-                Upload Company Logo
-              </h3>
-              <p className="text-gray-600">
-                You selected a company logo during sign up. Would you like to upload it now?
-              </p>
-            </div>
-            
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
+          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl" role="dialog" aria-labelledby="logo-upload-title">
+            <h2 id="logo-upload-title" className="text-2xl font-bold text-gray-900">
+              Upload company logo
+            </h2>
+            <p className="mt-2 text-gray-600">
+              You selected a company logo during sign up. Would you like to upload it now?
+            </p>
             {companyLogoPreview && (
-              <div className="mb-6 w-full h-32 relative rounded-xl overflow-hidden border border-gray-200">
-                <Image
-                  src={companyLogoPreview}
-                  alt="Company Logo Preview"
-                  fill
-                  className="object-contain"
-                />
+              <div className="relative mt-4 h-32 w-full overflow-hidden rounded-xl border border-gray-200">
+                <Image src={companyLogoPreview} alt="Company logo preview" fill className="object-contain" />
               </div>
             )}
-            
-            {(error || message) && (
-              <div className="mb-6">
-                {error && (
-                  <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm">
-                    {error}
-                  </div>
-                )}
-                {message && (
-                  <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-xl text-sm">
-                    {message}
-                  </div>
-                )}
-              </div>
-            )}
-            
-            <div className="flex gap-4">
+            <div className="mt-6 flex gap-3">
               <button
-                className="flex-1 px-6 py-3 rounded-xl border border-gray-300 text-gray-700 hover:bg-gray-50 transition-all duration-200"
+                type="button"
+                className="flex-1 rounded-xl border border-gray-300 px-4 py-3 text-gray-800 hover:bg-gray-50"
                 onClick={() => {
                   setShowLogoPrompt(false);
                   setCompanyLogo(null);
@@ -775,18 +671,12 @@ function LoginForm() {
                 Skip
               </button>
               <button
-                className="flex-1 px-6 py-3 rounded-xl bg-gradient-to-r from-green-500 to-green-600 text-white font-semibold hover:from-green-600 hover:to-green-700 transition-all duration-200"
+                type="button"
+                className="flex-1 rounded-xl bg-green-600 px-4 py-3 font-semibold text-white hover:bg-green-700 disabled:opacity-60"
                 onClick={handleLogoUploadAfterAuth}
                 disabled={logoUploadLoading}
               >
-                {logoUploadLoading ? (
-                  <div className="flex items-center justify-center">
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                    Uploading...
-                  </div>
-                ) : (
-                  "Upload Logo"
-                )}
+                {logoUploadLoading ? "Uploading..." : "Upload logo"}
               </button>
             </div>
           </div>

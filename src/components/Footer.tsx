@@ -3,25 +3,14 @@ import Link from "next/link";
 import Image from "next/image";
 import { FormEvent, useState } from "react";
 import { usePathname } from "next/navigation";
-import { 
-  TicketIcon,
-  SparklesIcon,
-  MapPinIcon,
-  PhoneIcon,
-  EnvelopeIcon,
-  GlobeAltIcon,
-  HeartIcon,
-  ArrowUpIcon
-} from '@heroicons/react/24/outline';
-import ScannerAppLink from "@/components/ScannerAppLink";
-import { BRAND } from "@/constants/branding";
-import { 
-  FaFacebook, 
-  // FaTwitter, 
-  FaInstagram, 
-  FaTiktok, 
-  FaYoutube 
-} from 'react-icons/fa';
+import { SCANNER_APP_URL } from "@/constants/branding";
+import { POWERED_BY_LINE, SELL_PATH } from "@/constants/landing";
+import {
+  FaFacebook,
+  FaInstagram,
+  FaTiktok,
+  FaYoutube,
+} from "react-icons/fa";
 
 export default function Footer() {
   const pathname = usePathname();
@@ -29,10 +18,6 @@ export default function Footer() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [subscribeMessage, setSubscribeMessage] = useState<string | null>(null);
   const [subscribeError, setSubscribeError] = useState<string | null>(null);
-
-  const scrollToTop = () => {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
 
   const handleSubscribe = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -72,232 +57,113 @@ export default function Footer() {
   if (pathname === "/scan") return null;
 
   return (
-    <footer className="relative bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-white overflow-hidden">
-      {/* Animated background elements */}
-      <div className="absolute inset-0 opacity-5">
-        <div className="absolute top-10 left-10 w-32 h-32 bg-green-400 rounded-full animate-pulse"></div>
-        <div className="absolute top-20 right-20 w-24 h-24 bg-blue-400 rounded-full animate-bounce"></div>
-        <div className="absolute bottom-10 left-1/4 w-20 h-20 bg-purple-400 rounded-full animate-spin"></div>
-        <div className="absolute bottom-20 right-1/3 w-28 h-28 bg-yellow-400 rounded-full animate-pulse"></div>
+    <footer className="bg-[#0B1510] pb-[var(--mobile-nav-offset)] text-gray-200 md:pb-0">
+      <div className="mx-auto grid max-w-6xl gap-8 px-4 py-12 sm:px-6 md:grid-cols-2 lg:grid-cols-4">
+        <div>
+          <Link href="/" className="inline-flex" aria-label="Tikiti home">
+            <Image
+              src="/tikiti-wordmark.png"
+              alt="tikiti."
+              width={110}
+              height={40}
+              className="h-10 w-auto"
+            />
+          </Link>
+          <p className="mt-4 text-sm leading-relaxed text-gray-300">
+            Paperless event ticketing in South Africa. Organizers keep 100% of ticket face value.
+            Buyers pay a small platform fee at checkout.
+          </p>
+          <p className="mt-4 text-sm leading-relaxed text-gray-300">
+            IZIBONELO TECH PTY LTD
+            <br />
+            Durban, South Africa
+            <br />
+            <a className="font-semibold text-green-50 hover:underline" href="tel:+27610692364">
+              +27 61 069 2364
+            </a>
+            <br />
+            <a className="font-semibold text-green-50 hover:underline" href="mailto:info@tikiti.fun">
+              info@tikiti.fun
+            </a>
+          </p>
+          <div className="mt-4 flex items-center gap-3">
+            <a href="https://www.facebook.com/tiikiitii" target="_blank" rel="noopener noreferrer" aria-label="Facebook" className="rounded-lg bg-white/10 p-2 hover:bg-green-700">
+              <FaFacebook className="h-5 w-5" />
+            </a>
+            <a href="https://www.instagram.com/tikiti_fun" target="_blank" rel="noopener noreferrer" aria-label="Instagram" className="rounded-lg bg-white/10 p-2 hover:bg-green-700">
+              <FaInstagram className="h-5 w-5" />
+            </a>
+            <a href="https://www.tiktok.com/@tikiti.fun" target="_blank" rel="noopener noreferrer" aria-label="TikTok" className="rounded-lg bg-white/10 p-2 hover:bg-green-700">
+              <FaTiktok className="h-5 w-5" />
+            </a>
+            <a href="https://www.youtube.com/@tikiti_fun" target="_blank" rel="noopener noreferrer" aria-label="YouTube" className="rounded-lg bg-white/10 p-2 hover:bg-green-700">
+              <FaYoutube className="h-5 w-5" />
+            </a>
+          </div>
+        </div>
+
+        <div>
+          <h2 className="text-sm font-bold uppercase tracking-wide text-white">For guests</h2>
+          <ul className="mt-3 space-y-2 text-sm">
+            <li><Link className="font-semibold text-green-50 hover:underline" href="/events">Browse events</Link></li>
+            <li><Link className="font-semibold text-green-50 hover:underline" href="/login">Sign in</Link></li>
+          </ul>
+        </div>
+
+        <div>
+          <h2 className="text-sm font-bold uppercase tracking-wide text-white">For organizers</h2>
+          <ul className="mt-3 space-y-2 text-sm">
+            <li><Link className="font-semibold text-green-50 hover:underline" href={SELL_PATH}>Sell tickets</Link></li>
+            <li><Link className="font-semibold text-green-50 hover:underline" href="/sell#pricing">How pricing works</Link></li>
+            <li><Link className="font-semibold text-green-50 hover:underline" href="/login?redirect=/dashboard/create-event">Create organizer account</Link></li>
+            <li><a className="font-semibold text-green-50 hover:underline" href={SCANNER_APP_URL}>Tikiti Scanner</a></li>
+          </ul>
+        </div>
+
+        <div>
+          <h2 className="text-sm font-bold uppercase tracking-wide text-white">Support</h2>
+          <ul className="mt-3 space-y-2 text-sm">
+            <li><Link className="font-semibold text-green-50 hover:underline" href="/faq">FAQ</Link></li>
+            <li><Link className="font-semibold text-green-50 hover:underline" href="/help">Help Centre</Link></li>
+            <li><Link className="font-semibold text-green-50 hover:underline" href="/contact">Contact</Link></li>
+            <li><Link className="font-semibold text-green-50 hover:underline" href="/terms">Terms</Link></li>
+            <li><Link className="font-semibold text-green-50 hover:underline" href="/privacy">Privacy</Link></li>
+          </ul>
+          <form onSubmit={handleSubscribe} className="mt-6">
+            <label htmlFor="footer-email" className="block text-sm font-semibold text-white">
+              Email updates
+            </label>
+            <div className="mt-2 flex flex-col gap-2">
+              <input
+                id="footer-email"
+                name="email"
+                type="email"
+                autoComplete="email"
+                placeholder="you@example.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                className="rounded-xl border border-white/15 bg-white/10 px-3 py-2 text-sm text-white placeholder:text-gray-400 focus:outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-green-700)]"
+              />
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="rounded-full bg-green-600 px-4 py-2 text-sm font-bold text-white hover:bg-green-700 disabled:opacity-60"
+              >
+                {isSubmitting ? "Subscribing..." : "Subscribe"}
+              </button>
+            </div>
+            {subscribeMessage && <p className="mt-2 text-sm text-green-300" role="status">{subscribeMessage}</p>}
+            {subscribeError && <p className="mt-2 text-sm text-red-300" role="alert">{subscribeError}</p>}
+          </form>
+        </div>
       </div>
-
-      <div className="relative z-10">
-        {/* Main Footer Content */}
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-            
-            {/* Brand Section */}
-            <div className="lg:col-span-1">
-              <Link href="/" className="flex items-center gap-3 group mb-6">
-                <div className="h-12 w-12 flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all duration-200 transform group-hover:scale-105">
-                  <Image 
-                    src="/tikiti-wordmark.png" 
-                    alt="Tikiti Logo" 
-                    width={62} 
-                    height={62} 
-                    className="object-contain"
-                  />
-                </div>
-              </Link>
-              <p className="text-gray-300 mb-6 leading-relaxed">
-                {BRAND.tagline}. Discover events, sell digital tickets, and check in guests paperlessly — good for your crowd, great for the environment.
-              </p>
-              <div className="mb-6">
-                <p className="text-sm font-semibold text-green-400 mb-3">Tikiti Scanner — for organizers</p>
-                <ScannerAppLink variant="outline" className="items-start" />
-              </div>
-              <div className="flex items-center gap-2 text-gray-400">
-                <SparklesIcon className="h-5 w-5 text-yellow-400" />
-                <span className="text-sm">Powered by <a href="https://funzile.com" target="_blank" className="text-green-400 hover:text-green-300 transition-all duration-200">Funzile</a></span>
-              </div>
-            </div>
-
-            {/* Quick Links */}
-            <div>
-              <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
-                <TicketIcon className="h-5 w-5 text-green-400" />
-                Quick Links
-              </h3>
-              <ul className="space-y-3">
-                <li>
-                  <Link href="/" className="text-gray-300 hover:text-green-400 transition-all duration-200 flex items-center gap-2 group">
-                    <div className="w-1 h-1 bg-green-400 rounded-full group-hover:scale-150 transition-transform duration-200"></div>
-                    Home
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/events" className="text-gray-300 hover:text-green-400 transition-all duration-200 flex items-center gap-2 group">
-                    <div className="w-1 h-1 bg-green-400 rounded-full group-hover:scale-150 transition-transform duration-200"></div>
-                    Browse Events
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/dashboard/create-event" className="text-gray-300 hover:text-green-400 transition-all duration-200 flex items-center gap-2 group">
-                    <div className="w-1 h-1 bg-green-400 rounded-full group-hover:scale-150 transition-transform duration-200"></div>
-                    Create Event
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/dashboard" className="text-gray-300 hover:text-green-400 transition-all duration-200 flex items-center gap-2 group">
-                    <div className="w-1 h-1 bg-green-400 rounded-full group-hover:scale-150 transition-transform duration-200"></div>
-                    Dashboard
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/login" className="text-gray-300 hover:text-green-400 transition-all duration-200 flex items-center gap-2 group">
-                    <div className="w-1 h-1 bg-green-400 rounded-full group-hover:scale-150 transition-transform duration-200"></div>
-                    Sign In
-                  </Link>
-                </li>
-              </ul>
-            </div>
-
-            {/* Support */}
-            <div>
-              <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
-                <HeartIcon className="h-5 w-5 text-green-400" />
-                Support
-              </h3>
-              <ul className="space-y-3">
-                <li>
-                  <Link href="/help" className="text-gray-300 hover:text-green-400 transition-all duration-200 flex items-center gap-2 group">
-                    <div className="w-1 h-1 bg-green-400 rounded-full group-hover:scale-150 transition-transform duration-200"></div>
-                    Help Center
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/contact" className="text-gray-300 hover:text-green-400 transition-all duration-200 flex items-center gap-2 group">
-                    <div className="w-1 h-1 bg-green-400 rounded-full group-hover:scale-150 transition-transform duration-200"></div>
-                    Contact Us
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/faq" className="text-gray-300 hover:text-green-400 transition-all duration-200 flex items-center gap-2 group">
-                    <div className="w-1 h-1 bg-green-400 rounded-full group-hover:scale-150 transition-transform duration-200"></div>
-                    FAQ
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/privacy" className="text-gray-300 hover:text-green-400 transition-all duration-200 flex items-center gap-2 group">
-                    <div className="w-1 h-1 bg-green-400 rounded-full group-hover:scale-150 transition-transform duration-200"></div>
-                    Privacy Policy
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/terms" className="text-gray-300 hover:text-green-400 transition-all duration-200 flex items-center gap-2 group">
-                    <div className="w-1 h-1 bg-green-400 rounded-full group-hover:scale-150 transition-transform duration-200"></div>
-                    Terms of Service
-                  </Link>
-                </li>
-              </ul>
-            </div>
-
-            {/* Contact Info */}
-            <div>
-              <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
-                <GlobeAltIcon className="h-5 w-5 text-green-400" />
-                Contact Info
-              </h3>
-              <div className="space-y-4">
-                <div className="flex items-center gap-3 text-gray-300">
-                  <MapPinIcon className="h-5 w-5 text-green-400 flex-shrink-0" />
-                  <span className="text-sm">Durban, South Africa</span>
-                </div>
-                <div className="flex items-center gap-3 text-gray-300">
-                  <PhoneIcon className="h-5 w-5 text-green-400 flex-shrink-0" />
-                  <span className="text-sm">+27 61 069 2364</span>
-                </div>
-                <div className="flex items-center gap-3 text-gray-300">
-                  <EnvelopeIcon className="h-5 w-5 text-green-400 flex-shrink-0" />
-                  <span className="text-sm">info@tikiti.fun</span>
-                </div>
-              </div>
-
-              {/* Social Media */}
-              <div className="mt-6">
-                <h4 className="text-white font-semibold mb-3">Follow Us</h4>
-                <div className="flex items-center gap-3">
-                  <a href="https://www.facebook.com/tiikiitii" target="_blank" className="bg-gray-800 hover:bg-green-600 p-2 rounded-lg transition-all duration-200 transform hover:scale-110">
-                    <FaFacebook className="h-5 w-5" />
-                  </a>
-                  {/* <a href="#" className="bg-gray-800 hover:bg-green-600 p-2 rounded-lg transition-all duration-200 transform hover:scale-110">
-                    <FaTwitter className="h-5 w-5" />
-                  </a> */}
-                  <a href="https://www.instagram.com/tikiti_fun" className="bg-gray-800 hover:bg-green-600 p-2 rounded-lg transition-all duration-200 transform hover:scale-110">
-                    <FaInstagram className="h-5 w-5" />
-                  </a>
-                  <a href="https://www.tiktok.com/@tikiti.fun" target="_blank" rel="noopener noreferrer" className="bg-gray-800 hover:bg-green-600 p-2 rounded-lg transition-all duration-200 transform hover:scale-110" aria-label="TikTok">
-                    <FaTiktok className="h-5 w-5" />
-                  </a>
-                  <a href="https://www.youtube.com/@tikiti_fun" className="bg-gray-800 hover:bg-green-600 p-2 rounded-lg transition-all duration-200 transform hover:scale-110">
-                    <FaYoutube className="h-5 w-5" />
-                  </a>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Newsletter Signup */}
-          <div className="mt-12 pt-8 border-t border-gray-700">
-            <div className="max-w-2xl mx-auto text-center">
-              <h3 className="text-2xl font-bold text-white mb-4">Stay Updated</h3>
-              <p className="text-gray-300 mb-6">
-                Get the latest updates on events, exclusive offers, and platform features delivered to your inbox.
-              </p>
-              <form onSubmit={handleSubscribe} className="max-w-md mx-auto">
-                <div className="flex flex-col sm:flex-row gap-3">
-                  <input
-                    id="email"
-                    name="email"
-                    type="email"
-                    placeholder="Enter your email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                    className="flex-1 px-4 py-3 bg-gray-800 text-white rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 border border-gray-700 placeholder-gray-400"
-                  />
-                  <button
-                    type="submit"
-                    disabled={isSubmitting}
-                    className="bg-gradient-to-r from-green-500 to-green-600 text-white px-6 py-3 rounded-xl font-semibold hover:from-green-600 hover:to-green-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 disabled:opacity-60 disabled:cursor-not-allowed disabled:transform-none"
-                  >
-                    {isSubmitting ? "Subscribing..." : "Subscribe"}
-                  </button>
-                </div>
-                {subscribeMessage && (
-                  <p className="mt-3 text-sm text-green-400">{subscribeMessage}</p>
-                )}
-                {subscribeError && (
-                  <p className="mt-3 text-sm text-red-400">{subscribeError}</p>
-                )}
-              </form>
-            </div>
-          </div>
-        </div>
-
-        {/* Bottom Bar */}
-        <div className="border-t border-gray-700 bg-gray-900/50 backdrop-blur-sm">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-            <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-              <div className="flex items-center gap-4 text-sm text-gray-400">
-                <span>&copy; {new Date().getFullYear()} IZIBONELO TECH PTY LTD. All rights reserved.</span>
-                <span className="hidden md:inline">•</span>
-                <span className="hidden md:inline">Made with ❤️ by <a href="https://funzile.com" target="_blank" className="text-green-400 hover:text-green-300 transition-all duration-200">Funzile</a></span>
-              </div>
-              
-              <div className="flex items-center gap-4">
-                <button
-                  onClick={scrollToTop}
-                  className="bg-gradient-to-r from-green-500 to-green-600 text-white p-3 rounded-xl hover:from-green-600 hover:to-green-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105"
-                  aria-label="Scroll to top"
-                >
-                  <ArrowUpIcon className="h-5 w-5" />
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
+      <div className="border-t border-white/10">
+        <p className="mx-auto max-w-6xl px-4 py-4 text-sm text-gray-400 sm:px-6">
+          © {new Date().getFullYear()} IZIBONELO TECH PTY LTD. All rights reserved.
+        </p>
+        <p className="mx-auto max-w-6xl px-4 pb-6 text-sm text-gray-400 sm:px-6">{POWERED_BY_LINE}</p>
       </div>
     </footer>
   );
-} 
+}

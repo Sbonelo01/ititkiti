@@ -19,8 +19,8 @@ export function defaultOgImages(): NonNullable<Metadata["openGraph"]>["images"] 
   return [
     {
       url: absoluteUrl("/tikiti-logo.png"),
-      width: 1271,
-      height: 576,
+      width: 1129,
+      height: 520,
       alt: `${BRAND.name} — ${BRAND.tagline}`,
     },
   ];
