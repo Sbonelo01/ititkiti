@@ -1,4 +1,5 @@
 import { BRAND } from "@/constants/branding";
+import type { PublicOrganizerCard } from "@/lib/events/publicOrganizer";
 import { absoluteUrl } from "@/lib/seo/metadata";
 
 export function buildOrganizationJsonLd() {
@@ -49,6 +50,7 @@ export type EventJsonLdInput = {
   price: number;
   posterUrl?: string | null;
   lowestPrice?: number;
+  publicOrganizer?: PublicOrganizerCard | null;
 };
 
 export function buildEventJsonLd(event: EventJsonLdInput) {
@@ -83,12 +85,27 @@ export function buildEventJsonLd(event: EventJsonLdInput) {
       },
     },
     image: event.posterUrl ? [event.posterUrl] : [absoluteUrl("/tikiti-logo.png")],
-    organizer: {
+    organizer: eventOrganizerJsonLd(event.publicOrganizer),
+    ...(offers ? { offers } : {}),
+  };
+}
+
+function eventOrganizerJsonLd(organizer: PublicOrganizerCard | null | undefined) {
+  if (!organizer?.displayName) {
+    return {
       "@type": "Organization",
       name: BRAND.name,
       url: absoluteUrl("/"),
-    },
-    ...(offers ? { offers } : {}),
+    };
+  }
+
+  return {
+    "@type": "Organization",
+    name: organizer.displayName,
+    ...(organizer.websiteUrl ? { url: organizer.websiteUrl } : {}),
+    ...(organizer.logoUrl ? { logo: organizer.logoUrl } : {}),
+    ...(organizer.publicEmail ? { email: organizer.publicEmail } : {}),
+    ...(organizer.publicPhone ? { telephone: organizer.publicPhone } : {}),
   };
 }
 
