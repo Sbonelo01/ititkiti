@@ -9,6 +9,22 @@ import {
 const ORGANIZER_UUID =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
+/**
+ * The optional table is not queried until this is exactly "true".
+ * Leave it unset while supabase/migrations/20261111160007_organizer_public_profiles.sql
+ * is unapplied. A missing relation is remembered for this process so a premature
+ * flag does not repeat the database error.
+ */
+let optionalProfileTableMissing = false;
+
+export function organizerPublicProfilesEnabled(): boolean {
+  return process.env.ORGANIZER_PUBLIC_PROFILES === "true";
+}
+
+export function resetOrganizerPublicProfileProbeForTests(): void {
+  optionalProfileTableMissing = false;
+}
+
 function isMissingPublicProfile(error: { code?: string; message?: string }): boolean {
   const code = error.code ?? "";
   if (code === "PGRST205" || code === "42P01" || code === "PGRST204") return true;
@@ -18,6 +34,16 @@ function isMissingPublicProfile(error: { code?: string; message?: string }): boo
     message.includes("could not find the table") ||
     message.includes("schema cache")
   );
+}
+
+function asLookupError(error: unknown): { code?: string; message?: string } {
+  if (error instanceof Error) return { message: error.message };
+  if (!error || typeof error !== "object") return {};
+  const record = error as { code?: unknown; message?: unknown };
+  return {
+    code: typeof record.code === "string" ? record.code : undefined,
+    message: typeof record.message === "string" ? record.message : undefined,
+  };
 }
 
 /**
@@ -41,6 +67,8 @@ async function readExplicitPublicProfile(
   supabase: ReturnType<typeof getSupabaseAdmin>,
   organizerId: string
 ): Promise<PublicOrganizerCard | null> {
+  if (!organizerPublicProfilesEnabled() || optionalProfileTableMissing) return null;
+
   try {
     const { data, error } = await supabase
       .from("organizer_public_profiles")
@@ -49,14 +77,19 @@ async function readExplicitPublicProfile(
       .maybeSingle();
 
     if (error) {
-      if (!isMissingPublicProfile(error)) {
-        console.error("[public-organizer] public profile unavailable", error.code ?? "unknown");
+      if (isMissingPublicProfile(error)) {
+        optionalProfileTableMissing = true;
+        return null;
       }
+      console.error("[public-organizer] public profile unavailable", error.code ?? "unknown");
       return null;
     }
 
     return publicOrganizerCardFromProfileRow(data);
-  } catch {
+  } catch (error) {
+    if (isMissingPublicProfile(asLookupError(error))) {
+      optionalProfileTableMissing = true;
+    }
     return null;
   }
 }
