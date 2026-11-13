@@ -3,6 +3,7 @@ import {
   SCAN_DEBOUNCE_MS,
   VALIDATE_TICKET_PATH,
   acceptScan,
+  clearScannerBrowserSession,
   outcomeFromValidation,
   postValidateTicket,
   selectQrDecoder,
@@ -36,6 +37,32 @@ describe("supabaseAuthStorageKeys", () => {
       "sb-placeholder-auth-token.0",
       "sb-placeholder-auth-token-code-verifier",
     ]);
+  });
+});
+
+describe("clearScannerBrowserSession", () => {
+  const keys = [
+    "sb-placeholder-auth-token",
+    "sb-placeholder-auth-token-code-verifier",
+    "tikiti.auth.next",
+  ];
+
+  it("clears local auth keys after a successful global sign-out", async () => {
+    const signOut = vi.fn().mockResolvedValue({ error: null });
+    const removeItem = vi.fn();
+    await clearScannerBrowserSession({ signOut, storageKeys: keys, removeItem });
+    expect(signOut).toHaveBeenCalledOnce();
+    expect(removeItem).toHaveBeenCalledWith("sb-placeholder-auth-token");
+    expect(removeItem).toHaveBeenCalledWith("sb-placeholder-auth-token-code-verifier");
+    expect(removeItem).not.toHaveBeenCalledWith("tikiti.auth.next");
+  });
+
+  it("still clears local auth keys when revoke throws", async () => {
+    const signOut = vi.fn().mockRejectedValue(new Error("offline"));
+    const removeItem = vi.fn();
+    await clearScannerBrowserSession({ signOut, storageKeys: keys, removeItem });
+    expect(removeItem).toHaveBeenCalledWith("sb-placeholder-auth-token");
+    expect(removeItem).toHaveBeenCalledWith("sb-placeholder-auth-token-code-verifier");
   });
 });
 

@@ -15,6 +15,7 @@ import {
   safeAuthRedirectPath,
 } from "@/utils/authRedirect";
 import { userHasOrganizerEvents } from "@/utils/postAuthLanding";
+import { linkScannerMemberships } from "@/lib/scanner/linkScannerMemberships";
 import { supabase } from "@/utils/supabaseClient";
 
 function AuthCallbackHandler() {
@@ -53,6 +54,12 @@ function AuthCallbackHandler() {
       settled = true;
       window.clearTimeout(timeout);
       try {
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+        if (session?.access_token) {
+          await linkScannerMemberships(session.access_token);
+        }
         const destination = await resolvePostAuthPath(
           userId,
           next,

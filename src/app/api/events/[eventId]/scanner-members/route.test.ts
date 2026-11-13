@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { NextRequest } from "next/server";
-import { POST } from "./route";
+import { GET, POST } from "./route";
 import { requireEventOrganizer } from "@/server/events/eventOrganizerAuth";
 import { getSupabaseAdmin } from "@/server/supabaseAdmin";
 import { resetRateLimitBucketsForTests } from "@/utils/rateLimit";
@@ -71,6 +71,27 @@ describe("POST /api/events/[eventId]/scanner-members", () => {
     expect(JSON.stringify(createdBody)).not.toContain("user_id");
   });
 
+  it("normalizes surrounding whitespace and rejects a non-address", async () => {
+    insert.mockResolvedValueOnce({ error: null });
+    const spaced = await POST(post("  Door@Example.com  "), {
+      params: Promise.resolve({ eventId: EVENT_ID }),
+    });
+    expect(spaced.status).toBe(200);
+    expect(insert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        invited_email: "door@example.com",
+        user_id: null,
+      })
+    );
+
+    insert.mockClear();
+    const invalid = await POST(post("not-an-email"), {
+      params: Promise.resolve({ eventId: EVENT_ID }),
+    });
+    expect(invalid.status).toBe(400);
+    expect(insert).not.toHaveBeenCalled();
+  });
+
   it("rate limits repeated invites", async () => {
     insert.mockResolvedValue({ error: null });
     let lastStatus = 0;
@@ -82,5 +103,68 @@ describe("POST /api/events/[eventId]/scanner-members", () => {
     }
     expect(lastStatus).toBe(429);
     expect(listUsers).not.toHaveBeenCalled();
+  });
+});
+
+describe("GET /api/events/[eventId]/scanner-members", () => {
+  beforeEach(() => {
+    resetRateLimitBucketsForTests();
+    vi.mocked(requireEventOrganizer).mockResolvedValue({
+      ok: true,
+      eventId: EVENT_ID,
+      user: { id: "organizer-1" },
+    } as never);
+  });
+
+  it("returns pending, active, and removed invites", async () => {
+    const rows = [
+      {
+        id: "m1",
+        event_id: EVENT_ID,
+        user_id: null,
+        invited_email: "pending@example.com",
+        invited_by: "organizer-1",
+        created_at: "2026-11-03T00:00:00Z",
+        revoked_at: null,
+      },
+      {
+        id: "m2",
+        event_id: EVENT_ID,
+        user_id: "user-2",
+        invited_email: "active@example.com",
+        invited_by: "organizer-1",
+        created_at: "2026-11-02T00:00:00Z",
+        revoked_at: null,
+      },
+      {
+        id: "m3",
+        event_id: EVENT_ID,
+        user_id: "user-3",
+        invited_email: "removed@example.com",
+        invited_by: "organizer-1",
+        created_at: "2026-11-01T00:00:00Z",
+        revoked_at: "2026-11-04T00:00:00Z",
+      },
+    ];
+    const builder = {
+      select: () => builder,
+      eq: () => builder,
+      order: async () => ({ data: rows, error: null }),
+    };
+    vi.mocked(getSupabaseAdmin).mockReturnValue({ from: () => builder } as never);
+
+    const res = await GET(
+      new NextRequest(`http://localhost/api/events/${EVENT_ID}/scanner-members`, {
+        headers: { authorization: "Bearer token" },
+      }),
+      { params: Promise.resolve({ eventId: EVENT_ID }) }
+    );
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.members.map((member: { status: string }) => member.status)).toEqual([
+      "pending",
+      "active",
+      "removed",
+    ]);
   });
 });

@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
 import { requireEventOrganizer } from "@/server/events/eventOrganizerAuth";
 import { getSupabaseAdmin } from "@/server/supabaseAdmin";
 import { applyRateLimit } from "@/utils/rateLimit";
+
+const idSchema = z.uuid();
 
 type RouteContext = { params: Promise<{ eventId: string; memberId: string }> };
 
@@ -14,6 +17,9 @@ export async function DELETE(req: NextRequest, context: RouteContext) {
   if (rateLimited) return rateLimited;
 
   const { eventId, memberId } = await context.params;
+  if (!idSchema.safeParse(eventId).success || !idSchema.safeParse(memberId).success) {
+    return NextResponse.json({ error: "Invalid member" }, { status: 400 });
+  }
   const auth = await requireEventOrganizer(req.headers.get("authorization"), eventId);
   if (!auth.ok) {
     return NextResponse.json({ error: auth.error }, { status: auth.status });

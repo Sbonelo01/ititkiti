@@ -1,24 +1,15 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "@/utils/supabaseClient";
-import { isStaffOrAdmin } from "@/utils/roles";
-import { persistAuthRedirectPath } from "@/utils/authRedirect";
-import { supabaseAuthStorageKeys } from "@/lib/scanner/ticketScan";
+import { allowlistedScanRedirect, scannerAccessPath } from "@/lib/scanner/scanRedirect";
+import { clearScannerBrowserSession } from "@/lib/scanner/ticketScan";
+import ScanLogin from "@/components/ScanLogin";
 import StaffTicketScanner from "@/components/StaffTicketScanner";
 
-const LOGIN_HREF = "/login?redirect=%2Fscan";
-
-function clearLocalAuthSession() {
-  if (typeof window === "undefined") return;
-  for (const key of supabaseAuthStorageKeys(Object.keys(localStorage))) {
-    localStorage.removeItem(key);
-  }
-}
-
-type AccessState = "loading" | "anonymous" | "denied" | "ready";
+type AccessState = "loading" | "anonymous" | "denied" | "ready" | "error";
 
 function FullScreenStatus({ label }: { label: string }) {
   return (
@@ -29,8 +20,28 @@ function FullScreenStatus({ label }: { label: string }) {
   );
 }
 
-export default function ScanPage() {
-  const router = useRouter();
+async function resolveScannerAccess(
+  session: Session,
+  eventId: string | null
+): Promise<Exclude<AccessState, "loading">> {
+  try {
+    const response = await fetch(scannerAccessPath(eventId), {
+      headers: { Authorization: `Bearer ${session.access_token}` },
+      cache: "no-store",
+    });
+    if (response.status === 401) return "anonymous";
+    const body = (await response.json().catch(() => null)) as { allowed?: boolean } | null;
+    if (!response.ok || !body) return "error";
+    return body.allowed ? "ready" : "denied";
+  } catch {
+    return "error";
+  }
+}
+
+function ScanScreen() {
+  const searchParams = useSearchParams();
+  const eventId = searchParams.get("event");
+  const returnPath = allowlistedScanRedirect(eventId ? `/scan?event=${eventId}` : "/scan");
   const [access, setAccess] = useState<AccessState>("loading");
 
   useEffect(() => {
@@ -38,18 +49,17 @@ export default function ScanPage() {
 
     const applySession = (session: Session | null) => {
       if (cancelled) return;
-      const user = session?.user ?? null;
-      if (!user) {
+      if (!session?.user || !session.access_token) {
         setAccess("anonymous");
-        persistAuthRedirectPath("/scan");
-        router.replace(LOGIN_HREF);
         return;
       }
-      // Same rule as POST /api/validate-ticket: staff/admin live in app_metadata only.
-      setAccess(isStaffOrAdmin(user) ? "ready" : "denied");
+      setAccess("loading");
+      void resolveScannerAccess(session, eventId).then((next) => {
+        if (!cancelled) setAccess(next);
+      });
     };
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    void supabase.auth.getSession().then(({ data: { session } }) => {
       applySession(session);
     });
 
@@ -63,27 +73,40 @@ export default function ScanPage() {
       cancelled = true;
       subscription.unsubscribe();
     };
-  }, [router]);
+  }, [eventId]);
 
   const signOut = async () => {
-    try {
-      const { error } = await supabase.auth.signOut();
-      if (error) clearLocalAuthSession();
-    } catch {
-      // Offline revoke can fail. Still drop the browser session below.
-      clearLocalAuthSession();
-    }
-    persistAuthRedirectPath("/scan");
-    // Full navigation so a failed revoke cannot leave an in-memory session
-    // that immediately sends the login page back to /scan.
-    window.location.assign(LOGIN_HREF);
+    await clearScannerBrowserSession({
+      signOut: () => supabase.auth.signOut({ scope: "global" }),
+      storageKeys: Object.keys(localStorage),
+      removeItem: (key) => localStorage.removeItem(key),
+    });
+    window.location.assign(returnPath);
   };
 
-  if (access === "loading" || access === "anonymous") {
+  if (access === "loading") {
+    return <FullScreenStatus label="Checking access…" />;
+  }
+
+  if (access === "anonymous") {
+    return <ScanLogin returnPath={returnPath} />;
+  }
+
+  if (access === "error") {
     return (
-      <FullScreenStatus
-        label={access === "anonymous" ? "Redirecting to sign in…" : "Checking access…"}
-      />
+      <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black px-6 text-center text-white">
+        <div className="max-w-sm">
+          <h1 className="text-2xl font-bold">Couldn&apos;t check access</h1>
+          <p className="mt-3 text-gray-400">Check the connection and try again.</p>
+          <button
+            type="button"
+            onClick={() => window.location.reload()}
+            className="mt-6 font-semibold text-green-500"
+          >
+            Try again
+          </button>
+        </div>
+      </div>
     );
   }
 
@@ -93,7 +116,8 @@ export default function ScanPage() {
         <div className="max-w-sm">
           <h1 className="text-2xl font-bold">Access denied</h1>
           <p className="mt-3 text-gray-400">
-            Only staff and admin accounts can use the scanner.
+            This account can&apos;t scan this event. Ask the organizer to invite your email.
+            Signing in with Google does not grant access on its own.
           </p>
           <button
             type="button"
@@ -110,4 +134,12 @@ export default function ScanPage() {
   }
 
   return <StaffTicketScanner onLogout={() => { void signOut(); }} />;
+}
+
+export default function ScanPage() {
+  return (
+    <Suspense fallback={<FullScreenStatus label="Checking access…" />}>
+      <ScanScreen />
+    </Suspense>
+  );
 }

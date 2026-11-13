@@ -11,8 +11,41 @@ export function hasConfirmedEmail(user: Pick<User, "email_confirmed_at">): boole
   return typeof user.email_confirmed_at === "string" && user.email_confirmed_at.trim().length > 0;
 }
 
+function identityEmail(value: unknown): string | null {
+  if (typeof value !== "string") return null;
+  const email = normalizeScannerEmail(value);
+  return email || null;
+}
+
+/**
+ * Google's verified address, only when it is the session email.
+ * `user_metadata` is ignored — callers can edit that.
+ */
+function googleIdentityConfirmsSessionEmail(
+  user: Pick<User, "email" | "identities">
+): boolean {
+  const sessionEmail = identityEmail(user.email);
+  if (!sessionEmail) return false;
+
+  for (const identity of user.identities ?? []) {
+    if (identity.provider !== "google") continue;
+    const data = identity.identity_data;
+    if (!data || typeof data !== "object") continue;
+    const record = data as Record<string, unknown>;
+    if (record.email_verified !== true) continue;
+    if (identityEmail(record.email) === sessionEmail) return true;
+  }
+  return false;
+}
+
+export function sessionEmailIsVerified(
+  user: Pick<User, "email" | "email_confirmed_at" | "identities">
+): boolean {
+  return hasConfirmedEmail(user) || googleIdentityConfirmsSessionEmail(user);
+}
+
 function confirmedScannerEmail(user: User): string | null {
-  if (!hasConfirmedEmail(user) || !user.email?.trim()) return null;
+  if (!sessionEmailIsVerified(user) || !user.email?.trim()) return null;
   return normalizeScannerEmail(user.email);
 }
 
@@ -75,7 +108,7 @@ export async function canScanEvent(user: User, eventId: string): Promise<boolean
     .is("revoked_at", null)
     .maybeSingle();
 
-  if (!hasConfirmedEmail(user)) {
+  if (!sessionEmailIsVerified(user)) {
     return false;
   }
 
@@ -105,7 +138,7 @@ export async function requireScannerAppAccess(user: User): Promise<boolean> {
     return true;
   }
 
-  if (!hasConfirmedEmail(user)) {
+  if (!sessionEmailIsVerified(user)) {
     return false;
   }
 
@@ -168,7 +201,7 @@ export async function listScannerEventsForUser(user: User): Promise<ScannerEvent
     return events ?? [];
   }
 
-  if (!hasConfirmedEmail(user)) {
+  if (!sessionEmailIsVerified(user)) {
     return [];
   }
 

@@ -54,6 +54,25 @@ export function supabaseAuthStorageKeys(keys: readonly string[]): string[] {
   return keys.filter((key) => key.startsWith("sb-") && key.includes("-auth-token"));
 }
 
+/**
+ * Revoke the Supabase session, then drop every local auth key.
+ * Shared gate phones must not keep a session if the network revoke fails.
+ */
+export async function clearScannerBrowserSession(input: {
+  signOut: () => Promise<unknown>;
+  storageKeys: readonly string[];
+  removeItem: (key: string) => void;
+}): Promise<void> {
+  try {
+    await input.signOut();
+  } catch {
+    // Offline revoke can fail. Local keys are still removed below.
+  }
+  for (const key of supabaseAuthStorageKeys(input.storageKeys)) {
+    input.removeItem(key);
+  }
+}
+
 export function isValidationStatus(value: unknown): value is ValidationStatus {
   return (
     typeof value === "string" &&

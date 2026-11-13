@@ -1,18 +1,36 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { UserGroupIcon, TrashIcon } from "@heroicons/react/24/outline";
+import { UserGroupIcon, TrashIcon, ClipboardDocumentIcon } from "@heroicons/react/24/outline";
 import { supabase } from "@/utils/supabaseClient";
+import { scanReturnPath } from "@/lib/scanner/scanRedirect";
+import {
+  scannerMemberStatus,
+  scannerMemberStatusLabel,
+  type ScannerMemberStatus,
+} from "@/lib/scanner/scannerMemberStatus";
 
 interface ScannerMember {
   id: string;
   invited_email: string;
   user_id: string | null;
+  revoked_at: string | null;
   created_at: string;
+  status?: ScannerMemberStatus;
 }
 
 interface DoorTeamSectionProps {
   eventId: string;
+}
+
+function memberStatus(member: ScannerMember): ScannerMemberStatus {
+  if (member.status === "pending" || member.status === "active" || member.status === "removed") {
+    return member.status;
+  }
+  return scannerMemberStatus({
+    user_id: member.user_id,
+    revoked_at: member.revoked_at,
+  });
 }
 
 export default function DoorTeamSection({ eventId }: DoorTeamSectionProps) {
@@ -22,6 +40,7 @@ export default function DoorTeamSection({ eventId }: DoorTeamSectionProps) {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+  const scanPath = scanReturnPath(eventId);
 
   const getAccessToken = useCallback(async (): Promise<string | null> => {
     const {
@@ -90,7 +109,9 @@ export default function DoorTeamSection({ eventId }: DoorTeamSectionProps) {
       }
 
       setEmail("");
-      setMessage("Scanner access added. They can sign in at scan.tikiti.fun with their Tikiti account.");
+      setMessage(
+        "Scanner access saved. They get access when they sign in with this email (Google or password)."
+      );
       await loadMembers();
     } finally {
       setSubmitting(false);
@@ -121,16 +142,40 @@ export default function DoorTeamSection({ eventId }: DoorTeamSectionProps) {
     await loadMembers();
   };
 
+  const copyScanLink = async () => {
+    const url = `${window.location.origin}${scanPath}`;
+    try {
+      await navigator.clipboard.writeText(url);
+      setError(null);
+      setMessage("Scanner link copied.");
+    } catch {
+      setError(null);
+      setMessage(url);
+    }
+  };
+
   return (
     <div className="mt-10 pt-8 border-t border-gray-100">
       <h2 className="flex items-center gap-2 text-xl font-bold text-gray-900 mb-2">
         <UserGroupIcon className="h-6 w-6 text-green-500" />
         Door team (scanner access)
       </h2>
-      <p className="text-gray-600 mb-6 text-sm">
-        Invite people to scan tickets for this event at scan.tikiti.fun. They sign in with their Tikiti
-        account (any role). Access is limited to this event only.
+      <p className="text-gray-600 mb-4 text-sm">
+        Add people by email. They sign in at the scanner link with Google or a password. Access is
+        only for this event, and only after that email is verified. Removing someone takes effect
+        on their next scan.
       </p>
+
+      <button
+        type="button"
+        onClick={() => {
+          void copyScanLink();
+        }}
+        className="mb-6 inline-flex items-center gap-2 rounded-xl border border-gray-200 px-4 py-2 text-sm font-semibold text-gray-800 hover:bg-gray-50"
+      >
+        <ClipboardDocumentIcon className="h-5 w-5 text-green-600" />
+        Copy scanner link
+      </button>
 
       <form onSubmit={handleAdd} className="flex flex-col sm:flex-row gap-3 mb-6">
         <input
@@ -160,29 +205,30 @@ export default function DoorTeamSection({ eventId }: DoorTeamSectionProps) {
         <p className="text-gray-500 text-sm">No scanner access granted yet.</p>
       ) : (
         <ul className="space-y-2">
-          {members.map((member) => (
-            <li
-              key={member.id}
-              className="flex items-center justify-between gap-4 px-4 py-3 bg-gray-50 rounded-xl border border-gray-100"
-            >
-              <div>
-                <p className="font-medium text-gray-900">{member.invited_email}</p>
-                <p className="text-xs text-gray-500">
-                  {member.user_id
-                    ? "Signed in with this email"
-                    : "Waiting for them to sign in with this email"}
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={() => handleRevoke(member.id)}
-                className="text-red-600 hover:text-red-800 p-2 rounded-lg hover:bg-red-50"
-                aria-label={`Revoke ${member.invited_email}`}
+          {members.map((member) => {
+            const status = memberStatus(member);
+            return (
+              <li
+                key={member.id}
+                className="flex items-center justify-between gap-4 px-4 py-3 bg-gray-50 rounded-xl border border-gray-100"
               >
-                <TrashIcon className="h-5 w-5" />
-              </button>
-            </li>
-          ))}
+                <div>
+                  <p className="font-medium text-gray-900">{member.invited_email}</p>
+                  <p className="text-xs text-gray-500">{scannerMemberStatusLabel(status)}</p>
+                </div>
+                {status !== "removed" && (
+                  <button
+                    type="button"
+                    onClick={() => handleRevoke(member.id)}
+                    className="text-red-600 hover:text-red-800 p-2 rounded-lg hover:bg-red-50"
+                    aria-label={`Revoke ${member.invited_email}`}
+                  >
+                    <TrashIcon className="h-5 w-5" />
+                  </button>
+                )}
+              </li>
+            );
+          })}
         </ul>
       )}
     </div>
