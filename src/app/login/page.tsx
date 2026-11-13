@@ -23,6 +23,7 @@ import {
   safeAuthRedirectPath,
 } from "@/utils/authRedirect";
 import { userHasOrganizerEvents } from "@/utils/postAuthLanding";
+import { linkScannerMemberships } from "@/lib/scanner/linkScannerMemberships";
 
 function GoogleGlyph() {
   return (
@@ -149,6 +150,9 @@ function LoginForm() {
       if (error) {
         setError(error.message);
       } else {
+        if (data.session?.access_token) {
+          await linkScannerMemberships(data.session.access_token);
+        }
         setMessage("Logged in successfully! Redirecting...");
         const destination = await resolvePostAuthPath(
           data.user?.id,
@@ -202,7 +206,8 @@ function LoginForm() {
           redirectTo,
           userHasOrganizerEvents
         );
-        if (data.session) {
+        if (data.session?.access_token) {
+          await linkScannerMemberships(data.session.access_token);
           consumeAuthRedirectPath(redirectParam);
         }
         setTimeout(() => router.push(destination), 1500);

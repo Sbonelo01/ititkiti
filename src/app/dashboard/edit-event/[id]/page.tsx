@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { supabase } from "@/utils/supabaseClient";
 import { getProductRole } from "@/utils/roles";
+import { isSuperAdminUser } from "@/utils/superAdmin";
 import { User } from "@supabase/supabase-js";
 import { 
   CalendarIcon, 
@@ -43,6 +44,7 @@ export default function EditEvent() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [eventNotFound, setEventNotFound] = useState(false);
+  const [ownsEvent, setOwnsEvent] = useState(false);
   const router = useRouter();
   const params = useParams();
   const eventId = params.id as string;
@@ -57,9 +59,9 @@ export default function EditEvent() {
     totalTicketsInput: "",
   });
 
-  const loadEventData = useCallback(async (userId: string) => {
+  const loadEventData = useCallback(async (currentUser: User) => {
     try {
-      console.log('Loading event data for event ID:', eventId, 'and user ID:', userId);
+      console.log('Loading event data for event ID:', eventId, 'and user ID:', currentUser.id);
       
       const { data: allEvents, error: allEventsError } = await supabase
         .from('events')
@@ -76,13 +78,16 @@ export default function EditEvent() {
 
       const event = allEvents[0];
       console.log('Found event:', event);
-      console.log('Event organizer_id:', event.organizer_id, 'User ID:', userId);
+      console.log('Event organizer_id:', event.organizer_id, 'User ID:', currentUser.id);
 
-      if (event.organizer_id !== userId) {
+      const owns = event.organizer_id === currentUser.id;
+      if (!owns && !isSuperAdminUser(currentUser)) {
         console.error('User does not own this event');
+        setOwnsEvent(false);
         setEventNotFound(true);
         return;
       }
+      setOwnsEvent(owns);
 
       const eventDate = new Date(event.date);
       const dateString = eventDate.toISOString().split('T')[0];
@@ -113,13 +118,13 @@ export default function EditEvent() {
         return;
       }
 
-      if (getProductRole(session.user) !== "organizer") {
+      if (getProductRole(session.user) !== "organizer" && !isSuperAdminUser(session.user)) {
         router.push('/dashboard');
         return;
       }
 
       setUser(session.user);
-      await loadEventData(session.user.id);
+      await loadEventData(session.user);
       setLoading(false);
     };
 
@@ -471,6 +476,11 @@ export default function EditEvent() {
                 )}
 
                 {/* Submit Buttons */}
+                {!ownsEvent && (
+                  <p className="text-sm text-gray-600">
+                    You can manage scanner access for this event. Event details stay with the owner.
+                  </p>
+                )}
                 <div className="flex flex-col sm:flex-row gap-4 pt-6 border-t border-gray-100">
                   <button
                     type="button"
@@ -482,7 +492,7 @@ export default function EditEvent() {
                   </button>
                   <button
                     type="submit"
-                    disabled={submitting}
+                    disabled={submitting || !ownsEvent}
                     className="flex-1 bg-gradient-to-r from-green-500 to-green-600 text-white px-8 py-4 rounded-xl font-semibold hover:from-green-600 hover:to-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 flex items-center justify-center gap-2"
                   >
                     {submitting ? (
